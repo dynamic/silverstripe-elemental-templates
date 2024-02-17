@@ -1,0 +1,8 @@
+DNADesign\Elemental\Models\ElementalArea:
+  areaone:
+    OwnerClassName: 'DNADesign\ElementalSkeletons\Models\Skeleton'
+
+DNADesign\ElementalSkeletons\Models\Skeleton:
+  skeletonone:
+    Title: 'Skeleton One'
+    Elements: =>DNADesign\Elemental\Models\ElementalArea.areaone

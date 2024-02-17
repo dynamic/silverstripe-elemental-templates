@@ -11,11 +11,13 @@
 	"minimum-stability": "dev",
 	"prefer-stable": true,
 	"require": {
-		"dnadesign/silverstripe-elemental": "2.x-dev"
+		"dnadesign/silverstripe-elemental": "^5.0",
+        "lekoala/silverstripe-cms-actions": "^1.4"
 	},
-	"extra": {
-		"branch-alias": {
-			"dev-master": "1.x-dev"
-		}
-	}
+    "autoload": {
+        "psr-4": {
+            "DNADesign\\ElementalSkeletons\\": "src/",
+            "DNADesign\\ElementalSkeletons\\Tests\\": "tests/"
+        }
+    }
 }

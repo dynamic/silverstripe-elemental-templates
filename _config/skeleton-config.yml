@@ -1,0 +1,6 @@
+---
+name: skeleton-config
+---
+DNADesign\Elemental\Models\BaseElement:
+  extensions:
+    - DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
