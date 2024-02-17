@@ -2,3 +2,5 @@
 /.gitattributes   export-ignore
 /.scrutinizer.yml export-ignore
 /.github          export-ignore
+/.phpunit.xml.dist export-ignore
+/.phpcs.xml.dist  export-ignore
