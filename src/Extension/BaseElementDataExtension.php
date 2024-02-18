@@ -67,11 +67,11 @@ class BaseElementDataExtension extends DataExtension
         $manager = $this->getOwnerPage();
 
         if ($manager instanceof Template) {
-            $populate = Template::config()->get('populate');
-
-            if (array_key_exists($this->getOwner()->ClassName, $populate)) {
-                foreach ($populate[$this->getOwner()->ClassName] as $field => $value) {
-                    $this->getOwner()->$field = $value;
+            if ($populate = Template::config()->get('populate')) {
+                if (array_key_exists($this->getOwner()->ClassName, $populate)) {
+                    foreach ($populate[$this->getOwner()->ClassName] as $field => $value) {
+                        $this->getOwner()->$field = $value;
+                    }
                 }
             }
         }
