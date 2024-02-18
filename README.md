@@ -12,17 +12,7 @@ This module relies on native `$cascade_duplicates` settings to ensure sample con
 
 Ensure you setup a repository reference in your `composer.json` file:
 
-```json
-"repositories": [
-        {
-            "type": "vcs",
-            "url": "git@github.com:dynamic/silverstripe-elemental-skeletons.git"
-        }
-    ],
-```
-
-
-`composer require dnadesign/silverstripe-elemental-skeletons`
+`composer require dynamic/silverstripe-elemental-templates`
 
 ## License
 
