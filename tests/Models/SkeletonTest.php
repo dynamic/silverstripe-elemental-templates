@@ -3,7 +3,7 @@
 namespace DNADesign\ElementalSkeletons\Tests\Models;
 
 use DNADesign\Elemental\Forms\ElementalAreaField;
-use DNADesign\ElementalSkeletons\Models\Skeleton;
+use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FormField;
@@ -22,13 +22,13 @@ class SkeletonTest extends SapphireTest
      */
     public function testGetCMSFields()
     {
-        $skeleton = new Skeleton();
+        $skeleton = new Template();
         $fields = $skeleton->getCMSFields();
 
         $this->assertInstanceOf(FormField::class, $fields->dataFieldByName('Title'));
         $this->assertInstanceOf(DropdownField::class, $fields->dataFieldByName('PageType'));
 
-        $existingSkeleton = $this->objFromFixture(Skeleton::class, 'skeletonone');
+        $existingSkeleton = $this->objFromFixture(Template::class, 'skeletonone');
         $existingFields = $existingSkeleton->getCMSFields();
 
         $this->assertInstanceOf(ElementalAreaField::class, $existingFields->dataFieldByName('Elements'));

@@ -2,7 +2,7 @@ DNADesign\Elemental\Models\ElementalArea:
   areaone:
     OwnerClassName: 'DNADesign\ElementalSkeletons\Models\Skeleton'
 
-DNADesign\ElementalSkeletons\Models\Skeleton:
+Dynamic\ElememtalTemplates\Models\Template:
   skeletonone:
     Title: 'Skeleton One'
     Elements: =>DNADesign\Elemental\Models\ElementalArea.areaone
