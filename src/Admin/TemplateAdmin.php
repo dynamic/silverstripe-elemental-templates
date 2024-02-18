@@ -1,15 +1,15 @@
 <?php
 
-namespace DNADesign\ElementalArchetypes\Admin;
+namespace Dynamic\ElememtalTemplates\Admin;
 
-use DNADesign\ElementalSkeletons\Models\Skeleton;
+use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\Admin\ModelAdmin;
 
 /**
- * Class \DNADesign\ElementalArchetypes\Admin\SkeletonAdmin
+ * Class \Dynamic\ElememtalTemplates\Admin\TemplateAdmin
  *
  */
-class SkeletonAdmin extends ModelAdmin
+class TemplateAdmin extends ModelAdmin
 {
     /**
      * @var array|string[]
@@ -22,18 +22,18 @@ class SkeletonAdmin extends ModelAdmin
      * @var string[]
      */
     private static array $managed_models = [
-        Skeleton::class,
+        Template::class,
     ];
 
     /**
      * @var string
      */
-    private static string $menu_title = 'Element Skeletons';
+    private static string $menu_title = 'Element Templates';
 
     /**
      * @var string
      */
-    private static string $url_segment = 'elemental-skeletons';
+    private static string $url_segment = 'elemental-templates';
 
     /**
      * @var string

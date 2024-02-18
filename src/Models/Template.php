@@ -1,6 +1,6 @@
 <?php
 
-namespace DNADesign\ElementalSkeletons\Models;
+namespace Dynamic\ElememtalTemplates\Models;
 
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 use DNADesign\Elemental\Models\ElementalArea;
@@ -19,7 +19,7 @@ use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
 
 /**
- * Creates a Skeleton of elements that can be used to set up a page
+ * Creates a Template of elements that can be used to set up a page
  *
  * @property string $Title
  * @property string $PageType
@@ -29,22 +29,22 @@ use SilverStripe\Versioned\Versioned;
  * @method \SilverStripe\Assets\Image LayoutImage()
  * @mixin \DNADesign\Elemental\Extensions\ElementalAreasExtension
  */
-class Skeleton extends DataObject implements PermissionProvider
+class Template extends DataObject implements PermissionProvider
 {
     /**
      * @var string
      */
-    private static string $table_name = 'ElementSkeletons';
+    private static string $table_name = 'ElementTemplate';
 
     /**
      * @var string
      */
-    private static string $singular_name = 'Skeleton';
+    private static string $singular_name = 'Template';
 
     /**
      * @var string
      */
-    private static string $plural_name = 'Skeletons';
+    private static string $plural_name = 'Templates';
 
     /**
      * @var array|string[]
@@ -139,7 +139,7 @@ class Skeleton extends DataObject implements PermissionProvider
         $fields->replaceField('PageType', $pt = DropdownField::create('PageType', 'Which page type to use as the base', $pageTypes));
 
         $pt->setEmptyString('Please choose...');
-        $pt->setRightTitle('This will determine which elements are possible to add to the skeleton');
+        $pt->setRightTitle('This will determine which elements are possible to add to the template');
 
         if ($this->isinDB()) {
             $fields->push(TreeDropdownField::create('ParentID', 'Parent Page', \Page::class)->setEmptyString('Parent page (empty for root)'));
@@ -147,7 +147,7 @@ class Skeleton extends DataObject implements PermissionProvider
         }
 
         $fields->dataFieldByName('LayoutImage')
-            ->setFolderName('Uploads/Skeletons')
+            ->setFolderName('Uploads/templates')
             ->setAllowedFileCategories('image');
 
         return $fields;
@@ -214,11 +214,11 @@ class Skeleton extends DataObject implements PermissionProvider
     {
         return Controller::join_links(
             'admin',
-            'elemental-skeletons',
-            'DNADesign-ElementalSkeletons-Models-Skeleton',
+            'elemental-templates',
+            'DNADesign-ElementalTemplates-Models-Template',
             'EditForm',
             'field',
-            'DNADesign-ElementalSkeletons-Models-Skeleton',
+            'DNADesign-ElementalTemplates-Models-Template',
             'item',
             $this->ID,
             'edit'
@@ -249,17 +249,17 @@ class Skeleton extends DataObject implements PermissionProvider
     public function providePermissions(): array
     {
         return [
-            'ELEMENTAL_SKELETONS_CREATE' => [
-                'name' => 'Create a skeleton',
-                'category' => 'Elemental Skeletons',
+            'ELEMENTAL_TEMPLATE_CREATE' => [
+                'name' => 'Create a template',
+                'category' => 'Elemental Templates',
             ],
-            'ELEMENTAL_SKELETONS_EDIT' => [
-                'name' => 'Edit a skeleton',
-                'category' => 'Elemental Skeletons',
+            'ELEMENTAL_TEMPLATE_EDIT' => [
+                'name' => 'Edit a template',
+                'category' => 'Elemental Templates',
             ],
-            'ELEMENTAL_SKELETONS_DELETE' => [
-                'name' => 'Delete a skeleton',
-                'category' => 'Elemental Skeletons',
+            'ELEMENTAL_TEMPLATE_DELETE' => [
+                'name' => 'Delete a template',
+                'category' => 'Elemental Templates',
             ],
         ];
     }
@@ -275,7 +275,7 @@ class Skeleton extends DataObject implements PermissionProvider
             $member = $this->getUser();
         }
 
-        if ($member->can('ELEMENTAL_SKELETONS_CREATE')) {
+        if ($member->can('ELEMENTAL_TEMPLATE_CREATE')) {
             return true;
         }
 
@@ -292,7 +292,7 @@ class Skeleton extends DataObject implements PermissionProvider
             $member = $this->getUser();
         }
 
-        if ($member->can('ELEMENTAL_SKELETONS_EDIT')) {
+        if ($member->can('ELEMENTAL_TEMPLATE_EDIT')) {
             return true;
         }
 
@@ -309,7 +309,7 @@ class Skeleton extends DataObject implements PermissionProvider
             $member = $this->getUser();
         }
 
-        if ($member->can('ELEMENTAL_SKELETONS_DELETE')) {
+        if ($member->can('ELEMENTAL_TEMPLATE_DELETE')) {
             return true;
         }
 
