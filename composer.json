@@ -4,10 +4,16 @@
 	"type": "silverstripe-vendormodule",
 	"keywords": ["silverstripe", "element", "elemental", "content blocks", "templates"],
 	"license": "BSD-3-Clause",
-	"authors": [{
-		"name": "John Milmine",
-		"email": "john.milmine@dna.co.nz"
-	}],
+	"authors": [
+        {
+		    "name": "Jason Irish",
+		    "email": "dev@dynamicagency.com"
+	    },
+        {
+            "name": "Nic Horstmeier",
+            "email": "dev@dynamicagency.com"
+        }
+    ],
 	"minimum-stability": "dev",
 	"prefer-stable": true,
 	"require": {
