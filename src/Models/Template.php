@@ -215,10 +215,10 @@ class Template extends DataObject implements PermissionProvider
         return Controller::join_links(
             'admin',
             'elemental-templates',
-            'DNADesign-ElementalTemplates-Models-Template',
+            'Dynamic-WlememtalTemplates-Models-Template',
             'EditForm',
             'field',
-            'DNADesign-ElementalTemplates-Models-Template',
+            'Dynamic-WlememtalTemplates-Models-Template',
             'item',
             $this->ID,
             'edit'
