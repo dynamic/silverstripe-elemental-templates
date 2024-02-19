@@ -2,17 +2,18 @@
 
 namespace Dynamic\ElememtalTemplates\Extension;
 
+use SilverStripe\Security\Member;
+use SilverStripe\ORM\DataExtension;
+use SilverStripe\Security\Security;
+use SilverStripe\Control\Controller;
+use DNADesign\Elemental\Models\BaseElement;
 use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
-use SilverStripe\Control\Controller;
-use SilverStripe\ORM\DataExtension;
-use SilverStripe\Security\Member;
-use SilverStripe\Security\Security;
 
 /**
  * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
  *
- * @property \DNADesign\Elemental\Models\BaseElement|\Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension $owner
+ * @property BaseElement|BaseElementDataExtension $owner
  */
 class BaseElementDataExtension extends DataExtension
 {
