@@ -33,21 +33,25 @@ class Template extends DataObject implements PermissionProvider
 {
     /**
      * @var string
+     * @config
      */
     private static string $table_name = 'ElementTemplate';
 
     /**
      * @var string
+     * @config
      */
     private static string $singular_name = 'Template';
 
     /**
      * @var string
+     * @config
      */
     private static string $plural_name = 'Templates';
 
     /**
      * @var array|string[]
+     * @config
      */
     private static array $db = [
         'Title' => 'Varchar',
@@ -56,6 +60,7 @@ class Template extends DataObject implements PermissionProvider
 
     /**
      * @var array|string[]
+     * @config
      */
     private static array $has_one = [
         'Elements' => ElementalArea::class,
@@ -64,6 +69,7 @@ class Template extends DataObject implements PermissionProvider
 
     /**
      * @var array|string[]
+     * @config
      */
     private static array $owns = [
         'Elements',
@@ -71,6 +77,7 @@ class Template extends DataObject implements PermissionProvider
 
     /**
      * @var array|string[]
+     * @config
      */
     private static array $cascade_deletes = [
         'Elements',
@@ -78,6 +85,7 @@ class Template extends DataObject implements PermissionProvider
 
     /**
      * @var array|string[]
+     * @config
      */
     private static array $cascade_duplicates = [
         'Elements',
@@ -85,6 +93,7 @@ class Template extends DataObject implements PermissionProvider
 
     /**
      * @var array|string[]
+     * @config
      */
     private static array $extensions = [
         ElementalAreasExtension::class,
@@ -92,6 +101,7 @@ class Template extends DataObject implements PermissionProvider
 
     /**
      * @var array|string[]
+     * @config
      */
     private static array $summary_fields = [
         'Title' => 'Layout Name',
@@ -101,6 +111,7 @@ class Template extends DataObject implements PermissionProvider
 
     /**
      * @var array|string[]
+     * @config
      */
     private static array $field_labels = [
         'PageTypeName' => 'Page Type',
@@ -136,16 +147,23 @@ class Template extends DataObject implements PermissionProvider
         $pageTypes = self::getDecoratedBy(ElementalAreasExtension::class, \Page::class);
 
         $fields->removeByName('Sort');
-        $fields->replaceField('PageType', $pt = DropdownField::create('PageType', 'Which page type to use as the base', $pageTypes));
+        $fields->replaceField(
+            'PageType',
+            $pt = DropdownField::create('PageType', 'Which page type to use as the base', $pageTypes)
+        );
 
         $pt->setEmptyString('Please choose...');
         $pt->setRightTitle('This will determine which elements are possible to add to the template');
 
         if ($this->isinDB()) {
-            $fields->push(TreeDropdownField::create('ParentID', 'Parent Page', \Page::class)->setEmptyString('Parent page (empty for root)'));
+            $fields->push(
+                TreeDropdownField::create('ParentID', 'Parent Page', \Page::class)
+                    ->setEmptyString('Parent page (empty for root)')
+            );
             $fields->push(TextField::create('PageTitle', 'Page Title')->setDescription('Title for new page'));
         }
 
+        // @phpstan-ignore-next-line
         $fields->dataFieldByName('LayoutImage')
             ->setFolderName('Uploads/templates')
             ->setAllowedFileCategories('image');
