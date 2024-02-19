@@ -1,8 +1,8 @@
 <?php
 
-namespace DNADesign\ElementalSkeletons\Extension;
+namespace Dynamic\ElememtalTemplates\Extension;
 
-use DNADesign\ElementalSkeletons\Models\Skeleton;
+use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
 use SilverStripe\Control\Controller;
 use SilverStripe\ORM\DataExtension;
@@ -12,7 +12,7 @@ use SilverStripe\Security\Security;
 /**
  * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
  *
- * @property \DNADesign\Elemental\Models\BaseElement|\DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension $owner
+ * @property \DNADesign\Elemental\Models\BaseElement|\Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension $owner
  */
 class BaseElementDataExtension extends DataExtension
 {
@@ -31,7 +31,7 @@ class BaseElementDataExtension extends DataExtension
             return;
         }
 
-        if ($page instanceof Skeleton) {
+        if ($page instanceof Template) {
             // nested bock - we need to get edit link of parent block
             $link = Controller::join_links(
                 $page->CMSEditLink(),
@@ -66,12 +66,12 @@ class BaseElementDataExtension extends DataExtension
 
         $manager = $this->getOwnerPage();
 
-        if ($manager instanceof Skeleton) {
-            $populate = Skeleton::config()->get('populate');
-
-            if (array_key_exists($this->getOwner()->ClassName, $populate)) {
-                foreach ($populate[$this->getOwner()->ClassName] as $field => $value) {
-                    $this->getOwner()->$field = $value;
+        if ($manager instanceof Template) {
+            if ($populate = Template::config()->get('populate')) {
+                if (array_key_exists($this->getOwner()->ClassName, $populate)) {
+                    foreach ($populate[$this->getOwner()->ClassName] as $field => $value) {
+                        $this->getOwner()->$field = $value;
+                    }
                 }
             }
         }

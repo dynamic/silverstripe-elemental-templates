@@ -1,27 +1,27 @@
 <?php
 
-namespace DNADesign\ElementalSkeletons\Tasks;
+namespace Dynamic\ElememtalTemplates\Tasks;
 
-use DNADesign\ElementalSkeletons\Models\Skeleton;
+use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\Versioned\Versioned;
 
-class SkeletonElementsPopulateTask extends BuildTask
+class TemplateElementsPopulateTask extends BuildTask
 {
     /**
      * @var string
      */
-    protected $title = 'Populate Skeleton Elements';
+    protected $title = 'Populate Template Elements';
 
     /**
      * @var string
      */
-    protected $description = 'Populate the skeleton elements with some default content';
+    protected $description = 'Populate the template elements with some default content';
 
     /**
      * @var string
      */
-    private static string $segment = 'SkeletonElementsPopulateTask';
+    private static string $segment = 'TemplateElementsPopulateTask';
 
     /**
      * @param $request
@@ -29,9 +29,9 @@ class SkeletonElementsPopulateTask extends BuildTask
      */
     public function run($request): void
     {
-        $populate = Skeleton::config()->get('populate');
+        $populate = Template::config()->get('populate');
 
-        foreach (Skeleton::get() as $skeleton) {
+        foreach (Template::get() as $skeleton) {
             $area = $skeleton->Elements();
             foreach ($area->Elements() as $element) {
                 echo "Populating content for {$element->ClassName} with ID {$element->ID}" . PHP_EOL;

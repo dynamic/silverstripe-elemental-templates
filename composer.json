@@ -29,8 +29,8 @@
     },
     "autoload": {
         "psr-4": {
-            "DNADesign\\ElementalSkeletons\\": "src/",
-            "DNADesign\\ElementalSkeletons\\Tests\\": "tests/"
+            "Dynamic\\ElememtalTemplates\\": "src/",
+            "Dynamic\\ElememtalTemplates\\Tests\\": "tests/"
         }
     }
 }

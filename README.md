@@ -14,6 +14,20 @@ Ensure you setup a repository reference in your `composer.json` file:
 
 `composer require dynamic/silverstripe-elemental-templates`
 
+## Populating Template Elements
+
+You can pre-populate elements added to a template via config. This currently supports database fields via the following mapping:
+
+```yml
+Dynamic\ElememtalTemplates\Models\Template:
+  populate:
+    DNADesign\Elemental\Models\ElementContent:
+      Title: 'Content Block Title'
+      HTML: '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris elementum congue erat, accumsan tincidunt velit porta lobortis. Sed at efficitur ex. Nulla quis porta neque. In hac habitasse platea dictumst. Nullam et malesuada sem. Pellentesque eros eros, rutrum sit amet erat in, finibus ultrices tortor. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>'
+```
+
+A config like the above is not inherintly included in the module as it may not be a desirable effect/the type of predefined content may be unique for you project.
+
 ## License
 
 See [License](LICENSE.md)
