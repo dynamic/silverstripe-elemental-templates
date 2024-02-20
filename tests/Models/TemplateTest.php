@@ -2,6 +2,7 @@
 
 namespace Dynamic\ElememtalTemplates\Tests\Models;
 
+use DNADesign\Elemental\Extensions\ElementalPageExtension;
 use DNADesign\Elemental\Forms\ElementalAreaField;
 use Dynamic\ElememtalTemplates\Models\Template;
 use Dynamic\ElememtalTemplates\Tests\TestOnly\ElementOne;
@@ -24,6 +25,13 @@ class TemplateTest extends SapphireTest
     protected static $extra_dataobjects = [
         ElementOne::class,
         ElementTwo::class,
+    ];
+
+    /**
+     * @var string[]
+     */
+    protected static $required_extensions = [
+        'Page' => ElementalPageExtension::class,
     ];
 
     /**
