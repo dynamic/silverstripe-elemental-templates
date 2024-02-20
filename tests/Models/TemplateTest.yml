@@ -7,9 +7,9 @@ DNADesign\Elemental\Models\ElementalArea:
 Dynamic\ElememtalTemplates\Models\Template:
   templateone:
     Title: 'Template One'
-    PageType: 'Page'
+    PageType: 'Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePage'
     Elements: =>DNADesign\Elemental\Models\ElementalArea.areaone
   templatetwo:
     Title: 'Template Two'
-    PageType: 'Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePage'
+    PageType: 'Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePageTwo'
     Elements: =>DNADesign\Elemental\Models\ElementalArea.areatwo

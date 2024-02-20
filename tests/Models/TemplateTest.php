@@ -7,6 +7,8 @@ use DNADesign\Elemental\Forms\ElementalAreaField;
 use Dynamic\ElememtalTemplates\Models\Template;
 use Dynamic\ElememtalTemplates\Tests\TestOnly\ElementOne;
 use Dynamic\ElememtalTemplates\Tests\TestOnly\ElementTwo;
+use Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePage;
+use Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePageTwo;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FormField;
@@ -25,13 +27,15 @@ class TemplateTest extends SapphireTest
     protected static $extra_dataobjects = [
         ElementOne::class,
         ElementTwo::class,
+        SamplePage::class,
+        SamplePageTwo::class,
     ];
 
     /**
      * @var string[]
      */
     protected static $required_extensions = [
-        'Page' => ElementalPageExtension::class,
+        SamplePage::class => ElementalPageExtension::class,
     ];
 
     /**
