@@ -4,7 +4,7 @@ namespace Dynamic\ElememtalTemplates\Tests\TestOnly;
 
 use SilverStripe\Dev\TestOnly;
 
-class SamplePageTwo extends \Page implements TestOnly
+class SamplePageTwo extends SamplePage implements TestOnly
 {
     /**
      * @var string[]
