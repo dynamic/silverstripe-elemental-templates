@@ -163,8 +163,7 @@ class Template extends DataObject implements PermissionProvider
             );
             $fields->push(TextField::create('PageTitle', 'Page Title')->setDescription('Title for new page'));
 
-            $elementTypes = singleton($this->PageType)->getElementalTypes();
-            $fields->dataFieldByName('Elements')->setTypes($elementTypes);
+            $fields->dataFieldByName('Elements')->setTypes($this->getAllowedTypes());
         }
 
         // @phpstan-ignore-next-line
@@ -173,6 +172,16 @@ class Template extends DataObject implements PermissionProvider
             ->setAllowedFileCategories('image');
 
         return $fields;
+    }
+
+    /**
+     * @return mixed
+     */
+    protected function getAllowedTypes()
+    {
+        $pageType = $this->PageType;
+
+        return $pageType::singleton()->getElementalTypes();
     }
 
     /**
