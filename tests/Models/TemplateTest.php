@@ -35,7 +35,9 @@ class TemplateTest extends SapphireTest
      * @var string[]
      */
     protected static $required_extensions = [
-        SamplePage::class => ElementalPageExtension::class,
+        SamplePage::class => [
+            ElementalPageExtension::class,
+        ],
     ];
 
     /**
