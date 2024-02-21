@@ -12,13 +12,6 @@ use SilverStripe\Admin\ModelAdmin;
 class TemplateAdmin extends ModelAdmin
 {
     /**
-     * @var array|string[]
-     */
-    private static array $allowed_actions = [
-        'createPage',
-    ];
-
-    /**
      * @var string[]
      */
     private static array $managed_models = [
