@@ -10,6 +10,7 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBField;
+use SilverStripe\ORM\ValidationException;
 use SilverStripe\Versioned\Versioned;
 
 /**
@@ -19,7 +20,11 @@ use SilverStripe\Versioned\Versioned;
  */
 class CMSPageAddControllerExtension extends Extension
 {
-    public function updatePageOptions(FieldList $fields)
+    /**
+     * @param FieldList $fields
+     * @return void
+     */
+    public function updatePageOptions(FieldList $fields): void
     {
         $templates = ['' => 'Select template'] + Template::get()->map('ID', 'Title')->toArray();
 
@@ -28,7 +33,13 @@ class CMSPageAddControllerExtension extends Extension
         $fields->insertAfter('PageType', $templateField);
     }
 
-    public function updateDoAdd(DataObject $record, Form $form)
+    /**
+     * @param DataObject $record
+     * @param Form $form
+     * @return void
+     * @throws ValidationException
+     */
+    public function updateDoAdd(DataObject $record, Form $form): void
     {
         // Ensure the newly created record has the elemental extension
         if (!$record->hasExtension(ElementalAreasExtension::class)) {
