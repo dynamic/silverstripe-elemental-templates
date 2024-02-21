@@ -156,11 +156,14 @@ class Template extends DataObject implements PermissionProvider
         $pt->setRightTitle('This will determine which elements are possible to add to the template');
 
         if ($this->isinDB()) {
+            $fields->replaceField('PageType', $pt->performReadonlyTransformation());
             $fields->push(
                 TreeDropdownField::create('ParentID', 'Parent Page', \Page::class)
                     ->setEmptyString('Parent page (empty for root)')
             );
             $fields->push(TextField::create('PageTitle', 'Page Title')->setDescription('Title for new page'));
+
+            $fields->dataFieldByName('Elements')->setTypes($this->getAllowedTypes());
         }
 
         // @phpstan-ignore-next-line
@@ -169,6 +172,16 @@ class Template extends DataObject implements PermissionProvider
             ->setAllowedFileCategories('image');
 
         return $fields;
+    }
+
+    /**
+     * @return mixed
+     */
+    protected function getAllowedTypes()
+    {
+        $pageType = $this->PageType;
+
+        return $pageType::singleton()->getElementalTypes();
     }
 
     /**

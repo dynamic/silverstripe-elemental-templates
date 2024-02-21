@@ -13,7 +13,7 @@ use SilverStripe\CMS\Controllers\CMSPageEditController;
 /**
  * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
  *
- * @property BaseElement|BaseElementDataExtension $owner
+ * @property \DNADesign\Elemental\Models\BaseElement|\Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension $owner
  */
 class BaseElementDataExtension extends DataExtension
 {

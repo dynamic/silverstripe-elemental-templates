@@ -1,0 +1,15 @@
+DNADesign\Elemental\Models\ElementalArea:
+  areaone:
+    OwnerClassName: 'Dynamic\ElememtalTemplates\Models\Template'
+  areatwo:
+    OwnerClassName: 'Dynamic\ElememtalTemplates\Models\Template'
+
+Dynamic\ElememtalTemplates\Models\Template:
+  templateone:
+    Title: 'Template One'
+    PageType: 'Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePage'
+    Elements: =>DNADesign\Elemental\Models\ElementalArea.areaone
+  templatetwo:
+    Title: 'Template Two'
+    PageType: 'Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePageTwo'
+    Elements: =>DNADesign\Elemental\Models\ElementalArea.areatwo
