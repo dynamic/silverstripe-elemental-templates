@@ -157,12 +157,6 @@ class Template extends DataObject implements PermissionProvider
 
         if ($this->isinDB()) {
             $fields->replaceField('PageType', $pt->performReadonlyTransformation());
-            $fields->push(
-                TreeDropdownField::create('ParentID', 'Parent Page', \Page::class)
-                    ->setEmptyString('Parent page (empty for root)')
-            );
-            $fields->push(TextField::create('PageTitle', 'Page Title')->setDescription('Title for new page'));
-
             $fields->dataFieldByName('Elements')->setTypes($this->getAllowedTypes());
         }
 
@@ -185,57 +179,11 @@ class Template extends DataObject implements PermissionProvider
     }
 
     /**
-     * @return FieldList
-     */
-    public function getCMSActions(): FieldList
-    {
-        $actions = parent::getCMSActions();
-
-        if ($this->isinDB()) {
-            $actions->push(
-                CustomAction::create('createPage', 'Create new ' . $this->Title . ' page')
-                    ->addExtraClass('btn btn-success font-icon-plus-circled')
-            );
-        }
-
-        return $actions;
-    }
-
-    /**
      * @return string
      */
     public function PageTypeName(): string
     {
         return singleton($this->PageType)->singular_name();
-    }
-
-    /**
-     * @param $request
-     * @return string
-     */
-    public function createPage($request): string
-    {
-        $pageType = $this->PageType;
-        $parentID = $request['ParentID'] ?? 0;
-
-        $page = $pageType::create();
-        $page->ParentID = $parentID;
-        if ($request['PageTitle']) {
-            $page->Title = $request['PageTitle'];
-        }
-        $page->write();
-        $page->writeToStage(Versioned::DRAFT);
-
-        $area = $page->ElementalArea();
-
-        foreach ($this->Elements()->Elements() as $element) {
-            $copy = $element->duplicate();
-            $copy->write();
-            $copy->writeToStage(Versioned::DRAFT);
-            $area->Elements()->add($copy);
-        }
-
-        return 'Page Added';
     }
 
     /**
