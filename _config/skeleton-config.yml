@@ -4,3 +4,7 @@ name: skeleton-config
 DNADesign\Elemental\Models\BaseElement:
   extensions:
     - Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension
+
+SilverStripe\CMS\Controllers\CMSPageAddController:
+    extensions:
+        - Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension
