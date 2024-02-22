@@ -2,7 +2,7 @@
 
 A module allowing CMS users to define layouts, known as "skeletons", that provide a predefined set of elements when a page is created.
 
-This module relies on native `$cascade_duplicates` settings to ensure sample content, files, images, etc. are copied to the page as a starter. The feature allowing pre-populated content and objects is configurable. [See the documentation for that feature here]().
+This module relies on native `$cascade_duplicates` settings to ensure sample content, files, images, etc. are copied to the page as a starter. The feature allowing pre-populated content and objects is configurable, see below.
 
 ## Requirements
 
@@ -27,6 +27,10 @@ Dynamic\ElememtalTemplates\Models\Template:
 ```
 
 A config like the above is not inherintly included in the module as it may not be a desirable effect/the type of predefined content may be unique for you project.
+
+## Roadmap
+
+We understand the current methodology does not allow for configuring population definitions outside of database fields. We're working on adding this feature as it is clearly something that is beneficial.
 
 ## License
 
