@@ -8,3 +8,11 @@ DNADesign\Elemental\Models\BaseElement:
 SilverStripe\CMS\Controllers\CMSPageAddController:
     extensions:
         - Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension
+
+SilverStripe\CMS\Model\SiteTree:
+  extensions:
+    - Dynamic\ElememtalTemplates\Extension\SiteTreeExtension
+
+SilverStripe\Admin\LeftAndMain:
+  extensions:
+    - Dynamic\ElememtalTemplates\Extension\AddTemplateExtension
