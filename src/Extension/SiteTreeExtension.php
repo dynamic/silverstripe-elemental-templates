@@ -26,10 +26,18 @@ class SiteTreeExtension extends DataExtension
         $canCreate = Template::singleton()->canCreate();
         $hasElementalArea = Template::getDecoratedBy(ElementalAreasExtension::class, DataObject::class);
 
-        if ($canCreate && in_array($this->getOwner()->ClassName, $hasElementalArea)) {
-            $actions->addFieldToTab(
-                'ActionMenus.MoreOptions',
+        if ($canCreate && array_key_exists($this->getOwner()->ClassName, $hasElementalArea)) {
+            $moreOptions = $actions->fieldByName('ActionMenus.MoreOptions');
+
+            if(!$moreOptions) {
+                return;
+            }
+
+            $moreOptions->insertAfter(
+                'Information',
                 FormAction::create('CreateTemplate', 'Create Blocks Template')
+                    ->removeExtraClass('btn-primary')
+                    ->addExtraClass('btn-secondary')
             );
         }
     }
