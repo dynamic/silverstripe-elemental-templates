@@ -2,10 +2,13 @@
 
 namespace Dynamic\ElememtalTemplates\Extension;
 
+use Psr\Log\LoggerInterface;
 use SilverStripe\Security\Member;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
+use SilverStripe\Core\Config\Config;
+use SilverStripe\Core\Injector\Injector;
 use DNADesign\Elemental\Models\BaseElement;
 use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
@@ -66,12 +69,46 @@ class BaseElementDataExtension extends DataExtension
         parent::onBeforeWrite();
 
         $manager = $this->getOwnerPage();
+        if (!$manager) {
+            return;
+        }
 
         if ($manager instanceof Template) {
-            if ($populate = Template::config()->get('populate')) {
-                if (array_key_exists($this->getOwner()->ClassName, $populate)) {
-                    foreach ($populate[$this->getOwner()->ClassName] as $field => $value) {
-                        $this->getOwner()->$field = $value;
+            $populate = Config::inst()->get(Template::class, 'populate');
+            if (!$populate) {
+                return;
+            }
+
+            $ownerClass = $this->owner->ClassName;
+
+            if (isset($populate[$ownerClass])) {
+                // Populate standard fields
+                foreach ($populate[$ownerClass] as $field => $value) {
+                    if ($this->owner->hasField($field)) {
+                        $this->owner->$field = $value;
+                    }
+                }
+
+                // Handle has_many relations
+                foreach ($this->owner->hasMany() as $relationName => $relatedClass) {
+                    if (!isset($populate[$ownerClass][$relationName]) || !$this->owner->hasMethod($relationName)) {
+                        continue;
+                    }
+
+                    $existingRecords = $this->owner->$relationName();
+                    if ($existingRecords->count() > 0) {
+                        continue;
+                    }
+
+                    foreach ($populate[$ownerClass][$relationName] as $itemData) {
+                        $relatedObject = $relatedClass::create();
+                        foreach ($itemData as $field => $value) {
+                            if ($relatedObject->hasField($field)) {
+                                $relatedObject->$field = $value;
+                            }
+                        }
+                        $relatedObject->write();
+                        $this->owner->$relationName()->add($relatedObject);
                     }
                 }
             }
