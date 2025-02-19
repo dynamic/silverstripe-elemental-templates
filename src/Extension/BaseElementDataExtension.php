@@ -112,15 +112,18 @@ class BaseElementDataExtension extends DataExtension
 
                     $relatedData = $populate[$ownerClass][$relationName];
 
-                    // Check if the relation exists already
+                    // Check if ClassName is specified, otherwise use the default relation class
+                    $relatedClassName = $relatedData['ClassName'] ?? $relatedClass;
+
+                    // Ensure the relation does not already exist
                     if ($this->owner->getComponent($relationName)->exists()) {
                         continue;
                     }
 
                     // Create related object and assign it
-                    $relatedObject = $relatedClass::create();
+                    $relatedObject = $relatedClassName::create();
                     foreach ($relatedData as $field => $value) {
-                        if ($relatedObject->hasField($field)) {
+                        if ($field !== 'ClassName' && $relatedObject->hasField($field)) {
                             $relatedObject->$field = $value;
                         }
                     }
@@ -140,9 +143,12 @@ class BaseElementDataExtension extends DataExtension
                     }
 
                     foreach ($populate[$ownerClass][$relationName] as $itemData) {
-                        $relatedObject = $relatedClass::create();
+                        // Check if ClassName is specified, otherwise use the default relation class
+                        $relatedClassName = $itemData['ClassName'] ?? $relatedClass;
+
+                        $relatedObject = $relatedClassName::create();
                         foreach ($itemData as $field => $value) {
-                            if ($relatedObject->hasField($field)) {
+                            if ($field !== 'ClassName' && $relatedObject->hasField($field)) {
                                 $relatedObject->$field = $value;
                             }
                         }
@@ -163,9 +169,12 @@ class BaseElementDataExtension extends DataExtension
                     }
 
                     foreach ($populate[$ownerClass][$relationName] as $itemData) {
-                        $relatedObject = $relatedClass::create();
+                        // Check if ClassName is specified, otherwise use the default relation class
+                        $relatedClassName = $itemData['ClassName'] ?? $relatedClass;
+
+                        $relatedObject = $relatedClassName::create();
                         foreach ($itemData as $field => $value) {
-                            if ($relatedObject->hasField($field)) {
+                            if ($field !== 'ClassName' && $relatedObject->hasField($field)) {
                                 $relatedObject->$field = $value;
                             }
                         }
