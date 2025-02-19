@@ -2,14 +2,11 @@
 
 namespace Dynamic\ElememtalTemplates\Extension;
 
-use Psr\Log\LoggerInterface;
 use SilverStripe\Security\Member;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Config\Config;
-use SilverStripe\Core\Injector\Injector;
-use DNADesign\Elemental\Models\BaseElement;
 use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
 
@@ -68,6 +65,24 @@ class BaseElementDataExtension extends DataExtension
     {
         parent::onBeforeWrite();
 
+        $this->populateDefaultValues();
+    }
+
+    /**
+     * @return void
+     */
+    public function onAfterWrite(): void
+    {
+        parent::onAfterWrite();
+    }
+
+    /**
+     * Populates default values for new Elemental blocks based on YAML configuration.
+     *
+     * @return void
+     */
+    protected function populateDefaultValues(): void
+    {
         $manager = $this->getOwnerPage();
         if (!$manager) {
             return;
@@ -87,6 +102,30 @@ class BaseElementDataExtension extends DataExtension
                     if ($this->owner->hasField($field)) {
                         $this->owner->$field = $value;
                     }
+                }
+
+                // Handle has_one relations
+                foreach ($this->owner->hasOne() as $relationName => $relatedClass) {
+                    if (!isset($populate[$ownerClass][$relationName])) {
+                        continue;
+                    }
+
+                    $relatedData = $populate[$ownerClass][$relationName];
+
+                    // Check if the relation exists already
+                    if ($this->owner->getComponent($relationName)->exists()) {
+                        continue;
+                    }
+
+                    // Create related object and assign it
+                    $relatedObject = $relatedClass::create();
+                    foreach ($relatedData as $field => $value) {
+                        if ($relatedObject->hasField($field)) {
+                            $relatedObject->$field = $value;
+                        }
+                    }
+                    $relatedObject->write();
+                    $this->owner->setField("{$relationName}ID", $relatedObject->ID);
                 }
 
                 // Handle has_many relations
@@ -111,16 +150,31 @@ class BaseElementDataExtension extends DataExtension
                         $this->owner->$relationName()->add($relatedObject);
                     }
                 }
+
+                // Handle many_many relations
+                foreach ($this->owner->manyMany() as $relationName => $relatedClass) {
+                    if (!isset($populate[$ownerClass][$relationName]) || !$this->owner->hasMethod($relationName)) {
+                        continue;
+                    }
+
+                    $existingRecords = $this->owner->$relationName();
+                    if ($existingRecords->count() > 0) {
+                        continue;
+                    }
+
+                    foreach ($populate[$ownerClass][$relationName] as $itemData) {
+                        $relatedObject = $relatedClass::create();
+                        foreach ($itemData as $field => $value) {
+                            if ($relatedObject->hasField($field)) {
+                                $relatedObject->$field = $value;
+                            }
+                        }
+                        $relatedObject->write();
+                        $this->owner->$relationName()->add($relatedObject);
+                    }
+                }
             }
         }
-    }
-
-    /**
-     * @return void
-     */
-    public function onAfterWrite(): void
-    {
-        parent::onAfterWrite();
     }
 
     /**
