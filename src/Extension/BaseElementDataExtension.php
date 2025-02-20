@@ -226,29 +226,36 @@ class BaseElementDataExtension extends DataExtension
                     $this->owner->$relationName()->add($relatedObject);
                     $this->logAction("Created many_many relation {$relatedClassName} for {$relationName}", 'info');
 
-                    // Handle nested has_one (e.g., Image for ImageSlide)
-                    foreach ($relatedObject->hasOne() as $subRelationName => $subRelatedClass) {
-                        if (!isset($itemData[$subRelationName])) {
-                            continue;
+                    // ✅ Handle Image for ImageSlide
+                    if ($relatedObject->ClassName === 'Dynamic\Carousel\Model\ImageSlide' && isset($itemData['Image']['Filename'])) {
+                        $this->logAction("🔍 Processing ImageSlide: Checking image assignment...", 'debug');
+
+                        $image = $this->createImageFromFile($itemData['Image']['Filename']);
+                        if ($image) {
+                            $relatedObject->ImageID = $image->ID;
+                            $relatedObject->write();
+                            $this->logAction("✅ Assigned Image ID {$image->ID} to ImageSlide (Slide ID: {$relatedObject->ID})", 'info');
+                        } else {
+                            $this->logAction("⚠️ Image creation failed, no Image assigned to ImageSlide", 'error');
                         }
+                    }
 
-                        $subRelatedData = $itemData[$subRelationName];
-                        $subRelatedClassName = $subRelatedData['ClassName'] ?? $subRelatedClass;
+                    // Handle EmbedVideo for VideoSlide
+                    if ($relatedObject->ClassName === 'Dynamic\Carousel\Model\VideoSlide' && isset($itemData['EmbedVideo']['SourceURL'])) {
+                        $embedData = $itemData['EmbedVideo'];
+                        $embedObject = \nathancox\EmbedField\Model\EmbedObject::create();
 
-                        if ($relatedObject->getComponent($subRelationName)->exists()) {
-                            continue;
-                        }
-
-                        $subRelatedObject = $subRelatedClassName::create();
-                        foreach ($subRelatedData as $subField => $subValue) {
-                            if ($subField !== 'ClassName' && $subRelatedObject->hasField($subField)) {
-                                $subRelatedObject->$subField = $subValue;
+                        foreach ($embedData as $embedField => $embedValue) {
+                            if ($embedObject->hasField($embedField)) {
+                                $embedObject->$embedField = $embedValue;
                             }
                         }
-                        $subRelatedObject->write();
-                        $relatedObject->setField("{$subRelationName}ID", $subRelatedObject->ID);
+                        $embedObject->write();
+
+                        $relatedObject->EmbedVideoID = $embedObject->ID;
                         $relatedObject->write();
-                        $this->logAction("Created has_one relation {$subRelatedClassName} for {$subRelationName} inside {$relatedClassName}", 'info');
+
+                        $this->logAction("Created EmbedObject for VideoSlide with URL: {$embedData['SourceURL']}", 'info');
                     }
 
                     // Recurse for deeper relationships
@@ -258,6 +265,39 @@ class BaseElementDataExtension extends DataExtension
         } catch (\Exception $e) {
             $this->logAction("Error in createRelatedRecords(): " . $e->getMessage(), 'error');
         }
+    }
+
+    /**
+     * Creates an Image object from a file path and returns the Image record.
+     */
+    protected function createImageFromFile(string $filename): ?Image
+    {
+        // First, check if path is already absolute
+        if (file_exists($filename)) {
+            $absolutePath = $filename;
+        } else {
+            // Try BASE_PATH (assuming file is inside the project root)
+            $absolutePath = BASE_PATH . '/' . ltrim($filename, '/');
+            if (!file_exists($absolutePath)) {
+                // Try PUBLIC_PATH for assets stored under public folder
+                $absolutePath = PUBLIC_PATH . '/' . ltrim($filename, '/');
+            }
+        }
+
+        $this->logAction("🔍 Checking for Image file at: {$absolutePath}", 'debug');
+
+        if (!file_exists($absolutePath)) {
+            $this->logAction("⚠️ Image file not found: {$absolutePath}", 'error');
+            return null;
+        }
+
+        $image = Image::create();
+        $image->setFromLocalFile($absolutePath, basename($filename));
+        $image->write();
+
+        $this->logAction("✅ Successfully created Image from file {$absolutePath} (ID: {$image->ID})", 'info');
+
+        return $image;
     }
 
     /**
