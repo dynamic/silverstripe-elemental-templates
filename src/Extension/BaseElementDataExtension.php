@@ -312,6 +312,23 @@ class BaseElementDataExtension extends DataExtension
                         $this->logAction("Created EmbedObject for VideoSlide with URL: {$embedData['SourceURL']}", 'info');
                     }
 
+                    // Handle nested many_many relationships
+                    if (isset($itemData['Testimonials'])) {
+                        foreach ($itemData['Testimonials'] as $testimonialData) {
+                            $testimonialClassName = $testimonialData['ClassName'] ?? 'Dynamic\Elements\Model\Testimonial';
+
+                            $testimonialObject = $testimonialClassName::create();
+                            foreach ($testimonialData as $field => $value) {
+                                if ($field !== 'ClassName' && $testimonialObject->hasField($field)) {
+                                    $testimonialObject->$field = $value;
+                                }
+                            }
+                            $testimonialObject->write();
+                            $testimonialObject->TestimonialCategories()->add($relatedObject);
+                            $this->logAction("Added TestimonialCategory to Testimonial (ID: {$testimonialObject->ID})", 'info');
+                        }
+                    }
+
                     // Recurse for nested relationships
                     $this->createRelatedRecords($relatedClassName, $itemData, $depth + 1);
                 }
