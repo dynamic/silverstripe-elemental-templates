@@ -68,9 +68,6 @@ class BaseElementDataExtension extends DataExtension
     {
         parent::onBeforeWrite();
 
-        $logger = Injector::inst()->get(LoggerInterface::class);
-    $logger->info("TEST: SilverStripe logging system is working.");
-
         try {
             $this->populateElementData();
         } catch (\Exception $e) {
@@ -181,7 +178,10 @@ class BaseElementDataExtension extends DataExtension
                     continue;
                 }
 
-                if ($this->owner->$relationName()->count() > 0) {
+                $expectedCount = count($populateData[$relationName]);
+                $existingCount = $this->owner->$relationName()->count();
+
+                if ($existingCount >= $expectedCount) {
                     continue;
                 }
 
@@ -198,6 +198,57 @@ class BaseElementDataExtension extends DataExtension
                     $this->owner->$relationName()->add($relatedObject);
                     $this->logAction("Created has_many relation {$relatedClassName} for {$relationName}", 'info');
 
+                    // Handle Image for GalleryImage
+                    if ($relatedObject->ClassName === 'Dynamic\Elements\Gallery\Model\GalleryImage' && isset($itemData['Image']['Filename'])) {
+                        $this->logAction("Processing GalleryImage: Checking image assignment...", 'debug');
+
+                        $image = $this->createImageFromFile($itemData['Image']['Filename']);
+                        if ($image) {
+                            $relatedObject->ImageID = $image->ID;
+                            $relatedObject->write();
+                            $this->logAction("Assigned Image ID {$image->ID} to GalleryImage (Image ID: {$relatedObject->ID})", 'info');
+                        } else {
+                            $this->logAction("Image creation failed, no Image assigned to GalleryImage", 'error');
+                        }
+                    }
+
+                    // Handle SiteTreeLink for LinkListObject
+                    if ($relatedObject->ClassName === 'Dynamic\Elements\Links\Model\LinkListObject') {
+                        $this->logAction("LinkListObject detected. Checking for Link data...", 'debug');
+                        $this->logAction("Link data: " . json_encode($itemData['Link']), 'debug');
+
+                        if (isset($itemData['Link'])) {
+                            $this->logAction("Processing LinkListObject: Checking SiteTreeLink assignment...", 'debug');
+
+                            $linkData = $itemData['Link'];
+                            if (!isset($linkData['ClassName'])) {
+                                $this->logAction("Link data does not contain ClassName. Skipping Link creation.", 'warning');
+                                continue;
+                            }
+
+                            $linkClassName = $linkData['ClassName'];
+                            if (!class_exists($linkClassName)) {
+                                $this->logAction("Link class {$linkClassName} does not exist. Skipping Link creation.", 'error');
+                                continue;
+                            }
+
+                            $linkObject = $linkClassName::create();
+                            foreach ($linkData as $linkField => $linkValue) {
+                                if ($linkField !== 'ClassName' && $linkObject->hasField($linkField)) {
+                                    $linkObject->$linkField = $linkValue;
+                                }
+                            }
+                            $linkObject->write();
+                            $this->logAction("Created SiteTreeLink with ID: {$linkObject->ID}", 'info');
+
+                            $relatedObject->LinkID = $linkObject->ID; // Ensure we are setting the ID
+                            $relatedObject->write();
+                            $this->logAction("Assigned LinkID: {$linkObject->ID} to LinkListObject with ID: {$relatedObject->ID}", 'info');
+                        } else {
+                            $this->logAction("No Link data found for LinkListObject.", 'warning');
+                        }
+                    }
+
                     // Recurse for nested relationships
                     $this->createRelatedRecords($relatedClassName, $itemData, $depth + 1);
                 }
@@ -209,7 +260,10 @@ class BaseElementDataExtension extends DataExtension
                     continue;
                 }
 
-                if ($this->owner->$relationName()->count() > 0) {
+                $expectedCount = count($populateData[$relationName]);
+                $existingCount = $this->owner->$relationName()->count();
+
+                if ($existingCount >= $expectedCount) {
                     continue;
                 }
 
@@ -226,17 +280,17 @@ class BaseElementDataExtension extends DataExtension
                     $this->owner->$relationName()->add($relatedObject);
                     $this->logAction("Created many_many relation {$relatedClassName} for {$relationName}", 'info');
 
-                    // ✅ Handle Image for ImageSlide
+                    // Handle Image for ImageSlide
                     if ($relatedObject->ClassName === 'Dynamic\Carousel\Model\ImageSlide' && isset($itemData['Image']['Filename'])) {
-                        $this->logAction("🔍 Processing ImageSlide: Checking image assignment...", 'debug');
+                        $this->logAction("Processing ImageSlide: Checking image assignment...", 'debug');
 
                         $image = $this->createImageFromFile($itemData['Image']['Filename']);
                         if ($image) {
                             $relatedObject->ImageID = $image->ID;
                             $relatedObject->write();
-                            $this->logAction("✅ Assigned Image ID {$image->ID} to ImageSlide (Slide ID: {$relatedObject->ID})", 'info');
+                            $this->logAction("Assigned Image ID {$image->ID} to ImageSlide (Slide ID: {$relatedObject->ID})", 'info');
                         } else {
-                            $this->logAction("⚠️ Image creation failed, no Image assigned to ImageSlide", 'error');
+                            $this->logAction("Image creation failed, no Image assigned to ImageSlide", 'error');
                         }
                     }
 
@@ -337,119 +391,6 @@ class BaseElementDataExtension extends DataExtension
     protected function getOwnerPageSafe(): mixed
     {
         return $this->getOwner()->getPage();
-    }
-
-
-
-
-    /**
-     * Populates default values for new Elemental blocks based on YAML configuration.
-     *
-     * @return void
-     */
-    protected function populateDefaultValues(): void
-    {
-        $manager = $this->getOwnerPage();
-        if (!$manager) {
-            return;
-        }
-
-        if ($manager instanceof Template) {
-            $populate = Config::inst()->get(Template::class, 'populate');
-            if (!$populate) {
-                return;
-            }
-
-            $ownerClass = $this->owner->ClassName;
-
-            if (isset($populate[$ownerClass])) {
-                // Populate standard fields
-                foreach ($populate[$ownerClass] as $field => $value) {
-                    if ($this->owner->hasField($field)) {
-                        $this->owner->$field = $value;
-                    }
-                }
-
-                // Handle has_one relations
-                foreach ($this->owner->hasOne() as $relationName => $relatedClass) {
-                    if (!isset($populate[$ownerClass][$relationName])) {
-                        continue;
-                    }
-
-                    $relatedData = $populate[$ownerClass][$relationName];
-
-                    // Check if ClassName is specified, otherwise use the default relation class
-                    $relatedClassName = $relatedData['ClassName'] ?? $relatedClass;
-
-                    // Ensure the relation does not already exist
-                    if ($this->owner->getComponent($relationName)->exists()) {
-                        continue;
-                    }
-
-                    // Create related object and assign it
-                    $relatedObject = $relatedClassName::create();
-                    foreach ($relatedData as $field => $value) {
-                        if ($field !== 'ClassName' && $relatedObject->hasField($field)) {
-                            $relatedObject->$field = $value;
-                        }
-                    }
-                    $relatedObject->write();
-                    $this->owner->setField("{$relationName}ID", $relatedObject->ID);
-                }
-
-                // Handle has_many relations
-                foreach ($this->owner->hasMany() as $relationName => $relatedClass) {
-                    if (!isset($populate[$ownerClass][$relationName]) || !$this->owner->hasMethod($relationName)) {
-                        continue;
-                    }
-
-                    $existingRecords = $this->owner->$relationName();
-                    if ($existingRecords->count() > 0) {
-                        continue;
-                    }
-
-                    foreach ($populate[$ownerClass][$relationName] as $itemData) {
-                        // Check if ClassName is specified, otherwise use the default relation class
-                        $relatedClassName = $itemData['ClassName'] ?? $relatedClass;
-
-                        $relatedObject = $relatedClassName::create();
-                        foreach ($itemData as $field => $value) {
-                            if ($field !== 'ClassName' && $relatedObject->hasField($field)) {
-                                $relatedObject->$field = $value;
-                            }
-                        }
-                        $relatedObject->write();
-                        $this->owner->$relationName()->add($relatedObject);
-                    }
-                }
-
-                // Handle many_many relations
-                foreach ($this->owner->manyMany() as $relationName => $relatedClass) {
-                    if (!isset($populate[$ownerClass][$relationName]) || !$this->owner->hasMethod($relationName)) {
-                        continue;
-                    }
-
-                    $existingRecords = $this->owner->$relationName();
-                    if ($existingRecords->count() > 0) {
-                        continue;
-                    }
-
-                    foreach ($populate[$ownerClass][$relationName] as $itemData) {
-                        // Check if ClassName is specified, otherwise use the default relation class
-                        $relatedClassName = $itemData['ClassName'] ?? $relatedClass;
-
-                        $relatedObject = $relatedClassName::create();
-                        foreach ($itemData as $field => $value) {
-                            if ($field !== 'ClassName' && $relatedObject->hasField($field)) {
-                                $relatedObject->$field = $value;
-                            }
-                        }
-                        $relatedObject->write();
-                        $this->owner->$relationName()->add($relatedObject);
-                    }
-                }
-            }
-        }
     }
 
     /**
