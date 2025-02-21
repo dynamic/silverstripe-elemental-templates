@@ -198,17 +198,17 @@ class BaseElementDataExtension extends DataExtension
                     $this->owner->$relationName()->add($relatedObject);
                     $this->logAction("Created has_many relation {$relatedClassName} for {$relationName}", 'info');
 
-                    // Handle Image for GalleryImage
-                    if ($relatedObject->ClassName === 'Dynamic\Elements\Gallery\Model\GalleryImage' && isset($itemData['Image']['Filename'])) {
-                        $this->logAction("Processing GalleryImage: Checking image assignment...", 'debug');
+                    // Handle has_one Image for related objects
+                    if (isset($itemData['Image']['Filename'])) {
+                        $this->logAction("Processing {$relatedClassName}: Checking image assignment...", 'debug');
 
                         $image = $this->createImageFromFile($itemData['Image']['Filename']);
                         if ($image) {
                             $relatedObject->ImageID = $image->ID;
                             $relatedObject->write();
-                            $this->logAction("Assigned Image ID {$image->ID} to GalleryImage (Image ID: {$relatedObject->ID})", 'info');
+                            $this->logAction("Assigned Image ID {$image->ID} to {$relatedClassName} (ID: {$relatedObject->ID})", 'info');
                         } else {
-                            $this->logAction("Image creation failed, no Image assigned to GalleryImage", 'error');
+                            $this->logAction("Image creation failed, no Image assigned to {$relatedClassName}", 'error');
                         }
                     }
 
@@ -280,17 +280,17 @@ class BaseElementDataExtension extends DataExtension
                     $this->owner->$relationName()->add($relatedObject);
                     $this->logAction("Created many_many relation {$relatedClassName} for {$relationName}", 'info');
 
-                    // Handle Image for ImageSlide
-                    if ($relatedObject->ClassName === 'Dynamic\Carousel\Model\ImageSlide' && isset($itemData['Image']['Filename'])) {
-                        $this->logAction("Processing ImageSlide: Checking image assignment...", 'debug');
+                    // Handle has_one Image for related objects
+                    if (isset($itemData['Image']['Filename'])) {
+                        $this->logAction("Processing {$relatedClassName}: Checking image assignment...", 'debug');
 
                         $image = $this->createImageFromFile($itemData['Image']['Filename']);
                         if ($image) {
                             $relatedObject->ImageID = $image->ID;
                             $relatedObject->write();
-                            $this->logAction("Assigned Image ID {$image->ID} to ImageSlide (Slide ID: {$relatedObject->ID})", 'info');
+                            $this->logAction("Assigned Image ID {$image->ID} to {$relatedClassName} (ID: {$relatedObject->ID})", 'info');
                         } else {
-                            $this->logAction("Image creation failed, no Image assigned to ImageSlide", 'error');
+                            $this->logAction("Image creation failed, no Image assigned to {$relatedClassName}", 'error');
                         }
                     }
 
@@ -312,7 +312,7 @@ class BaseElementDataExtension extends DataExtension
                         $this->logAction("Created EmbedObject for VideoSlide with URL: {$embedData['SourceURL']}", 'info');
                     }
 
-                    // Recurse for deeper relationships
+                    // Recurse for nested relationships
                     $this->createRelatedRecords($relatedClassName, $itemData, $depth + 1);
                 }
             }
