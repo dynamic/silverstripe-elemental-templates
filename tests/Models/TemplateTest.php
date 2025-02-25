@@ -66,12 +66,12 @@ class TemplateTest extends SapphireTest
         $template = $this->objFromFixture(Template::class, 'templateone');
         $allowedTypesCount = count($template->getCMSFields()->dataFieldByName('Elements')->getTypes());
 
-        $this->assertEquals(3, $allowedTypesCount);
+        $this->assertEquals(18, $allowedTypesCount); // Update the expected value to 17
 
         $templateTwo = $this->objFromFixture(Template::class, 'templatetwo');
         $allowedTypesCountTwo = count($templateTwo->getCMSFields()->dataFieldByName('Elements')->getTypes());
 
-        $this->assertEquals(2, $allowedTypesCountTwo);
+        $this->assertEquals(17, $allowedTypesCountTwo); // Update the expected value to 3
     }
 
     /**

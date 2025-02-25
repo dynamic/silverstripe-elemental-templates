@@ -2,21 +2,22 @@
 
 namespace Dynamic\ElememtalTemplates\Models;
 
-use DNADesign\Elemental\Extensions\ElementalAreasExtension;
-use DNADesign\Elemental\Models\ElementalArea;
-use LeKoala\CmsActions\CustomAction;
 use SilverStripe\Assets\Image;
-use SilverStripe\Control\Controller;
 use SilverStripe\Core\ClassInfo;
-use SilverStripe\Forms\DropdownField;
+use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\TextField;
-use SilverStripe\Forms\TreeDropdownField;
-use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Member;
-use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
+use LeKoala\CmsActions\CustomAction;
+use SilverStripe\Control\Controller;
+use SilverStripe\Forms\DropdownField;
+use SilverStripe\Security\Permission;
 use SilverStripe\Versioned\Versioned;
+use SilverStripe\Forms\TreeDropdownField;
+use DNADesign\Elemental\Models\ElementalArea;
+use SilverStripe\Security\PermissionProvider;
+use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 
 /**
  * Creates a Template of elements that can be used to set up a page
@@ -302,6 +303,25 @@ class Template extends DataObject implements PermissionProvider
     public function canView($member = null): bool
     {
         return true;
+    }
+
+    /**
+     * Determine if the current user can archive this template.
+     *
+     * @param null $member
+     * @return bool
+     */
+    public function canArchive($member = null)
+    {
+        if ($member === null) {
+            $member = $this->getUser();
+        }
+
+        if ($member->can('ELEMENTAL_TEMPLATE_DELETE')) {
+            return true;
+        }
+
+        return parent::canDelete($member);
     }
 
     /**
