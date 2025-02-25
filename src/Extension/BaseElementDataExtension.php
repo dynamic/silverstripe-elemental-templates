@@ -158,6 +158,21 @@ class BaseElementDataExtension extends DataExtension
                     continue;
                 }
 
+                // Handle has_one Image for related objects
+                if ($relatedClassName === Image::class && isset($relatedData['Filename'])) {
+                    $this->logAction("Processing {$relatedClassName}: Checking image assignment...", 'debug');
+
+                    $image = $this->createImageFromFile($relatedData['Filename']);
+                    if ($image) {
+                        $this->owner->setField("{$relationName}ID", $image->ID);
+                        $this->logAction("Assigned Image ID {$image->ID} to {$relatedClassName} (ID: {$this->owner->ID})", 'info');
+                        continue;
+                    } else {
+                        $this->logAction("Image creation failed, no Image assigned to {$relatedClassName}", 'error');
+                        continue;
+                    }
+                }
+
                 $relatedObject = $relatedClassName::create();
                 foreach ($relatedData as $field => $value) {
                     if ($field !== 'ClassName' && $relatedObject->hasField($field)) {
@@ -212,41 +227,19 @@ class BaseElementDataExtension extends DataExtension
                         }
                     }
 
-                    // Handle SiteTreeLink for LinkListObject
-                    if ($relatedObject->ClassName === 'Dynamic\Elements\Links\Model\LinkListObject') {
-                        $this->logAction("LinkListObject detected. Checking for Link data...", 'debug');
-                        $this->logAction("Link data: " . json_encode($itemData['Link']), 'debug');
-
-                        if (isset($itemData['Link'])) {
-                            $this->logAction("Processing LinkListObject: Checking SiteTreeLink assignment...", 'debug');
-
-                            $linkData = $itemData['Link'];
-                            if (!isset($linkData['ClassName'])) {
-                                $this->logAction("Link data does not contain ClassName. Skipping Link creation.", 'warning');
-                                continue;
+                    // Handle SiteTreeLink for related objects
+                    if (isset($itemData['CtaLink'])) {
+                        $ctaLinkData = $itemData['CtaLink'];
+                        $ctaLink = \SilverStripe\LinkField\Models\SiteTreeLink::create();
+                        foreach ($ctaLinkData as $field => $value) {
+                            if ($ctaLink->hasField($field)) {
+                                $ctaLink->$field = $value;
                             }
-
-                            $linkClassName = $linkData['ClassName'];
-                            if (!class_exists($linkClassName)) {
-                                $this->logAction("Link class {$linkClassName} does not exist. Skipping Link creation.", 'error');
-                                continue;
-                            }
-
-                            $linkObject = $linkClassName::create();
-                            foreach ($linkData as $linkField => $linkValue) {
-                                if ($linkField !== 'ClassName' && $linkObject->hasField($linkField)) {
-                                    $linkObject->$linkField = $linkValue;
-                                }
-                            }
-                            $linkObject->write();
-                            $this->logAction("Created SiteTreeLink with ID: {$linkObject->ID}", 'info');
-
-                            $relatedObject->LinkID = $linkObject->ID; // Ensure we are setting the ID
-                            $relatedObject->write();
-                            $this->logAction("Assigned LinkID: {$linkObject->ID} to LinkListObject with ID: {$relatedObject->ID}", 'info');
-                        } else {
-                            $this->logAction("No Link data found for LinkListObject.", 'warning');
                         }
+                        $ctaLink->write();
+                        $relatedObject->CtaLinkID = $ctaLink->ID;
+                        $relatedObject->write();
+                        $this->logAction("Assigned CtaLink ID {$ctaLink->ID} to {$relatedClassName} (ID: {$relatedObject->ID})", 'info');
                     }
 
                     // Recurse for nested relationships
