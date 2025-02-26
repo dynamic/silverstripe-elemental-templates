@@ -299,6 +299,23 @@ class Template extends DataObject implements PermissionProvider
      * @param $member
      * @return bool
      */
+    public function canArchive($member = null): bool
+    {
+        if ($member === null) {
+            $member = $this->getUser();
+        }
+
+        if ($member->can('ELEMENTAL_TEMPLATE_DELETE')) {
+            return true;
+        }
+
+        return parent::canDelete($member);
+    }
+
+    /**
+     * @param $member
+     * @return bool
+     */
     public function canView($member = null): bool
     {
         return true;
