@@ -29,7 +29,7 @@ class SiteTreeExtension extends DataExtension
         if ($canCreate && array_key_exists($this->getOwner()->ClassName, $hasElementalArea)) {
             $moreOptions = $actions->fieldByName('ActionMenus.MoreOptions');
 
-            if(!$moreOptions) {
+            if (!$moreOptions) {
                 return;
             }
 

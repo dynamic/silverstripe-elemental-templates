@@ -12,7 +12,10 @@ use Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePageTwo;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FormField;
+use SilverStripe\Security\Member;
+use SilverStripe\Security\Security;
 use ReflectionException;
+use ReflectionMethod;
 
 class TemplateTest extends SapphireTest
 {
@@ -60,18 +63,31 @@ class TemplateTest extends SapphireTest
 
     /**
      * @return void
+     * @throws ReflectionException
      */
     public function testAllElementsAllowed()
     {
+        // Calculate the expected number of allowed types for SamplePage
+        $samplePage = singleton(SamplePage::class);
+        $expectedAllowedTypesSamplePage = count($samplePage->getElementalTypes());
+
+        // Calculate the expected number of allowed types for SamplePageTwo
+        $samplePageTwo = singleton(SamplePageTwo::class);
+        $expectedAllowedTypesSamplePageTwo = count($samplePageTwo->getElementalTypes());
+
+        // Get the actual number of allowed types for templateone
         $template = $this->objFromFixture(Template::class, 'templateone');
         $allowedTypesCount = count($template->getCMSFields()->dataFieldByName('Elements')->getTypes());
 
-        $this->assertEquals(3, $allowedTypesCount);
+        // Assert the expected number of allowed types for SamplePage
+        $this->assertEquals($expectedAllowedTypesSamplePage, $allowedTypesCount);
 
+        // Get the actual number of allowed types for templatetwo
         $templateTwo = $this->objFromFixture(Template::class, 'templatetwo');
         $allowedTypesCountTwo = count($templateTwo->getCMSFields()->dataFieldByName('Elements')->getTypes());
 
-        $this->assertEquals(2, $allowedTypesCountTwo);
+        // Assert the expected number of allowed types for SamplePageTwo
+        $this->assertEquals($expectedAllowedTypesSamplePageTwo, $allowedTypesCountTwo);
     }
 
     /**
@@ -79,7 +95,18 @@ class TemplateTest extends SapphireTest
      */
     public function testCanCreate(): void
     {
-        $this->markTestSkipped('TODO - Implement testCanCreate');
+        $userWithCreatePermission = $this->objFromFixture(Member::class, 'userWithCreatePermission');
+        $userWithoutCreatePermission = $this->objFromFixture(Member::class, 'userWithoutCreatePermission');
+
+        // Test user with create permission
+        Security::setCurrentUser($userWithCreatePermission);
+        $template = Template::create();
+        $this->assertTrue($template->canCreate());
+
+        // Test user without create permission
+        Security::setCurrentUser($userWithoutCreatePermission);
+        $template = Template::create();
+        $this->assertFalse($template->canCreate());
     }
 
     /**
@@ -87,7 +114,18 @@ class TemplateTest extends SapphireTest
      */
     public function testCanEdit(): void
     {
-        $this->markTestSkipped('TODO - Implement testCanEdit');
+        $userWithEditPermission = $this->objFromFixture(Member::class, 'userWithCreatePermission'); // Assuming same user has edit permission
+        $userWithoutEditPermission = $this->objFromFixture(Member::class, 'userWithoutCreatePermission');
+
+        // Test user with edit permission
+        Security::setCurrentUser($userWithEditPermission);
+        $template = $this->objFromFixture(Template::class, 'templateone');
+        $this->assertTrue($template->canEdit());
+
+        // Test user without edit permission
+        Security::setCurrentUser($userWithoutEditPermission);
+        $template = $this->objFromFixture(Template::class, 'templateone');
+        $this->assertFalse($template->canEdit());
     }
 
     /**
@@ -95,6 +133,17 @@ class TemplateTest extends SapphireTest
      */
     public function testCanDelete(): void
     {
-        $this->markTestSkipped('TODO - Implement testCanDelete');
+        $userWithDeletePermission = $this->objFromFixture(Member::class, 'userWithCreatePermission'); // Assuming same user has delete permission
+        $userWithoutDeletePermission = $this->objFromFixture(Member::class, 'userWithoutCreatePermission');
+
+        // Test user with delete permission
+        Security::setCurrentUser($userWithDeletePermission);
+        $template = $this->objFromFixture(Template::class, 'templateone');
+        $this->assertTrue($template->canDelete());
+
+        // Test user without delete permission
+        Security::setCurrentUser($userWithoutDeletePermission);
+        $template = $this->objFromFixture(Template::class, 'templateone');
+        $this->assertFalse($template->canDelete());
     }
 }
