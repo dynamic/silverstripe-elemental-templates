@@ -31,14 +31,14 @@ class AddTemplateExtension extends LeftAndMainExtension
         $pageID = $data['ID'];
         $className = $data['ClassName'];
 
-        if($page = $className::get()->byID($pageID)) {
+        if ($page = $className::get()->byID($pageID)) {
             $template = Template::create();
             $template->Title = 'Template from ' . $page->Title;
             $template->PageType = $page->ClassName;
             $template->write();
             $elements = $template->Elements()->Elements();
 
-            foreach($page->ElementalArea()->Elements() as $element) {
+            foreach ($page->ElementalArea()->Elements() as $element) {
                 $newElement = $element->duplicate();
                 $newElement->write();
                 $elements->add($newElement);

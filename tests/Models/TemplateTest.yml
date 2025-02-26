@@ -1,3 +1,38 @@
+SilverStripe\Security\Group:
+  createGroup:
+    Title: 'Create Group'
+    
+  noCreateGroup:
+    Title: 'No Create Group'
+
+SilverStripe\Security\Permission:
+  createPermission:
+    Code: 'ELEMENTAL_TEMPLATE_CREATE'
+    Group: =>SilverStripe\Security\Group.createGroup
+
+  editPermission:
+    Code: 'ELEMENTAL_TEMPLATE_EDIT'
+    Group: =>SilverStripe\Security\Group.createGroup
+
+  deletePermission:
+    Code: 'ELEMENTAL_TEMPLATE_DELETE'
+    Group: =>SilverStripe\Security\Group.createGroup
+
+SilverStripe\Security\Member:
+  userWithCreatePermission:
+    FirstName: 'User'
+    Surname: 'WithCreatePermission'
+    Email: 'userwithcreate@example.com'
+    Password: 'password'
+    Groups: =>SilverStripe\Security\Group.createGroup
+
+  userWithoutCreatePermission:
+    FirstName: 'User'
+    Surname: 'WithoutCreatePermission'
+    Email: 'userwithoutcreate@example.com'
+    Password: 'password'
+    Groups: =>SilverStripe\Security\Group.noCreateGroup
+
 DNADesign\Elemental\Models\ElementalArea:
   areaone:
     OwnerClassName: 'Dynamic\ElememtalTemplates\Models\Template'
