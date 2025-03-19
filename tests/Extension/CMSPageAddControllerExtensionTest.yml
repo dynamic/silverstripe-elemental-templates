@@ -1,0 +1,22 @@
+DNADesign\Elemental\Models\BaseElement:
+  testElement1:
+    Title: "Test Element 1"
+  testElement2:
+    Title: "Test Element 2"
+
+DNADesign\Elemental\Models\ElementalArea:
+  testElementalArea:
+    Elements:
+      - =>DNADesign\Elemental\Models\BaseElement.testElement1
+      - =>DNADesign\Elemental\Models\BaseElement.testElement2
+
+Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePage:
+  testPage:
+    Title: "Test Page"
+    ClassName: "Page"
+    ElementalAreaID: =>DNADesign\Elemental\Models\ElementalArea.testElementalArea
+
+Dynamic\ElememtalTemplates\Tests\TestOnly\TestTemplate:
+  testTemplate:
+    Title: "Test Template"
+    ElementalAreaID: =>DNADesign\Elemental\Models\ElementalArea.testElementalArea

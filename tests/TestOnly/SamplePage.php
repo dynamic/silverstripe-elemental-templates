@@ -13,4 +13,6 @@ class SamplePage extends \Page implements TestOnly
     private static array $extensions = [
         ElementalPageExtension::class,
     ];
+
+    private static $table_name = 'SamplePage';
 }
