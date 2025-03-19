@@ -2,6 +2,11 @@
 
 A module for Silverstripe CMS that allows CMS users to define reusable page layouts, known as "templates" or "skeletons". These templates provide a predefined set of Elemental blocks that can be used to quickly create pages with consistent layouts and content.
 
+[![CI](https://github.com/dynamic/silverstripe-elemental-templates/actions/workflows/ci.yml/badge.svg)](https://github.com/dynamic/silverstripe-elemental-templates/actions/workflows/ci.yml)  
+[![Latest Stable Version](https://poser.pugx.org/dynamic/silverstripe-elemental-templates/v/stable)](https://packagist.org/packages/dynamic/silverstripe-elemental-templates)  
+[![Total Downloads](https://poser.pugx.org/dynamic/silverstripe-elemental-templates/downloads)](https://packagist.org/packages/dynamic/silverstripe-elemental-templates)  
+[![License](https://poser.pugx.org/dynamic/silverstripe-elemental-templates/license)](https://packagist.org/packages/dynamic/silverstripe-elemental-templates)  
+
 ## Features
 
 - **Predefined Templates**: Create reusable templates with predefined Elemental blocks.
