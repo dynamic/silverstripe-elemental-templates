@@ -11,6 +11,7 @@ use SilverStripe\Core\Injector\Injector;
 use DNADesign\Elemental\Models\ElementalArea;
 use Dynamic\ElementalTemplates\Models\Template;
 use Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePage;
+use DNADesign\Elemental\Extensions\ElementalPageExtension;
 use Dynamic\ElememtalTemplates\Tests\TestOnly\TestTemplate;
 use Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension;
 
@@ -24,6 +25,12 @@ class CMSPageAddControllerExtensionTest extends SapphireTest
     protected static $extra_dataobjects = [
         SamplePage::class,
         TestTemplate::class,
+    ];
+
+    protected static $required_extensions = [
+        SamplePage::class => [
+            ElementalPageExtension::class,
+        ],
     ];
 
     protected function setUp(): void
