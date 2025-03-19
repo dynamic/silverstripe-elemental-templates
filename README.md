@@ -1,40 +1,89 @@
 # Silverstripe Elemental Layouts
 
-A module allowing CMS users to define layouts, known as "skeletons", that provide a predefined set of elements when a page is created.
+A module for Silverstripe CMS that allows CMS users to define reusable page layouts, known as "templates" or "skeletons". These templates provide a predefined set of Elemental blocks that can be used to quickly create pages with consistent layouts and content.
 
-This module relies on native `$cascade_duplicates` settings to ensure sample content, files, images, etc. are copied to the page as a starter. The feature allowing pre-populated content and objects is configurable, see below.
+## Features
+
+- **Predefined Templates**: Create reusable templates with predefined Elemental blocks.
+- **Page Creation from Templates**: Quickly create new pages based on existing templates.
+- **Template Creation from Pages**: Generate templates from existing pages, including their Elemental blocks.
+- **Configurable Defaults**: Populate Elemental blocks with default values defined in YAML configuration.
 
 ## Requirements
 
 - Silverstripe CMS ^5
+- DNADesign Elemental module ^5.2
 
 ## Installation
 
-Ensure you setup a repository reference in your `composer.json` file:
+Install the module via Composer:
 
-`composer require dynamic/silverstripe-elemental-templates`
+```bash
+composer require dynamic/silverstripe-elemental-templates
+```
+
+Run `dev/build` to apply database changes.
+
+## Usage
+
+### Creating a Template
+
+1. Navigate to the "Elemental Templates" section in the CMS.
+2. Click "Add Template".
+3. Fill in the template details:
+   - **Title**: Name of the template.
+   - **Page Type**: Select the page type this template is compatible with.
+   - **Elements**: Add Elemental blocks to the template.
+4. Save the template.
+
+### Creating a Page from a Template
+
+1. Go to the "Pages" section in the CMS.
+2. Click "Add Page".
+3. Select the desired page type.
+4. In the "Template" dropdown, choose a template to apply to the new page.
+5. Complete the remaining page details and save.
+
+The selected template's Elemental blocks will be duplicated and added to the new page.
+
+### Creating a Template from an Existing Page
+
+1. Open the page you want to use as the basis for a template.
+2. In the "More Options" menu, click "Create Blocks Template".
+3. A new template will be created with the same Elemental blocks as the page.
+4. Edit the template as needed in the "Elemental Templates" section.
 
 ## Populating Template Elements
 
-You can pre-populate elements added to a template via config. This currently supports database fields via the following mapping:
+The module supports pre-populating Elemental blocks with default values. This is configurable via YAML and supports database fields and relationships.
 
-```yml
+### Example YAML Configuration
+
+```yaml
 Dynamic\ElememtalTemplates\Models\Template:
   populate:
     DNADesign\Elemental\Models\ElementContent:
-      Title: 'Content Block Title'
-      HTML: '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris elementum congue erat, accumsan tincidunt velit porta lobortis. Sed at efficitur ex. Nulla quis porta neque. In hac habitasse platea dictumst. Nullam et malesuada sem. Pellentesque eros eros, rutrum sit amet erat in, finibus ultrices tortor. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>'
+      Title: "Default Title"
+      Content: "<p>Default content</p>"
 ```
 
-A config like the above is not inherintly included in the module as it may not be a desirable effect/the type of predefined content may be unique for you project.
+**Note:** The `$populate` static configuration is checked on the `Template` class to determine whether default values should be applied when duplicating elements from a template.
 
 ## Roadmap
 
-We understand the current methodology does not allow for configuring population definitions outside of database fields. We're working on adding this feature as it is clearly something that is beneficial.
+We recognize that the current implementation only supports configuring population definitions for database fields. Expanding this functionality to include other types of data is a priority, and we are actively working on adding this feature to enhance the module's flexibility and usability.
+
+## Logging and Debugging
+
+The module logs key actions, such as template creation and Elemental block duplication, to the Silverstripe log file (`silverstripe.log`). This can help diagnose issues during development.
+
+## Contributing
+
+Contributions are welcome! Please submit a pull request or open an issue on GitHub.
 
 ## License
 
-See [License](LICENSE.md)
+This module is licensed under the BSD-3-Clause license. See the LICENSE file for details.
 
 ## Maintainers
  *  [Dynamic](http://www.dynamicagency.com) (<dev@dynamicagency.com>)
