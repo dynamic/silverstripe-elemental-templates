@@ -164,7 +164,7 @@ class Template extends DataObject implements PermissionProvider
 
                 $fields->addFieldToTab(
                     'Root.Main',
-                    ElementalAreaField::create('ElementsID', $this->Elements(), $this->getAllowedTypes())
+                    ElementalAreaField::create('Elements', $this->Elements(), $this->getAllowedTypes())
                 );
             }
 
@@ -173,7 +173,13 @@ class Template extends DataObject implements PermissionProvider
                 ->setAllowedFileCategories('image');
         });
 
-        return parent::getCMSFields();
+        $fields = parent::getCMSFields();
+
+        if ($el = $fields->dataFieldByName('Elements')) {
+            $el->setTypes($this->getAllowedTypes());
+        }
+
+        return $fields;
     }
 
     /**
@@ -196,7 +202,7 @@ class Template extends DataObject implements PermissionProvider
     public function PageTypeName(): string
     {
         if (!$this->PageType) {
-            return false;
+            return '';
         }
         return singleton($this->PageType)->singular_name();
     }
