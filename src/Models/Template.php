@@ -3,6 +3,7 @@
 namespace Dynamic\ElememtalTemplates\Models;
 
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
+use DNADesign\Elemental\Forms\ElementalAreaField;
 use DNADesign\Elemental\Models\ElementalArea;
 use LeKoala\CmsActions\CustomAction;
 use SilverStripe\Assets\Image;
@@ -154,6 +155,10 @@ class Template extends DataObject implements PermissionProvider
             $pt->setEmptyString('Please choose...');
             $pt->setRightTitle('This will determine which elements are possible to add to the template');
 
+            if ($this->isinDB()) {
+                $fields->dataFieldByName('PageType')->performReadonlyTransformation();
+            }
+
             $fields->dataFieldByName('LayoutImage')
                 ->setFolderName('Uploads/templates')
                 ->setAllowedFileCategories('image');
@@ -161,9 +166,8 @@ class Template extends DataObject implements PermissionProvider
 
         $fields = parent::getCMSFields();
 
-        if ($this->isinDB()) {
-            $fields->dataFieldByName('PageType')->performReadonlyTransformation();
-            $fields->dataFieldByName('Elements')->setTypes($this->getAllowedTypes());
+        if ($el = $fields->dataFieldByName('Elements')) {
+            $el->setTypes($this->getAllowedTypes());
         }
 
         return $fields;
