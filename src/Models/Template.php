@@ -173,13 +173,7 @@ class Template extends DataObject implements PermissionProvider
                 ->setAllowedFileCategories('image');
         });
 
-        $fields = parent::getCMSFields();
-
-        if ($el = $fields->dataFieldByName('Elements')) {
-            $el->setTypes($this->getAllowedTypes());
-        }
-
-        return $fields;
+        return parent::getCMSFields();
     }
 
     /**
