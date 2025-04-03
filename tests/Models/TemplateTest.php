@@ -70,21 +70,26 @@ class TemplateTest extends SapphireTest
         // Calculate the expected number of allowed types for SamplePage
         $samplePage = singleton(SamplePage::class);
         $expectedAllowedTypesSamplePage = count($samplePage->getElementalTypes());
+        error_log('Expected allowed types for SamplePage: ' . $expectedAllowedTypesSamplePage);
 
         // Calculate the expected number of allowed types for SamplePageTwo
         $samplePageTwo = singleton(SamplePageTwo::class);
         $expectedAllowedTypesSamplePageTwo = count($samplePageTwo->getElementalTypes());
+        error_log('Expected allowed types for SamplePageTwo: ' . $expectedAllowedTypesSamplePageTwo);
 
         // Get the actual number of allowed types for templateone
         $template = $this->objFromFixture(Template::class, 'templateone');
         $allowedTypesCount = count($template->getCMSFields()->dataFieldByName('Elements')->getTypes());
+        error_log('Allowed types count for templateone: ' . $allowedTypesCount);
 
         // Assert the expected number of allowed types for SamplePage
         $this->assertEquals($expectedAllowedTypesSamplePage, $allowedTypesCount);
 
         // Get the actual number of allowed types for templatetwo
         $templateTwo = $this->objFromFixture(Template::class, 'templatetwo');
+        $templateTwo->write();
         $allowedTypesCountTwo = count($templateTwo->getCMSFields()->dataFieldByName('Elements')->getTypes());
+        error_log('Allowed types count for templatetwo: ' . $allowedTypesCountTwo);
 
         // Assert the expected number of allowed types for SamplePageTwo
         $this->assertEquals($expectedAllowedTypesSamplePageTwo, $allowedTypesCountTwo);

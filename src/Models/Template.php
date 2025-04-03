@@ -161,7 +161,7 @@ class Template extends DataObject implements PermissionProvider
 
             if ($this->isinDB()) {
                 $fields->replaceField('PageType', $pt->performReadonlyTransformation());
-                
+
                 $fields->addFieldToTab(
                     'Root.Main',
                     ElementalAreaField::create('ElementsID', $this->Elements(), $this->getAllowedTypes())
@@ -183,6 +183,10 @@ class Template extends DataObject implements PermissionProvider
     {
         $pageType = $this->PageType;
 
+        if (!$pageType || !class_exists($pageType)) {
+            return []; // Return an empty array if PageType is invalid
+        }
+
         return $pageType::singleton()->getElementalTypes();
     }
 
@@ -191,6 +195,9 @@ class Template extends DataObject implements PermissionProvider
      */
     public function PageTypeName(): string
     {
+        if (!$this->PageType) {
+            return false;
+        }
         return singleton($this->PageType)->singular_name();
     }
 
