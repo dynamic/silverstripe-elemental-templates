@@ -146,7 +146,11 @@ class Template extends DataObject implements PermissionProvider
         $this->beforeUpdateCMSFields(function (FieldList $fields) {
             $pageTypes = self::getDecoratedBy(ElementalAreasExtension::class, \Page::class);
 
-            $fields->removeByName('Sort');
+            $fields->removeByName([
+                'Sort',
+                'ElementsID',
+            ]);
+
             $fields->replaceField(
                 'PageType',
                 $pt = DropdownField::create('PageType', 'Which page type to use as the base', $pageTypes)
@@ -156,7 +160,12 @@ class Template extends DataObject implements PermissionProvider
             $pt->setRightTitle('This will determine which elements are possible to add to the template');
 
             if ($this->isinDB()) {
-                $fields->dataFieldByName('PageType')->performReadonlyTransformation();
+                $fields->replaceField('PageType', $pt->performReadonlyTransformation());
+                
+                $fields->addFieldToTab(
+                    'Root.Main',
+                    ElementalAreaField::create('ElementsID', $this->Elements(), $this->getAllowedTypes())
+                );
             }
 
             $fields->dataFieldByName('LayoutImage')
@@ -164,13 +173,7 @@ class Template extends DataObject implements PermissionProvider
                 ->setAllowedFileCategories('image');
         });
 
-        $fields = parent::getCMSFields();
-
-        if ($el = $fields->dataFieldByName('Elements')) {
-            $el->setTypes($this->getAllowedTypes());
-        }
-
-        return $fields;
+        return parent::getCMSFields();
     }
 
     /**
