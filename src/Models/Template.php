@@ -142,28 +142,29 @@ class Template extends DataObject implements PermissionProvider
      */
     public function getCMSFields(): FieldList
     {
+        $this->beforeUpdateCMSFields(function (FieldList $fields) {
+            $pageTypes = self::getDecoratedBy(ElementalAreasExtension::class, \Page::class);
+
+            $fields->removeByName('Sort');
+            $fields->replaceField(
+                'PageType',
+                $pt = DropdownField::create('PageType', 'Which page type to use as the base', $pageTypes)
+            );
+
+            $pt->setEmptyString('Please choose...');
+            $pt->setRightTitle('This will determine which elements are possible to add to the template');
+
+            $fields->dataFieldByName('LayoutImage')
+                ->setFolderName('Uploads/templates')
+                ->setAllowedFileCategories('image');
+        });
+
         $fields = parent::getCMSFields();
 
-        $pageTypes = self::getDecoratedBy(ElementalAreasExtension::class, \Page::class);
-
-        $fields->removeByName('Sort');
-        $fields->replaceField(
-            'PageType',
-            $pt = DropdownField::create('PageType', 'Which page type to use as the base', $pageTypes)
-        );
-
-        $pt->setEmptyString('Please choose...');
-        $pt->setRightTitle('This will determine which elements are possible to add to the template');
-
         if ($this->isinDB()) {
-            $fields->replaceField('PageType', $pt->performReadonlyTransformation());
+            $fields->dataFieldByName('PageType')->performReadonlyTransformation();
             $fields->dataFieldByName('Elements')->setTypes($this->getAllowedTypes());
         }
-
-        // @phpstan-ignore-next-line
-        $fields->dataFieldByName('LayoutImage')
-            ->setFolderName('Uploads/templates')
-            ->setAllowedFileCategories('image');
 
         return $fields;
     }
