@@ -4,6 +4,7 @@ namespace Dynamic\ElememtalTemplates\Extension;
 
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElememtalTemplates\Service\TemplateElementDuplicator;
 use LeKoala\CmsActions\CustomAction;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Control\Controller;
@@ -81,8 +82,9 @@ class SiteTreeExtension extends DataExtension
             if ($this->getOwner()->ID) {
                 $moreOptions->insertAfter(
                     'CreateTemplate',
-                    CustomAction::create('ApplyTemplate', 'Apply Blocks Template')
+                    $ap = CustomAction::create('ApplyTemplate', 'Apply Blocks Template')
                 );
+                $ap->setShouldRefresh(true);
             }
         }
     }
@@ -148,12 +150,10 @@ class SiteTreeExtension extends DataExtension
             return Controller::curr()->redirectBack();
         }
 
-        // Duplicate each element from the template into the page's elemental area.
-        foreach ($templateArea->Elements() as $element) {
-            $newElement = $element->duplicate();
-            $pageArea->Elements()->add($newElement);
-            $this->logAction("Duplicated element (ID: {$element->ID}) to new element (ID: {$newElement->ID}).", "debug");
-        }
+        // Use the consolidated service to duplicate elements from the template into the page's ElementalArea.
+        /** @var TemplateElementDuplicator $duplicator */
+        $duplicator = Injector::inst()->get(TemplateElementDuplicator::class);
+        $duplicator->duplicateElements($template, $pageArea);
 
         $this->getOwner()->write();
         $this->logAction("Template applied successfully to page ID {$this->getOwner()->ID}.", "info");

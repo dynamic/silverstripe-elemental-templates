@@ -15,6 +15,7 @@ use SilverStripe\ORM\ValidationException;
 use DNADesign\Elemental\Models\ElementalArea;
 use Dynamic\ElememtalTemplates\Models\Template;
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
+use Dynamic\ElememtalTemplates\Service\TemplateElementDuplicator;
 
 /**
  * Class \Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension
@@ -66,15 +67,11 @@ class CMSPageAddControllerExtension extends Extension
             return;
         }
 
-        // Add elements to the ElementalArea
+        // Use the new TemplateElementDuplicator service to add elements
         try {
-            foreach ($template->Elements()->Elements() as $element) {
-                $copy = $element->duplicate();
-                $copy->setSkipPopulateData(true);
-                $copy->write();
-                $copy->writeToStage(Versioned::DRAFT);
-                $elementalArea->Elements()->add($copy);
-            }
+            /** @var TemplateElementDuplicator $duplicator */
+            $duplicator = Injector::inst()->get(TemplateElementDuplicator::class);
+            $duplicator->duplicateElements($template, $elementalArea);
 
             Injector::inst()->get(LoggerInterface::class)->info(
                 "Successfully added elements from template ID {$templateID} to ElementalArea for record ID {$record->ID}."
