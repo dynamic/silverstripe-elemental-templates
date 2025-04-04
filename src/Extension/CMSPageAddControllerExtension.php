@@ -72,7 +72,7 @@ class CMSPageAddControllerExtension extends Extension
             );
         }
     }
-    
+
     /**
      * (Optional) Find or create the ElementalArea for the given record.
      * This method may be shared with other parts of the module if needed.
