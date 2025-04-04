@@ -159,7 +159,7 @@ class SiteTreeExtension extends DataExtension
         $this->logAction("Template applied successfully to page ID {$this->getOwner()->ID}.", "info");
 
         $form->sessionMessage('The template has been applied successfully.', 'good');
-        
+
         // Force the CMS to reload the edit view (including the ElementalArea)
         return Controller::curr()->redirectBack();
     }
