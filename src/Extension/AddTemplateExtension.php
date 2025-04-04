@@ -35,11 +35,13 @@ class AddTemplateExtension extends LeftAndMainExtension
             $template = Template::create();
             $template->Title = 'Template from ' . $page->Title;
             $template->PageType = $page->ClassName;
+            $template->setSkipPopulateData(true);
             $template->write();
             $elements = $template->Elements()->Elements();
 
             foreach ($page->ElementalArea()->Elements() as $element) {
                 $newElement = $element->duplicate();
+                $newElement->setSkipPopulateData(true); // Prevent populateElementData() from running
                 $newElement->write();
                 $elements->add($newElement);
             }
