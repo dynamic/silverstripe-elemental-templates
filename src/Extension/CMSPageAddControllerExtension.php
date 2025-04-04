@@ -8,14 +8,12 @@ use SilverStripe\Core\Extension;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\DropdownField;
-use SilverStripe\Versioned\Versioned;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\ValidationException;
-use DNADesign\Elemental\Models\ElementalArea;
-use Dynamic\ElememtalTemplates\Models\Template;
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
-use Dynamic\ElememtalTemplates\Service\TemplateElementDuplicator;
+use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElememtalTemplates\Service\TemplateApplicator;
 
 /**
  * Class \Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension
@@ -25,6 +23,8 @@ use Dynamic\ElememtalTemplates\Service\TemplateElementDuplicator;
 class CMSPageAddControllerExtension extends Extension
 {
     /**
+     * Update page options to include a template selection.
+     *
      * @param FieldList $fields
      * @return void
      */
@@ -38,8 +38,10 @@ class CMSPageAddControllerExtension extends Extension
     }
 
     /**
+     * Hook into the record creation process to apply a template.
+     *
      * @param DataObject $record
-     * @param Form $form
+     * @param Form       $form
      * @return void
      * @throws ValidationException
      */
@@ -52,7 +54,7 @@ class CMSPageAddControllerExtension extends Extension
 
         $record->write();
 
-        // Validate the template
+        // Validate the template.
         $templateID = (int)$form->Fields()->dataFieldByName('TemplateID')->Value();
         if (!$templateID || !$template = Template::get()->byID($templateID)) {
             Injector::inst()->get(LoggerInterface::class)->warning(
@@ -61,76 +63,46 @@ class CMSPageAddControllerExtension extends Extension
             return;
         }
 
-        // Find or create the ElementalArea
-        $elementalArea = $this->findOrCreateElementalArea($record);
-        if (!$elementalArea) {
-            return;
-        }
-
-        // Use the new TemplateElementDuplicator service to add elements
-        try {
-            /** @var TemplateElementDuplicator $duplicator */
-            $duplicator = Injector::inst()->get(TemplateElementDuplicator::class);
-            $duplicator->duplicateElements($template, $elementalArea);
-
-            Injector::inst()->get(LoggerInterface::class)->info(
-                "Successfully added elements from template ID {$templateID} to ElementalArea for record ID {$record->ID}."
-            );
-        } catch (\Exception $e) {
+        // Use the consolidated TemplateApplicator service to apply the template.
+        /** @var TemplateApplicator $applicator */
+        $applicator = Injector::inst()->get(TemplateApplicator::class);
+        if (!$applicator->applyTemplateToRecord($record, $template)) {
             Injector::inst()->get(LoggerInterface::class)->error(
-                "Error while duplicating elements for template ID {$templateID}: " . $e->getMessage()
+                "Failed to apply template ID {$templateID} to record ID {$record->ID}."
             );
         }
     }
-
+    
     /**
-     * Find or create the ElementalArea for the given record.
+     * (Optional) Find or create the ElementalArea for the given record.
+     * This method may be shared with other parts of the module if needed.
      *
      * @param DataObject $record
-     * @return ElementalArea|null
+     * @return \DNADesign\Elemental\Models\ElementalArea|null
      */
-    protected function findOrCreateElementalArea(DataObject $record): ?ElementalArea
+    protected function findOrCreateElementalArea(DataObject $record): ?\DNADesign\Elemental\Models\ElementalArea
     {
-        // Get all ElementalArea relations using getElementalRelations()
         $elementalAreaRelations = $record->getElementalRelations();
 
         foreach ($elementalAreaRelations as $relationName) {
-            Injector::inst()->get(LoggerInterface::class)->info(
-                "Checking ElementalArea relation: {$relationName}"
-            );
-
-            // Check if the field exists in getCMSFields()
+            Injector::inst()->get(LoggerInterface::class)->info("Checking ElementalArea relation: {$relationName}");
             $cmsFields = $record->getCMSFields();
             if ($cmsFields->dataFieldByName("{$relationName}")) {
-                Injector::inst()->get(LoggerInterface::class)->info(
-                    "Found valid ElementalArea relation: {$relationName}"
-                );
-
-                // Retrieve or create the ElementalArea
+                Injector::inst()->get(LoggerInterface::class)->info("Found valid ElementalArea relation: {$relationName}");
                 $elementalArea = $record->getComponent($relationName);
                 if (!$elementalArea || !$elementalArea->exists()) {
-                    Injector::inst()->get(LoggerInterface::class)->info(
-                        "Creating new ElementalArea for relation: {$relationName}"
-                    );
-
-                    $elementalArea = ElementalArea::create();
+                    Injector::inst()->get(LoggerInterface::class)->info("Creating new ElementalArea for relation: {$relationName}");
+                    $elementalArea = \DNADesign\Elemental\Models\ElementalArea::create();
                     $elementalArea->write();
                     $record->setField("{$relationName}ID", $elementalArea->ID);
                     $record->write();
                 }
-
                 return $elementalArea;
             } else {
-                Injector::inst()->get(LoggerInterface::class)->info(
-                    "Skipping relation: {$relationName} as it is not visible in getCMSFields()"
-                );
+                Injector::inst()->get(LoggerInterface::class)->info("Skipping relation: {$relationName} as it is not visible in getCMSFields()");
             }
         }
-
-        Injector::inst()->get(LoggerInterface::class)->warning(
-            "No valid ElementalArea relation found for record ID {$record->ID}."
-        );
-
+        Injector::inst()->get(LoggerInterface::class)->warning("No valid ElementalArea relation found for record ID {$record->ID}.");
         return null;
     }
 }

@@ -4,7 +4,7 @@ namespace Dynamic\ElememtalTemplates\Extension;
 
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 use Dynamic\ElememtalTemplates\Models\Template;
-use Dynamic\ElememtalTemplates\Service\TemplateElementDuplicator;
+use Dynamic\ElememtalTemplates\Service\TemplateApplicator;
 use LeKoala\CmsActions\CustomAction;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Control\Controller;
@@ -72,7 +72,6 @@ class SiteTreeExtension extends DataExtension
             }
 
             // "Create Blocks Template" action using CustomAction.
-            // Provide both the action name and title as required.
             $moreOptions->insertAfter(
                 'Information',
                 CustomAction::create('CreateTemplate', 'Create Blocks Template')
@@ -118,49 +117,15 @@ class SiteTreeExtension extends DataExtension
         }
         $this->logAction("Template found: " . $template->Title, "debug");
 
-        // Get the template's ElementalArea.
-        $templateArea = $template->Elements();
-        if (!$templateArea || !$templateArea->exists()) {
-            $this->logAction("Template with ID {$templateID} does not have an elemental area.", "error");
-            $form->sessionMessage('The selected template does not have an elemental area.', 'bad');
+        /** @var TemplateApplicator $applicator */
+        $applicator = Injector::inst()->get(TemplateApplicator::class);
+        if (!$applicator->applyTemplateToRecord($this->owner, $template)) {
+            $this->logAction("Failed to apply template to page ID {$this->owner->ID}.", "error");
+            $form->sessionMessage('Failed to apply the template.', 'bad');
             return Controller::curr()->redirectBack();
         }
-
-        // Leverage Template::getDecoratedBy() so that if the current page type
-        // is decorated by ElementalAreasExtension (using Page as the base) then it can operate.
-        $decoratedTypes = Template::getDecoratedBy(ElementalAreasExtension::class, \Page::class);
-        if (!isset($decoratedTypes[$this->getOwner()->ClassName])) {
-            $this->logAction("The page type ({$this->getOwner()->ClassName}) is not configured with an elemental area.", "error");
-            $form->sessionMessage('This page is not configured with an elemental area.', 'bad');
-            return Controller::curr()->redirectBack();
-        }
-
-        // Check that the current page supports ElementalArea() relation.
-        if (!$this->getOwner()->hasMethod('ElementalArea')) {
-            $this->logAction("Method 'ElementalArea' does not exist on page type {$this->getOwner()->ClassName}.", "error");
-            $form->sessionMessage('This page does not support elemental areas.', 'bad');
-            return Controller::curr()->redirectBack();
-        }
-
-        // Get the page's ElementalArea.
-        $pageArea = $this->getOwner()->ElementalArea();
-        if (!$pageArea || !$pageArea->exists()) {
-            $this->logAction("The page does not have an elemental area to apply the template.", "error");
-            $form->sessionMessage('This page does not have an elemental area to apply the template.', 'bad');
-            return Controller::curr()->redirectBack();
-        }
-
-        // Use the consolidated service to duplicate elements from the template into the page's ElementalArea.
-        /** @var TemplateElementDuplicator $duplicator */
-        $duplicator = Injector::inst()->get(TemplateElementDuplicator::class);
-        $duplicator->duplicateElements($template, $pageArea);
-
-        $this->getOwner()->write();
-        $this->logAction("Template applied successfully to page ID {$this->getOwner()->ID}.", "info");
 
         $form->sessionMessage('The template has been applied successfully.', 'good');
-
-        // Force the CMS to reload the edit view (including the ElementalArea)
         return Controller::curr()->redirectBack();
     }
 
@@ -172,6 +137,7 @@ class SiteTreeExtension extends DataExtension
      */
     protected function logAction(string $message, string $level = 'info'): void
     {
+        /** @var LoggerInterface $logger */
         $logger = Injector::inst()->get(LoggerInterface::class);
         switch ($level) {
             case 'error':
