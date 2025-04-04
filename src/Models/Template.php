@@ -119,21 +119,28 @@ class Template extends DataObject implements PermissionProvider
     ];
 
     /**
-     * @param $extension
-     * @param $baseClass
+     * @param string $extension
+     * @param string $baseClass
      * @return array
      * @throws \ReflectionException
      */
-    public static function getDecoratedBy($extension, $baseClass): array
+    public static function getDecoratedBy(string $extension, string $baseClass): array
     {
         $classes = [];
+        $currentUser = Security::getCurrentUser();
 
         foreach (ClassInfo::subClassesFor($baseClass) as $className) {
             $class = $className::singleton();
+
+            // Check if the class has the specified extension
             if ($class::has_extension($className, $extension)) {
-                $classes[$className] = singleton($className)->singular_name();
+                // Check if the user has create permissions for this class
+                if ($currentUser && $class->canCreate($currentUser)) {
+                    $classes[$className] = $class->singular_name();
+                }
             }
         }
+
         return $classes;
     }
 
