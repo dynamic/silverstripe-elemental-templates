@@ -35,7 +35,8 @@ class SiteTreeExtension extends DataExtension
     {
         if ($this->owner->ID) {
             $templates = Template::get()->map('ID', 'Title')->toArray();
-            $fields->addFieldToTab('Root.Settings',
+            $fields->addFieldToTab(
+                'Root.Settings',
                 DropdownField::create(
                     'ApplyTemplateID',
                     'Select Template to Apply',

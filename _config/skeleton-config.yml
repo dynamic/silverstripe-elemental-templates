@@ -12,6 +12,3 @@ SilverStripe\CMS\Controllers\CMSPageAddController:
 SilverStripe\CMS\Model\SiteTree:
   extensions:
     - Dynamic\ElememtalTemplates\Extension\SiteTreeExtension
-
-SilverStripe\Admin\LeftAndMain:
-  extensions: []
