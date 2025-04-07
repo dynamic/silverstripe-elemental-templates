@@ -27,23 +27,21 @@ class SiteTreeExtension extends DataExtension
     ];
 
     /**
-     * Update CMS fields to add a tab for applying an existing template.
+     * Update Settings fields to add a dropdown for applying an existing template.
      *
      * @param FieldList $fields
      */
-    public function updateCMSFields(FieldList $fields): void
+    public function updateSettingsFields(FieldList $fields): void
     {
-        // Only add the apply template field if the page already exists
         if ($this->owner->ID) {
             $templates = Template::get()->map('ID', 'Title')->toArray();
-            $fields->findOrMakeTab('Root.ApplyTemplate')
-                ->push(
-                    DropdownField::create(
-                        'ApplyTemplateID',
-                        'Select Template to Apply',
-                        $templates
-                    )->setEmptyString('-- Select a Template --')
-                );
+            $fields->addFieldToTab('Root.Settings',
+                DropdownField::create(
+                    'ApplyTemplateID',
+                    'Select Template to Apply',
+                    $templates
+                )->setEmptyString('-- Select a Template --')
+            );
         }
     }
 
