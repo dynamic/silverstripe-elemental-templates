@@ -41,7 +41,9 @@ class SiteTreeExtension extends DataExtension
                     'ApplyTemplateID',
                     'Select Template to Apply',
                     $templates
-                )->setEmptyString('-- Select a Template --')
+                )
+                ->setEmptyString('-- Select a Template --')
+                ->setDescription('To apply a template, go to More Options and select Apply Blocks Template.')
             );
         }
     }
