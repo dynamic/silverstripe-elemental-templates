@@ -69,10 +69,12 @@ class SiteTreeExtension extends DataExtension
                 return;
             }
 
-            // "Create Blocks Template" action using CustomAction.
+            // Ensure the CreateTemplate action calls the method in AddTemplateExtension
             $moreOptions->insertAfter(
                 'Information',
                 CustomAction::create('CreateTemplate', 'Create Blocks Template')
+                    ->setUseButtonTag(true)
+                    ->setAttribute('data-url', $this->owner->Link('CreateTemplate'))
             );
 
             // "Apply Blocks Template" action if this is an existing page.
@@ -105,26 +107,76 @@ class SiteTreeExtension extends DataExtension
             $form->sessionMessage('Please select a template before applying.', 'bad');
             return Controller::curr()->redirectBack();
         }
-        $this->logAction("Template ID received: " . $templateID, "debug");
 
+        // Ensure the template is retrieved before passing it to the service
         $template = Template::get()->byID($templateID);
         if (!$template) {
             $this->logAction("No template found with ID: " . $templateID, "error");
             $form->sessionMessage('The selected template could not be found.', 'bad');
             return Controller::curr()->redirectBack();
         }
-        $this->logAction("Template found: " . $template->Title, "debug");
 
         /** @var TemplateApplicator $applicator */
         $applicator = Injector::inst()->get(TemplateApplicator::class);
-        if (!$applicator->applyTemplateToRecord($this->owner, $template)) {
-            $this->logAction("Failed to apply template to page ID {$this->owner->ID}.", "error");
-            $form->sessionMessage('Failed to apply the template.', 'bad');
+        $result = $applicator->applyTemplateToRecord($this->owner, $template);
+
+        if (!$result['success']) {
+            $this->logAction($result['message'], "error");
+            $form->sessionMessage($result['message'], 'bad');
             return Controller::curr()->redirectBack();
         }
 
-        $form->sessionMessage('The template has been applied successfully.', 'good');
+        $form->sessionMessage($result['message'], 'good');
         return Controller::curr()->redirectBack();
+    }
+
+    /**
+     * Create a template from the current page.
+     *
+     * @param array $data
+     * @param Form $form
+     * @return void
+     * @throws \SilverStripe\ORM\ValidationException
+     */
+    public function CreateTemplate($data, $form): void
+    {
+        $pageID = $data['ID'];
+        $className = $data['ClassName'];
+
+        // Ensure the class exists and is a valid subclass of SiteTree
+        if (!class_exists($className) || !is_subclass_of($className, \SilverStripe\CMS\Model\SiteTree::class)) {
+            $this->logAction("Invalid page class: {$className}", "error");
+            $form->sessionMessage('Invalid page class.', 'bad');
+            Controller::curr()->redirectBack();
+            return;
+        }
+
+        // Retrieve the page by ID
+        if ($page = $className::get()->byID($pageID)) {
+            $template = Template::create();
+            $template->Title = 'Template from ' . $page->Title;
+            $template->PageType = $page->ClassName;
+            $template->write();
+            $elements = $template->Elements()->Elements();
+
+            // Duplicate elements from the page's ElementalArea
+            if ($page->hasMethod('ElementalArea') && $page->ElementalArea()->exists()) {
+                foreach ($page->ElementalArea()->Elements() as $element) {
+                    $newElement = $element->duplicate();
+                    $newElement->write();
+                    $elements->add($newElement);
+                }
+            }
+
+            $template->write();
+
+            // Redirect to the newly created template's CMS edit link
+            Controller::curr()->redirect($template->CMSEditLink());
+        } else {
+            $this->logAction("Page not found with ID: {$pageID}", "error");
+            $form->sessionMessage('Page not found.', 'bad');
+            Controller::curr()->redirectBack();
+        }
     }
 
     /**

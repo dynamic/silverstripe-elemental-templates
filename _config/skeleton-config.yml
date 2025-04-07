@@ -14,5 +14,4 @@ SilverStripe\CMS\Model\SiteTree:
     - Dynamic\ElememtalTemplates\Extension\SiteTreeExtension
 
 SilverStripe\Admin\LeftAndMain:
-  extensions:
-    - Dynamic\ElememtalTemplates\Extension\AddTemplateExtension
+  extensions: []

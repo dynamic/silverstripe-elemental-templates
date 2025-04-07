@@ -47,14 +47,12 @@ class CMSPageAddControllerExtension extends Extension
      */
     public function updateDoAdd(DataObject $record, Form $form): void
     {
-        // Ensure the newly created record has the elemental extension
         if (!$record->hasExtension(ElementalAreasExtension::class)) {
             return;
         }
 
         $record->write();
 
-        // Validate the template.
         $templateID = (int)$form->Fields()->dataFieldByName('TemplateID')->Value();
         if (!$templateID || !$template = Template::get()->byID($templateID)) {
             Injector::inst()->get(LoggerInterface::class)->warning(
@@ -63,13 +61,12 @@ class CMSPageAddControllerExtension extends Extension
             return;
         }
 
-        // Use the consolidated TemplateApplicator service to apply the template.
         /** @var TemplateApplicator $applicator */
         $applicator = Injector::inst()->get(TemplateApplicator::class);
-        if (!$applicator->applyTemplateToRecord($record, $template)) {
-            Injector::inst()->get(LoggerInterface::class)->error(
-                "Failed to apply template ID {$templateID} to record ID {$record->ID}."
-            );
+        $result = $applicator->applyTemplateToRecord($record, $template);
+
+        if (!$result['success']) {
+            Injector::inst()->get(LoggerInterface::class)->error($result['message']);
         }
     }
 
