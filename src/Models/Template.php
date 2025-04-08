@@ -5,6 +5,7 @@ namespace Dynamic\ElememtalTemplates\Models;
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 use DNADesign\Elemental\Forms\ElementalAreaField;
 use DNADesign\Elemental\Models\ElementalArea;
+use Ergebnis\Composer\Normalize\Version;
 use LeKoala\CmsActions\CustomAction;
 use SilverStripe\Assets\Image;
 use SilverStripe\Control\Controller;
@@ -18,6 +19,8 @@ use SilverStripe\Security\Member;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Control\Director;
 
 /**
  * Creates a Template of elements that can be used to set up a page
@@ -98,6 +101,7 @@ class Template extends DataObject implements PermissionProvider
      */
     private static array $extensions = [
         ElementalAreasExtension::class,
+        Versioned::class,
     ];
 
     /**
@@ -186,7 +190,33 @@ class Template extends DataObject implements PermissionProvider
             $el->setTypes($this->getAllowedTypes());
         }
 
+        // Add a Preview button
+        $fields->addFieldToTab(
+            'Root.Main',
+            LiteralField::create(
+                'PreviewButton',
+                sprintf(
+                    '<a href="%s" target="_blank" class="btn btn-primary">Preview Template</a>',
+                    $this->getPreviewLink()
+                )
+            )
+        );
+
         return $fields;
+    }
+
+    /**
+     * Generate the preview link for the template.
+     *
+     * @return string
+     */
+    public function getPreviewLink(): string
+    {
+        return Controller::join_links(
+            Director::absoluteBaseURL(),
+            'template-preview',
+            $this->ID
+        );
     }
 
     /**

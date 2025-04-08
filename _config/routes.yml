@@ -1,0 +1,8 @@
+---
+Name: template-preview-routes
+After:
+  - '#coreroutes'
+---
+SilverStripe\Control\Director:
+  rules:
+    'template-preview/$ID/$Action': Dynamic\ElementalTemplates\Controller\TemplatePreviewController
