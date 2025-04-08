@@ -1,0 +1,10 @@
+DNADesign\Elemental\Models\ElementalArea:
+  exampleArea:
+    Title: "Example Elemental Area"
+    Elements: []
+
+Dynamic\ElementalTemplates\Models\Template:
+  exampleTemplate:
+    Title: "Example Template"
+    PageType: "Page"
+    ElementsID: "=>DNADesign\\Elemental\\Models\\ElementalArea.exampleArea"
