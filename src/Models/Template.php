@@ -5,12 +5,14 @@ namespace Dynamic\ElememtalTemplates\Models;
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 use DNADesign\Elemental\Forms\ElementalAreaField;
 use DNADesign\Elemental\Models\ElementalArea;
+use Ergebnis\Composer\Normalize\Version;
 use LeKoala\CmsActions\CustomAction;
 use SilverStripe\Assets\Image;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\FormAction;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Forms\TreeDropdownField;
 use SilverStripe\ORM\DataObject;
@@ -18,6 +20,8 @@ use SilverStripe\Security\Member;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Control\Director;
 
 /**
  * Creates a Template of elements that can be used to set up a page
@@ -98,6 +102,7 @@ class Template extends DataObject implements PermissionProvider
      */
     private static array $extensions = [
         ElementalAreasExtension::class,
+        Versioned::class,
     ];
 
     /**
@@ -187,6 +192,20 @@ class Template extends DataObject implements PermissionProvider
         }
 
         return $fields;
+    }
+
+    /**
+     * Generate the preview link for the template.
+     *
+     * @return string
+     */
+    public function getPreviewLink(): string
+    {
+        return Controller::join_links(
+            Director::absoluteBaseURL(),
+            'template-preview',
+            $this->ID
+        );
     }
 
     /**
@@ -355,5 +374,22 @@ class Template extends DataObject implements PermissionProvider
     protected function getUser(): ?Member
     {
         return Security::getCurrentUser();
+    }
+
+    /**
+     * @return FieldList
+     */
+    public function getCMSActions(): FieldList
+    {
+        $actions = parent::getCMSActions();
+
+        // Add a custom CMS action for previewing the template
+        $actions->push(
+            CustomAction::create('PreviewTemplate', 'Preview Template')
+                ->setUseButtonTag(true)
+                ->setAttribute('onclick', "window.open('{$this->getPreviewLink()}', '_blank')") // Open the URL in a new window
+        );
+
+        return $actions;
     }
 }
