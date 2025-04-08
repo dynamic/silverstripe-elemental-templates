@@ -12,6 +12,7 @@ use SilverStripe\Control\Controller;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\FormAction;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Forms\TreeDropdownField;
 use SilverStripe\ORM\DataObject;
@@ -189,18 +190,6 @@ class Template extends DataObject implements PermissionProvider
         if ($el = $fields->dataFieldByName('Elements')) {
             $el->setTypes($this->getAllowedTypes());
         }
-
-        // Add a Preview button
-        $fields->addFieldToTab(
-            'Root.Main',
-            LiteralField::create(
-                'PreviewButton',
-                sprintf(
-                    '<a href="%s" target="_blank" class="btn btn-primary">Preview Template</a>',
-                    $this->getPreviewLink()
-                )
-            )
-        );
 
         return $fields;
     }
@@ -385,5 +374,22 @@ class Template extends DataObject implements PermissionProvider
     protected function getUser(): ?Member
     {
         return Security::getCurrentUser();
+    }
+
+    /**
+     * @return FieldList
+     */
+    public function getCMSActions(): FieldList
+    {
+        $actions = parent::getCMSActions();
+
+        // Add a custom CMS action for previewing the template
+        $actions->push(
+            CustomAction::create('PreviewTemplate', 'Preview Template')
+                ->setUseButtonTag(true)
+                ->setAttribute('onclick', "window.open('{$this->getPreviewLink()}', '_blank')") // Open the URL in a new window
+        );
+
+        return $actions;
     }
 }
