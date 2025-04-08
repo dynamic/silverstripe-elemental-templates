@@ -2,11 +2,11 @@
 
 namespace Dynamic\ElememtalTemplates\Extension;
 
+use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
-use DNADesign\Elemental\Models\BaseElement;
 use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
 
@@ -17,6 +17,19 @@ use SilverStripe\CMS\Controllers\CMSPageEditController;
  */
 class BaseElementDataExtension extends DataExtension
 {
+    /**
+     * @var string
+     * @config
+     */
+    public function updateCMSFields(FieldList $fields): void
+    {
+        $manager = $this->getOwnerPage();
+
+        if ($manager instanceof Template) {
+            //$fields->removeByName('AvailableGlobally');
+        }
+    }
+
     /**
      * @param string|null $link
      * @return void
@@ -68,6 +81,11 @@ class BaseElementDataExtension extends DataExtension
         $manager = $this->getOwnerPage();
 
         if ($manager instanceof Template) {
+            // Explicitly set AvailableGlobally to false for Template instances
+            if ($this->getOwner()->hasField('AvailableGlobally')) {
+                $this->getOwner()->AvailableGlobally = false;
+            }
+
             if ($populate = Template::config()->get('populate')) {
                 if (array_key_exists($this->getOwner()->ClassName, $populate)) {
                     foreach ($populate[$this->getOwner()->ClassName] as $field => $value) {
