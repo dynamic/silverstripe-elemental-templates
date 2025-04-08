@@ -26,9 +26,17 @@ class TemplateElementDuplicator
         foreach ($template->Elements()->Elements() as $element) {
             try {
                 $copy = $element->duplicate();
+
+                // set skip populate flag to true to prevent populateElementData() from being called
                 if (method_exists($copy, 'setSkipPopulateData')) {
                     $copy->setSkipPopulateData(true);
                 }
+
+                // set AvailableGlobally to default
+                if ($copy->hasMethod('setResetAvailableGlobally')) {
+                    $copy->setResetAvailableGlobally(true);
+                }
+
                 $copy->write();
                 // Write to draft stage if versioned.
                 if ($copy->hasExtension(Versioned::class)) {

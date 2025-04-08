@@ -17,6 +17,16 @@ use SilverStripe\CMS\Controllers\CMSPageEditController;
  */
 class BaseElementDataExtension extends DataExtension
 {
+    protected $resetAvailableGlobally = false;
+
+    /**
+     * Sets the flag to skip populateElementData().
+     */
+    public function setResetAvailableGlobally(bool $reset): void
+    {
+        $this->resetAvailableGlobally = $reset;
+    }
+
     /**
      * @var string
      * @config
@@ -93,6 +103,11 @@ class BaseElementDataExtension extends DataExtension
                     }
                 }
             }
+        }
+
+        // Reset available globally if the flag is set
+        if ($this->resetAvailableGlobally) {
+            $this->getOwner()->setAvailableGlobally(true);
         }
     }
 
