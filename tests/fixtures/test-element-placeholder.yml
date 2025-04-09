@@ -1,0 +1,23 @@
+DNADesign\Elemental\Models\ElementContent:
+  ExampleContentBlock:
+    Title: "Example Content Block"
+    HTML: "<p>This is placeholder content for the example block.</p>"
+    AvailableGlobally: false
+
+Dynamic\Elements\Card\Elements\ElementCard:
+  ExampleCardBlock:
+    Title: "Example Card Block"
+    ShowTitle: true
+    Content: "<p>This is placeholder content for the card block.</p>"
+    TitleTag: 'h4'
+    ImagePosition: "top"
+    AvailableGlobally: false
+    ElementLink:
+      ClassName: 'SilverStripe\LinkField\Models\SiteTreeLink'
+      PageID: 1
+      LinkText: 'Learn More'
+      OwnerClass: 'Dynamic\Elements\Card\Elements\ElementCard'
+      OwnerRelation: 'ElementLink'
+    Image:
+      Title: 'Card Image'
+      Filename: "app/images/placeholder.png"

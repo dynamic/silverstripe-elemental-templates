@@ -11,6 +11,12 @@ use SilverStripe\Core\Config\Config;
 use SilverStripe\Dev\FixtureFactory;
 use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
+use Symfony\Component\Yaml\Yaml;
+use Psr\Log\LoggerInterface;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Control\Director;
+use SilverStripe\Dev\YamlFixture;
+use Dynamic\ElementalTemplates\Service\FixtureDataService;
 
 /**
  * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
@@ -106,52 +112,34 @@ class BaseElementDataExtension extends DataExtension
     {
         parent::onBeforeWrite();
 
+        $logger = Injector::inst()->get(LoggerInterface::class);
+        $fixtureService = Injector::inst()->get(FixtureDataService::class);
+
         // Reset available globally if the flag is set
         if ($this->resetAvailableGlobally) {
             $this->getOwner()->AvailableGlobally = true;
         }
 
+        // Skip if the skipPopulateData flag is set to true
         if ($this->skipPopulateData) {
             return;
         }
 
+        $logger->debug('onBeforeWrite triggered for ' . $this->owner->ClassName);
+
         $manager = $this->getOwnerPage();
 
-        if ($manager instanceof Template) {
-            // Explicitly set AvailableGlobally to false for Template instances
-            if ($this->getOwner()->hasField('AvailableGlobally')) {
-                $this->getOwner()->AvailableGlobally = false;
-            }
-
-            // Populate data using FixtureFactory
-            $this->populateElementDataFromFixture();
-        }
-    }
-
-    /**
-     * Populate element data using FixtureFactory and YAML configuration.
-     */
-    protected function populateElementDataFromFixture(): void
-    {
-        $fixturesPath = Config::inst()->get(self::class, 'fixtures');
-
-        if (!$fixturesPath || !file_exists($fixturesPath)) {
-            return; // Exit if no valid fixtures path is set
+        if (!$manager instanceof Template || $this->owner->isInDB()) {
+            return;
         }
 
-        $factory = FixtureFactory::create();
-
-        // Load the fixture data
-        $factory->import($fixturesPath);
-
-        // Example: Apply the loaded data to the current element
-        $populateData = $factory->get('BaseElement', $this->getOwner()->ClassName);
-
-        if ($populateData) {
-            foreach ($populateData as $field => $value) {
-                $this->getOwner()->$field = $value;
-            }
+        // Explicitly set AvailableGlobally to false for Template instances
+        if ($this->getOwner()->hasField('AvailableGlobally')) {
+            $this->getOwner()->AvailableGlobally = false;
         }
+
+        // Call the FixtureDataService to populate fields
+        $fixtureService->populateElementData($this->owner);
     }
 
     /**
