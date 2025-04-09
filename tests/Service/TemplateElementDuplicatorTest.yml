@@ -1,0 +1,15 @@
+DNADesign\Elemental\Models\BaseElement:
+  default_element:
+    Title: 'Default Element'
+    AvailableGlobally: false
+
+DNADesign\Elemental\Models\ElementalArea:
+  default:
+    Title: 'Default Area'
+    Elements: =>DNADesign\Elemental\Models\BaseElement.default_element
+
+Dynamic\ElememtalTemplates\Models\Template:
+  default:
+    Title: 'Default Template'
+    AvailableGlobally: false
+    Elements: =>DNADesign\Elemental\Models\ElementalArea.default

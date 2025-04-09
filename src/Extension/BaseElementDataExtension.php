@@ -17,7 +17,17 @@ use SilverStripe\CMS\Controllers\CMSPageEditController;
  */
 class BaseElementDataExtension extends DataExtension
 {
+    protected $skipPopulateData = false;
+
     protected $resetAvailableGlobally = false;
+
+    /**
+     * Sets the flag to skip populateElementData().
+     */
+    public function setSkipPopulateData(bool $skip): void
+    {
+        $this->skipPopulateData = $skip;
+    }
 
     /**
      * Sets the flag to skip populateElementData().
@@ -82,11 +92,15 @@ class BaseElementDataExtension extends DataExtension
     }
 
     /**
-     * @return void
+     * Skips the populateElementData logic if the flag is set.
      */
     public function onBeforeWrite(): void
     {
         parent::onBeforeWrite();
+
+        if ($this->skipPopulateData) {
+            return;
+        }
 
         $manager = $this->getOwnerPage();
 
@@ -107,7 +121,7 @@ class BaseElementDataExtension extends DataExtension
 
         // Reset available globally if the flag is set
         if ($this->resetAvailableGlobally) {
-            $this->getOwner()->setAvailableGlobally(true);
+            $this->getOwner()->AvailableGlobally = 1;
         }
     }
 
