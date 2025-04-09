@@ -7,7 +7,7 @@ use Dynamic\ElementalTemplates\Models\Template;
 
 class TemplatePreviewControllerTest extends FunctionalTest
 {
-    protected static $fixture_file = 'template-preview-test.yml';
+    //protected static $fixture_file = 'template-preview-test.yml';
 
     protected function setUp(): void
     {
