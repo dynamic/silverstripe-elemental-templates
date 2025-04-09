@@ -26,15 +26,32 @@ class TemplateElementDuplicator
         foreach ($template->Elements()->Elements() as $element) {
             try {
                 $copy = $element->duplicate();
-                if (method_exists($copy, 'setSkipPopulateData')) {
+
+                $logger->debug(sprintf(
+                    "Duplicating element (ID: %d) to new element (ID: %d).",
+                    $element->ID,
+                    $copy->ID
+                ));
+                // set skip populate flag to true to prevent populateElementData() from being called
+                if ($copy->hasMethod('setSkipPopulateData')) {
                     $copy->setSkipPopulateData(true);
                 }
+
+                // set AvailableGlobally to default
+                if ($copy->hasMethod('setResetAvailableGlobally')) {
+                    $copy->setResetAvailableGlobally(true);
+                }
+
                 $copy->write();
+
                 // Write to draft stage if versioned.
                 if ($copy->hasExtension(Versioned::class)) {
                     $copy->writeToStage(Versioned::DRAFT);
                 }
+
+                // Add the duplicated element to the target area.
                 $area->Elements()->add($copy);
+
                 $logger->debug(sprintf(
                     "Duplicated element (ID: %d) to new element (ID: %d).",
                     $element->ID,

@@ -2,11 +2,11 @@
 
 namespace Dynamic\ElememtalTemplates\Extension;
 
+use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
-use DNADesign\Elemental\Models\BaseElement;
 use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
 
@@ -17,6 +17,39 @@ use SilverStripe\CMS\Controllers\CMSPageEditController;
  */
 class BaseElementDataExtension extends DataExtension
 {
+    protected $skipPopulateData = false;
+
+    protected $resetAvailableGlobally = false;
+
+    /**
+     * Sets the flag to skip populateElementData().
+     */
+    public function setSkipPopulateData(bool $skip): void
+    {
+        $this->skipPopulateData = $skip;
+    }
+
+    /**
+     * Sets the flag to skip populateElementData().
+     */
+    public function setResetAvailableGlobally(bool $reset): void
+    {
+        $this->resetAvailableGlobally = $reset;
+    }
+
+    /**
+     * @var string
+     * @config
+     */
+    public function updateCMSFields(FieldList $fields): void
+    {
+        $manager = $this->getOwnerPage();
+
+        if ($manager instanceof Template) {
+            //$fields->removeByName('AvailableGlobally');
+        }
+    }
+
     /**
      * @param string|null $link
      * @return void
@@ -59,15 +92,30 @@ class BaseElementDataExtension extends DataExtension
     }
 
     /**
-     * @return void
+     * Skips the populateElementData logic if the flag is set.
      */
     public function onBeforeWrite(): void
     {
         parent::onBeforeWrite();
 
+        // Reset available globally if the flag is set
+        if ($this->resetAvailableGlobally) {
+            $this->getOwner()->AvailableGlobally = true;
+        }
+
+        if ($this->skipPopulateData) {
+            return;
+        }
+
         $manager = $this->getOwnerPage();
 
         if ($manager instanceof Template) {
+            // Explicitly set AvailableGlobally to false for Template instances
+            if ($this->getOwner()->hasField('AvailableGlobally')) {
+                $this->getOwner()->AvailableGlobally = false;
+            }
+
+            // Populate data from the fixtures if it exists
             if ($populate = Template::config()->get('populate')) {
                 if (array_key_exists($this->getOwner()->ClassName, $populate)) {
                     foreach ($populate[$this->getOwner()->ClassName] as $field => $value) {
