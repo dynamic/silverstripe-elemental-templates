@@ -46,7 +46,7 @@ class BaseElementDataExtension extends DataExtension
         $manager = $this->getOwnerPage();
 
         if ($manager instanceof Template) {
-            //$fields->removeByName('AvailableGlobally');
+            $fields->removeByName('AvailableGlobally');
         }
     }
 
