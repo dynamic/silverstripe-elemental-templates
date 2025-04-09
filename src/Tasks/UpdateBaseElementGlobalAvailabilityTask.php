@@ -6,7 +6,6 @@ use SilverStripe\Dev\BuildTask;
 use DNADesign\Elemental\Models\BaseElement;
 use Dynamic\ElememtalTemplates\Models\Template;
 
-
 class UpdateBaseElementGlobalAvailabilityTask extends BuildTask
 {
     protected $title = 'Update BaseElement Global Availability';
