@@ -51,7 +51,7 @@ class TemplateElementDuplicator
 
                 // Add the duplicated element to the target area.
                 $area->Elements()->add($copy);
-                
+
                 $logger->debug(sprintf(
                     "Duplicated element (ID: %d) to new element (ID: %d).",
                     $element->ID,

@@ -98,6 +98,11 @@ class BaseElementDataExtension extends DataExtension
     {
         parent::onBeforeWrite();
 
+        // Reset available globally if the flag is set
+        if ($this->resetAvailableGlobally) {
+            $this->getOwner()->AvailableGlobally = true;
+        }
+
         if ($this->skipPopulateData) {
             return;
         }
@@ -110,6 +115,7 @@ class BaseElementDataExtension extends DataExtension
                 $this->getOwner()->AvailableGlobally = false;
             }
 
+            // Populate data from the fixtures if it exists
             if ($populate = Template::config()->get('populate')) {
                 if (array_key_exists($this->getOwner()->ClassName, $populate)) {
                     foreach ($populate[$this->getOwner()->ClassName] as $field => $value) {
@@ -117,11 +123,6 @@ class BaseElementDataExtension extends DataExtension
                     }
                 }
             }
-        }
-
-        // Reset available globally if the flag is set
-        if ($this->resetAvailableGlobally) {
-            $this->getOwner()->AvailableGlobally = 1;
         }
     }
 
