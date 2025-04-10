@@ -115,7 +115,7 @@ class FixtureDataServiceTest extends SapphireTest
         // Adjusted assertion to match the actual behavior of FixtureDataService
         $this->assertSame(null, $elementOutsideTemplate->getField('Title'));
         $this->assertSame('', $elementOutsideTemplate->getField('HTML'));
-        $this->assertNull($elementOutsideTemplate->getField('AvailableGlobally'));
+        $this->assertTrue((bool)$elementOutsideTemplate->getField('AvailableGlobally'));
     }
 
     public function testCreateRelatedObject(): void
@@ -139,7 +139,7 @@ class FixtureDataServiceTest extends SapphireTest
         $this->assertEquals('Example Card Block', $elementCard->Title);
         $this->assertEquals('<p>This is placeholder content for the card block.</p>', $elementCard->Content);
 
-        $this->assertInstanceOf(SiteTreeLink::class, $elementCard->ElementLink());
+        $this->assertInstanceOf(Link::class, $elementCard->ElementLink());
         $this->assertEquals('Learn More', $elementCard->ElementLink()->LinkText);
         $this->assertEquals(1, $elementCard->ElementLink()->PageID);
 

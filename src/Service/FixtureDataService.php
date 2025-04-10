@@ -4,7 +4,6 @@ namespace Dynamic\ElementalTemplates\Service;
 
 use Exception;
 use RuntimeException;
-use SilverStripe\Dev\Debug;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Assets\Image;
 use SilverStripe\ORM\DataObject;
@@ -96,7 +95,8 @@ class FixtureDataService
 
             foreach ($fields as $field => $value) {
                 if ($value === '') {
-                    $logger->debug("Skipping field: $field because the value is empty.");
+                    $logger->debug("Setting field: $field to null because the value is empty.");
+                    $element->setField($field, null);
                     continue;
                 }
 
@@ -130,33 +130,16 @@ class FixtureDataService
                 if ($relationName && $relationClassName) {
                     $logger->debug("Processing relation: $relationName with class: $relationClassName");
 
-                    $relationList = $element->$relationName();
-
                     if (is_array($value)) {
-                        // Handle has_many or nested relations
-                        foreach ($value as $nestedValue) {
-                            // Check if a similar object already exists to prevent duplicates
-                            $existingObject = $relationList->filter('Title', $nestedValue['Title'] ?? '')->first();
-                            if ($existingObject) {
-                                $logger->debug("Skipping creation of duplicate object for relation: $relationName with Title: " . $nestedValue['Title']);
-                                continue;
-                            }
-
-                            $relatedObject = $this->createRelatedObject($relationClassName, $nestedValue);
-
-                            if ($relatedObject) {
-                                $relationList->add($relatedObject);
-                                $logger->debug("Added related $relationClassName object with ID: " . $relatedObject->ID . " to $relationName");
-                            }
-                        }
-                    } else {
-                        // Handle has_one or single relation
+                        // Handle nested data for has_one relationships
                         $relatedObject = $this->createRelatedObject($relationClassName, $value);
 
                         if ($relatedObject) {
                             $element->setField("{$relationName}ID", $relatedObject->ID);
                             $logger->debug("Created related $relationClassName object with ID: " . $relatedObject->ID);
                         }
+                    } else {
+                        $logger->warning("Field: $field is not a valid nested array for relation: $relationName.");
                     }
                 } else {
                     $logger->warning("Field: $field is not a valid db field or relation.");
@@ -175,12 +158,20 @@ class FixtureDataService
      * @param array|string $data
      * @return DataObject
      */
-    public function createRelatedObject(string $relatedClassName, $data): DataObject
+    private function createRelatedObject(string $relatedClassName, $data): ?DataObject
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
 
+        $logger->debug("Creating related object with class: $relatedClassName and data: " . json_encode($data));
+
+        // Validate that $data is an array
+        if (!is_array($data)) {
+            $logger->warning("Invalid data type for related object creation. Expected array, got: " . gettype($data));
+            return null;
+        }
+
         // Check if a specific ClassName is provided in the data
-        if (isset($data['ClassName']) && is_subclass_of($data['ClassName'], $relatedClassName)) {
+        if (isset($data['ClassName'])) {
             $logger->debug("Overriding base class $relatedClassName with subclass " . $data['ClassName']);
             $relatedClassName = $data['ClassName'];
         } else {
@@ -193,17 +184,22 @@ class FixtureDataService
             throw new RuntimeException("Invalid class: $relatedClassName is not a subclass of DataObject.");
         }
 
+        $logger->debug("Validated class: $relatedClassName as a subclass of DataObject.");
+
+        // Handle Image creation
         if (is_a($relatedClassName, Image::class, true)) {
-            $logger->debug("Creating Image object for class: $relatedClassName");
+            $logger->debug("Detected $relatedClassName class for relation. Calling createImageFromFile().");
             return $this->createImageFromFile($data['Filename'] ?? '');
         }
 
+        // Handle Link creation
         if (is_a($relatedClassName, Link::class, true)) {
-            $logger->debug("Creating Link object for class: $relatedClassName");
+            $logger->debug("Detected $relatedClassName class for relation. Calling createLinkFromData().");
             return $this->createLinkFromData($data);
         }
 
-        $logger->debug("Creating generic DataObject for class: $relatedClassName with data: " . json_encode($data));
+        // Generic DataObject creation
+        $logger->debug("Creating $relatedClassName object with data: " . json_encode($data));
 
         try {
             $relatedObject = $relatedClassName::create();
@@ -211,13 +207,13 @@ class FixtureDataService
 
             foreach ($data as $field => $value) {
                 if (is_array($value)) {
-                    // Handle nested relations (e.g., Image or ElementLink)
+                    // Handle nested relations
                     $relationClassName = $relatedObject->config()->get('has_one')[$field] ?? null;
 
                     if ($relationClassName && is_subclass_of($relationClassName, DataObject::class)) {
-                        if ($relationClassName instanceof Image) {
+                        if (is_a($relationClassName, Image::class, true)) {
                             $nestedObject = $this->createImageFromFile($value['Filename'] ?? '');
-                        } elseif ($relationClassName instanceof Link) {
+                        } elseif (is_a($relationClassName, Link::class, true)) {
                             $nestedObject = $this->createLinkFromData($value);
                         } else {
                             $nestedObject = $this->createRelatedObject($relationClassName, $value);
@@ -257,23 +253,30 @@ class FixtureDataService
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
 
-        // Check if the file exists
+        // Resolve the absolute path
         $absolutePath = Director::baseFolder() . '/' . ltrim($filePath, '/');
+        $logger->debug("Attempting to create Image from file: $absolutePath");
 
+        // Check if the file exists
         if (!file_exists($absolutePath)) {
-            $logger->warning("Image file does not exist: $filePath");
+            $logger->warning("Image file does not exist: $absolutePath");
             return null;
         }
 
-        // Create a new Image record
-        $image = Image::create();
-        $image->Filename = $filePath;
-        $image->setFromLocalFile($absolutePath, basename($filePath));
-        $image->write();
+        try {
+            // Create a new Image record
+            $image = Image::create();
+            $image->Filename = $filePath;
+            $image->setFromLocalFile($absolutePath, basename($filePath));
+            $image->write();
 
-        $logger->debug("Created Image record with ID: {$image->ID} for file: $filePath");
+            $logger->debug("Created Image record with ID: {$image->ID} for file: $filePath");
 
-        return $image;
+            return $image;
+        } catch (Exception $e) {
+            $logger->error("Failed to create Image record for file: $filePath. Error: " . $e->getMessage());
+            return null;
+        }
     }
 
     /**
@@ -282,25 +285,34 @@ class FixtureDataService
      * @param array $linkData
      * @return Link|null
      */
-    private function createLinkFromData(array $linkData): ?Link
+    private function createLinkFromData($data): ?Link
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
 
-        // Determine the class to use for the Link
-        $className = $linkData['ClassName'] ?? Link::class;
+        $logger->debug("Creating Link record with data: " . json_encode($data));
 
-        if (!is_subclass_of($className, Link::class)) {
-            $logger->warning("Invalid Link class: $className");
+        // Ensure $data is an array
+        if (!is_array($data)) {
+            $logger->warning("Invalid data type for Link creation. Expected array, got: " . gettype($data));
             return null;
         }
 
+        // Determine the class to use for the Link
+        $className = $data['ClassName'] ?? Link::class;
+
+        // Validate that the class is a subclass of Link
+        if (!is_a($className, Link::class, true)) {
+            $logger->warning("Invalid Link class: $className");
+            return null;
+        }
+        
         $logger->debug("Creating Link record of class: $className");
 
         // Create a new Link record
         /** @var Link $link */
         $link = $className::create();
 
-        foreach ($linkData as $field => $value) {
+        foreach ($data as $field => $value) {
             if ($field !== 'ClassName') {
                 $link->$field = $value;
             }
