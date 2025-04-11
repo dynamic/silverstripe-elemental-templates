@@ -227,7 +227,7 @@ class FixtureDataService
             $existingRecord = $query->first();
             if ($existingRecord) {
                 $logger->debug("Found existing record for $relatedClassName with matching fields: " . json_encode($duplicateCheckFields));
-                
+
                 // Update the existing record with the new data
                 $existingRecord->update($data);
                 $existingRecord->write();
