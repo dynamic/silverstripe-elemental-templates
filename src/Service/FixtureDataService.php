@@ -171,7 +171,6 @@ class FixtureDataService
                 // Handle scalar fields directly
                 $logger->debug("Setting scalar field: $identifier with value: " . json_encode($fields));
                 $element->setField($identifier, $fields);
-                
             }
         }
 
