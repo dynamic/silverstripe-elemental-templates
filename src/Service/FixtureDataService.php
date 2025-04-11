@@ -173,7 +173,6 @@ class FixtureDataService
                 $element->setField($identifier, $fields);
             }
         }
-
         // Log the final state of the element
         $logger->debug('Final state of element: ' . json_encode($element->toMap()));
     }
@@ -413,10 +412,12 @@ class FixtureDataService
         $filename = preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $filename);
 
         // Generate target path in assets
-        $folder = trim($folder, '/');
-        $targetFolder = $folder ? ASSETS_PATH . "/$folder" : ASSETS_PATH;
-        if (!file_exists($targetFolder)) {
-            mkdir($targetFolder, 0755, true);
+        if ($folder) {
+            $folder = trim($folder, '/');
+            $targetFolder = $folder ? ASSETS_PATH . "/$folder" : ASSETS_PATH;
+            if (!file_exists($targetFolder)) {
+                mkdir($targetFolder, 0755, true);
+            }
         }
 
         $localPath = $folder ? "$folder/$filename" : $filename;
