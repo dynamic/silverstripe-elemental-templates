@@ -112,9 +112,9 @@ class BaseElementDataExtension extends DataExtension
         $fixtureService = Injector::inst()->get(FixtureDataService::class);
 
         // Reset available globally if the flag is set
-        if ($this->resetAvailableGlobally) {
+        //if ($this->resetAvailableGlobally) {
             $this->getOwner()->AvailableGlobally = true;
-        }
+        //}
 
         // Skip if the skipPopulateData flag is set to true
         if ($this->skipPopulateData) {
