@@ -40,7 +40,7 @@ Dynamic\Elements\Carousel\Elements\ElementCarousel:
           OwnerClass: 'Dynamic\Carousel\Model\ImageSlide'
           OwnerRelation: 'ElementLink'
       - ClassName: 'Dynamic\Carousel\Model\ImageSlide'
-        Title: 'Slide Twp Headline'
+        Title: 'Slide Two Headline'
         Content: '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>'
         Image:
           Title: 'Slide 2 Image'
