@@ -57,8 +57,6 @@ class FixtureDataServiceTest extends SapphireTest
         $className = ElementContent::class;
         $data = $service->getFixtureData($className);
 
-        echo print_r($data); // Debugging output
-
         $this->assertNotNull($data, 'Fixture data should not be null for a valid class name.');
         $this->assertIsArray($data, 'Fixture data should be an array.');
 

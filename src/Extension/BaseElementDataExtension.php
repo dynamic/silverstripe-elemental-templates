@@ -8,14 +8,10 @@ use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Config\Config;
-use SilverStripe\Dev\FixtureFactory;
 use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
-use Symfony\Component\Yaml\Yaml;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Control\Director;
-use SilverStripe\Dev\YamlFixture;
 use Dynamic\ElementalTemplates\Service\FixtureDataService;
 
 /**
