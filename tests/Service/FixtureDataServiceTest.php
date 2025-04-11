@@ -7,6 +7,7 @@ use SilverStripe\Assets\Image;
 use Symfony\Component\Yaml\Yaml;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Core\Config\Config;
+use Dynamic\Carousel\Model\ImageSlide;
 use SilverStripe\LinkField\Models\Link;
 use SilverStripe\Core\Injector\Injector;
 use DNADesign\Elemental\Models\BaseElement;
@@ -15,6 +16,7 @@ use DNADesign\Elemental\Models\ElementContent;
 use Dynamic\ElememtalTemplates\Models\Template;
 use Dynamic\Elements\Card\Elements\ElementCard;
 use SilverStripe\LinkField\Models\SiteTreeLink;
+use Dynamic\Elements\Carousel\Elements\ElementCarousel;
 use Dynamic\ElementalTemplates\Service\FixtureDataService;
 use Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension;
 
@@ -136,20 +138,26 @@ class FixtureDataServiceTest extends SapphireTest
         $template->ElementsID = $elementalArea->ID;
         $template->write();
 
-        // Create an ElementCard and attach it to the ElementalArea
-        $elementCard = ElementCard::create();
-        $elementCard->ParentID = $elementalArea->ID;
-        $elementCard->write();
+        // Create an ElementCarousel and attach it to the ElementalArea
+        $elementCarousel = ElementCarousel::create();
+        $elementCarousel->ParentID = $elementalArea->ID;
+        $elementCarousel->write();
 
-        // Verify that the ElementCard has the expected Image and ElementLink records
-        $this->assertEquals('Example Card Block', $elementCard->Title);
-        $this->assertEquals('<p>This is placeholder content for the card block.</p>', $elementCard->Content);
+        // Verify that the ElementCarousel has the expected Slides
+        $slides = $elementCarousel->Slides();
+        $this->assertCount(2, $slides, 'ElementCarousel should have 2 Slides.');
 
-        $this->assertInstanceOf(Link::class, $elementCard->ElementLink());
-        $this->assertEquals('Learn More', $elementCard->ElementLink()->LinkText);
-        $this->assertEquals(1, $elementCard->ElementLink()->PageID);
+        // Log the IDs of the slides being added to the ElementCarousel
+        foreach ($slides as $slide) {
+            echo "Slide ID: " . $slide->ID . "\n";
+        }
 
-        $this->assertInstanceOf(Image::class, $elementCard->Image());
+        foreach ($slides as $slide) {
+            $this->assertInstanceOf(ImageSlide::class, $slide, 'Each Slide should be an instance of ImageSlide.');
+            $this->assertNotEmpty($slide->Title, 'Each Slide should have a Title.');
+            $this->assertInstanceOf(Image::class, $slide->Image(), 'Each Slide should have an associated Image.');
+            $this->assertInstanceOf(SiteTreeLink::class, $slide->ElementLink(), 'Each Slide should have an associated Link.');
+        }
     }
 
     public function testPopulateElementDataWithRelationships(): void
@@ -173,9 +181,12 @@ class FixtureDataServiceTest extends SapphireTest
         $this->assertEquals('Example Card Block', $elementCard->Title);
         $this->assertEquals('<p>This is placeholder content for the card block.</p>', $elementCard->Content);
 
-        $this->assertInstanceOf(SiteTreeLink::class, $elementCard->ElementLink());
-        $this->assertEquals('Learn More', $elementCard->ElementLink()->LinkText);
-        $this->assertEquals(1, $elementCard->ElementLink()->PageID);
+        // Ensure the ElementLink is retrieved correctly
+        $elementLink = $elementCard->ElementLink();
+        $this->assertNotNull($elementLink, 'ElementLink should not be null.');
+        $this->assertInstanceOf(SiteTreeLink::class, $elementLink, 'ElementLink should be an instance of SiteTreeLink.');
+        $this->assertEquals('Learn More', $elementLink->LinkText, 'ElementLink should have the correct LinkText.');
+        $this->assertEquals(1, $elementLink->PageID, 'ElementLink should have the correct PageID.');
 
         $this->assertInstanceOf(Image::class, $elementCard->Image());
     }

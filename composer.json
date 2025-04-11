@@ -28,6 +28,7 @@
     },
     "require-dev": {
         "dynamic/silverstripe-elemental-card":"^2.0",
+        "dynamic/silverstripe-elemental-carousel":"^2.0",
         "silverstripe/frameworktest": "^1",
         "silverstripe/recipe-testing": "^3",
         "silverstripe/standards": "^1"

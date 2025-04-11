@@ -136,41 +136,42 @@ class FixtureDataService
                     continue;
                 }
 
-                // Check if the field is a relationship
-                $hasOne = $element->config()->get('has_one');
-                $hasMany = $element->config()->get('has_many');
-                $manyMany = $element->config()->get('many_many');
+                // Generalize relationship handling in populateElementData
+                $relationships = [
+                    'has_one' => $element->config()->get('has_one'),
+                    'has_many' => $element->config()->get('has_many'),
+                    'many_many' => $element->config()->get('many_many'),
+                ];
 
-                $relationName = null;
-                $relationClassName = null;
+                foreach ($relationships as $relationType => $relationConfig) {
+                    if (isset($relationConfig[$field])) {
+                        $relationName = $field;
+                        $relationClassName = $relationConfig[$field];
 
-                if (isset($hasOne[$field])) {
-                    $relationName = $field;
-                    $relationClassName = $hasOne[$field];
-                } elseif (isset($hasMany[$field])) {
-                    $relationName = $field;
-                    $relationClassName = $hasMany[$field];
-                } elseif (isset($manyMany[$field])) {
-                    $relationName = $field;
-                    $relationClassName = $manyMany[$field];
-                }
-
-                if ($relationName && $relationClassName) {
-                    $logger->debug("Processing relation: $relationName with class: $relationClassName");
-
-                    if (is_array($value)) {
-                        // Handle nested data for has_one relationships
-                        $relatedObject = $this->createRelatedObject($relationClassName, $value);
-
-                        if ($relatedObject) {
-                            $element->setField("{$relationName}ID", $relatedObject->ID);
-                            $logger->debug("Created related $relationClassName object with ID: " . $relatedObject->ID);
+                        if ($relationType === 'has_one') {
+                            $relatedObject = $this->createRelatedObject($relationClassName, $value);
+                            if ($relatedObject) {
+                                $element->setField("{$relationName}ID", $relatedObject->ID);
+                                $logger->debug("Set has_one relation: $relationName with ID: " . $relatedObject->ID);
+                            }
+                        } elseif (in_array($relationType, ['has_many', 'many_many'])) {
+                            // Clear the relationship before adding new related objects
+                            $element->{$relationName}()->removeAll();
+                            $logger->debug("Cleared existing $relationType relation: $relationName before adding new objects.");
+                            if (is_array($value)) {
+                                foreach ($value as $relatedData) {
+                                    $relatedObject = $this->createRelatedObject($relationClassName, $relatedData);
+                                    if ($relatedObject) {
+                                        $element->{$relationName}()->add($relatedObject);
+                                        $logger->debug("Added related $relationClassName object with ID: " . $relatedObject->ID . " to $relationType relation: $relationName");
+                                    }
+                                }
+                            } else {
+                                $logger->warning("Field: $field is not a valid array for $relationType relation: $relationName.");
+                            }
                         }
-                    } else {
-                        $logger->warning("Field: $field is not a valid nested array for relation: $relationName.");
+                        continue;
                     }
-                } else {
-                    $logger->warning("Field: $field is not a valid db field or relation.");
                 }
             }
         }
