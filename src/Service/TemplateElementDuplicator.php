@@ -38,9 +38,9 @@ class TemplateElementDuplicator
                 }
 
                 // set AvailableGlobally to default
-                if ($copy->hasMethod('setResetAvailableGlobally')) {
+                //if ($copy->hasMethod('setResetAvailableGlobally')) {
                     $copy->setResetAvailableGlobally(true);
-                }
+                //}
 
                 $copy->write();
 

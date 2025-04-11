@@ -1,0 +1,59 @@
+DNADesign\Elemental\Models\ElementContent:
+  ExampleContentBlock:
+    Title: 'Test Content Block Title'
+    TopTitle: 'Test Content Block Top Title'
+    HTML: '<p>Test Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris elementum congue erat, accumsan tincidunt velit porta lobortis. Sed at efficitur ex. Nulla quis porta neque. In hac habitasse platea dictumst. Nullam et malesuada sem. Pellentesque eros eros, rutrum sit amet erat in, finibus ultrices tortor. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>'
+    DuplicateCheck:
+      - Title
+      - TopTitle
+
+Dynamic\Elements\Card\Elements\ElementCard:
+  ExampleCardBlock:
+    Title: "Example Card Block"
+    ShowTitle: true
+    Content: "<p>This is placeholder content for the card block.</p>"
+    TitleTag: 'h4'
+    ImagePosition: "top"
+    AvailableGlobally: false
+    ElementLink:
+      ClassName: 'SilverStripe\LinkField\Models\SiteTreeLink'
+      PageID: 1
+      LinkText: 'Learn More'
+      OwnerClass: 'Dynamic\Elements\Card\Elements\ElementCard'
+      OwnerRelation: 'ElementLink'
+    Image:
+      Title: 'Card Image'
+      PopulateFileFrom: 'app/images/placeholder.png'
+      Filename: 'assets/placeholder/CardImages/CardImage.png'
+
+Dynamic\Elements\Carousel\Elements\ElementCarousel:
+  ExampleCarouselBlock:
+    Title: "Example Carousel Block"
+    ShowTitle: false
+    Slides:
+      - ClassName: 'Dynamic\Carousel\Model\ImageSlide'
+        Title: 'Slide One Headline'
+        Content: '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>'
+        Image:
+          Title: 'Slide 1 Image'
+          PopulateFileFrom: 'placeholder.png'
+          Filename: 'assets/Placeholder/Slides/Slide1.png'
+        ElementLink:
+          ClassName: 'SilverStripe\LinkField\Models\SiteTreeLink'
+          PageID: 1
+          LinkText: 'Learn More'
+          OwnerClass: 'Dynamic\Carousel\Model\ImageSlide'
+          OwnerRelation: 'ElementLink'
+      - ClassName: 'Dynamic\Carousel\Model\ImageSlide'
+        Title: 'Slide Two Headline'
+        Content: '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>'
+        Image:
+          Title: 'Slide 2 Image'
+          PopulateFileFrom: 'placeholder.png'
+          Filename: 'assets/Placeholder/Slides/Slide2.png'
+        ElementLink:
+          ClassName: 'SilverStripe\LinkField\Models\SiteTreeLink'
+          PageID: 1
+          LinkText: 'Learn More'
+          OwnerClass: 'Dynamic\Carousel\Model\ImageSlide'
+          OwnerRelation: 'ElementLink'
