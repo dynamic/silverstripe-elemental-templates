@@ -30,6 +30,17 @@ class FixtureDataServiceTest extends SapphireTest
         $mockLogger = $this->createMock(LoggerInterface::class);
         Injector::inst()->registerService($mockLogger, LoggerInterface::class);
 
+        // Ensure the logger captures debug-level logs during tests
+        $mockLogger->method('debug')->willReturnCallback(function ($message) {
+            error_log("DEBUG: $message");
+        });
+        $mockLogger->method('warning')->willReturnCallback(function ($message) {
+            error_log("WARNING: $message");
+        });
+        $mockLogger->method('error')->willReturnCallback(function ($message) {
+            error_log("ERROR: $message");
+        });
+
         // Dynamically resolve the path to the test fixture file
         $testFixturePath = __DIR__ . '/test-element-placeholder.yml';
 
@@ -197,7 +208,16 @@ class FixtureDataServiceTest extends SapphireTest
         $service = new FixtureDataService();
 
         // Test with a local image path
-        $localImagePath = 'app/images/placeholder.png';
+        $localImagePath = __DIR__ . '/placeholder.png';
+        error_log("Local image path: $localImagePath");
+        // Add debugging to verify file path and permissions
+        error_log("Resolved local image path: $localImagePath");
+        if (!file_exists($localImagePath)) {
+            $this->fail("Local image file does not exist: $localImagePath");
+        }
+        if (!is_readable($localImagePath)) {
+            $this->fail("Local image file is not readable: $localImagePath");
+        }
         $localImage = $service->createImageFromFile($localImagePath);
         $this->assertInstanceOf(Image::class, $localImage, 'Local image should be created successfully.');
 

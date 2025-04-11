@@ -305,9 +305,14 @@ class FixtureDataService
             return null;
         }
 
-        // Resolve the absolute path for local files
-        $absolutePath = Director::baseFolder() . '/' . ltrim($filePath, '/');
-        $logger->debug("Attempting to create Image from file: $absolutePath");
+        // Correct the regular expression to escape the backslash properly
+        if (!preg_match('/^(\/|[a-zA-Z]:\\\\)/', $filePath)) {
+            $absolutePath = Director::baseFolder() . '/' . ltrim($filePath, '/');
+        } else {
+            $absolutePath = $filePath;
+        }
+
+        $logger->debug("Resolved absolute path for local file: $absolutePath");
 
         // Check if the file exists
         if (!file_exists($absolutePath)) {
@@ -315,18 +320,29 @@ class FixtureDataService
             return null;
         }
 
+        if (!is_readable($absolutePath)) {
+            $logger->warning("Image file is not readable: $absolutePath");
+            return null;
+        }
+
+        // Add detailed debugging to log absolute path and asset handling
+        $logger->debug("Resolved absolute path for local file: $absolutePath");
+
         try {
+            // Log before calling setFromLocalFile
+            $logger->debug("Calling setFromLocalFile with path: $absolutePath and filename: " . basename($filePath));
+
             // Create a new Image record
             $image = Image::create();
             $image->Filename = $filePath;
             $image->setFromLocalFile($absolutePath, basename($filePath));
             $image->write();
 
-            $logger->debug("Created Image record with ID: {$image->ID} for file: $filePath");
+            $logger->debug("Successfully created Image record with ID: {$image->ID}");
 
             return $image;
         } catch (Exception $e) {
-            $logger->error("Failed to create Image record for file: $filePath. Error: " . $e->getMessage());
+            $logger->error("Error in setFromLocalFile for file: $absolutePath. Error: " . $e->getMessage());
             return null;
         }
     }
