@@ -185,7 +185,7 @@ class FixtureDataService
      * @param array|string $data
      * @return DataObject
      */
-    private function createRelatedObject(string $relatedClassName, $data): ?DataObject
+    public function createRelatedObject(string $relatedClassName, $data): ?DataObject
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
 
@@ -224,6 +224,26 @@ class FixtureDataService
             $logger->debug("Detected $relatedClassName class for relation. Calling createLinkFromData().");
             return $this->createLinkFromData($data);
         }
+
+        $duplicateCheckFields = $data['DuplicateCheck'] ?? [];
+        unset($data['DuplicateCheck']);
+
+        if (!empty($duplicateCheckFields)) {
+            $query = DataObject::get($relatedClassName);
+            foreach ($duplicateCheckFields as $field) {
+                if ($relatedClassName::singleton()->hasDatabaseField($field) && isset($data[$field])) {
+                    $query = $query->filter($field, $data[$field]);
+                }
+            }
+
+            $existingRecord = $query->first();
+            if ($existingRecord) {
+                $logger->debug("Found existing record for $relatedClassName with matching fields: " . json_encode($duplicateCheckFields));
+                return $existingRecord;
+            }
+        }
+
+        $logger->debug("No existing record found. Creating new $relatedClassName object.");
 
         // Generic DataObject creation
         $logger->debug("Creating $relatedClassName object with data: " . json_encode($data));

@@ -252,4 +252,26 @@ class FixtureDataServiceTest extends SapphireTest
         $this->assertInstanceOf(Image::class, $image, 'Created object should be an instance of Image.');
         $this->assertEquals('Placeholder/test-placeholder.png', $image->Filename, 'Image filename should match the provided value.');
     }
+
+    public function testDuplicateCheck(): void
+    {
+        $service = new FixtureDataService();
+
+        // Test with a new record
+        $data = [
+            'Title' => 'Unique Title',
+            'Content' => 'Unique Content',
+            'DuplicateCheck' => ['Title', 'Content'],
+        ];
+
+        $newRecord = $service->createRelatedObject(ElementContent::class, $data);
+        $this->assertNotNull($newRecord, 'New record should be created successfully.');
+        $this->assertEquals('Unique Title', $newRecord->Title, 'Title should match the provided value.');
+        $this->assertEquals('Unique Content', $newRecord->Content, 'Content should match the provided value.');
+
+        // Test with a duplicate record
+        $duplicateRecord = $service->createRelatedObject(ElementContent::class, $data);
+        $this->assertNotNull($duplicateRecord, 'Duplicate record should be found successfully.');
+        $this->assertEquals($newRecord->ID, $duplicateRecord->ID, 'Duplicate record should match the existing record.');
+    }
 }

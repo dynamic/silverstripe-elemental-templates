@@ -3,6 +3,9 @@ DNADesign\Elemental\Models\ElementContent:
     Title: 'Test Content Block Title'
     TopTitle: 'Test Content Block Top Title'
     HTML: '<p>Test Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris elementum congue erat, accumsan tincidunt velit porta lobortis. Sed at efficitur ex. Nulla quis porta neque. In hac habitasse platea dictumst. Nullam et malesuada sem. Pellentesque eros eros, rutrum sit amet erat in, finibus ultrices tortor. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>'
+    DuplicateCheck:
+      - Title
+      - TopTitle
 
 Dynamic\Elements\Card\Elements\ElementCard:
   ExampleCardBlock:
