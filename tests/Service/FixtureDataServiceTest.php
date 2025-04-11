@@ -29,7 +29,7 @@ class FixtureDataServiceTest extends SapphireTest
         Injector::inst()->registerService($mockLogger, LoggerInterface::class);
 
         // Override the fixtures path to use the test YAML file
-        Config::modify()->set(BaseElementDataExtension::class, 'fixtures', 'vendor/dynamic/silverstripe-elemental-templates/tests/fixtures/test-element-placeholder.yml');
+        Config::modify()->set(BaseElementDataExtension::class, 'fixtures', '../fixtures/test-element-placeholder.yml');
     }
 
     protected function tearDown(): void
