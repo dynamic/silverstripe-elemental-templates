@@ -28,19 +28,13 @@ class FixtureDataService
 
         $logger->debug('Starting getFixtureData() for class: ' . $className);
 
-        // Get the fixture path from the configuration
-        $configuredPath = Config::inst()->get(BaseElementDataExtension::class, 'fixtures');
+        // Resolve the fixture path dynamically
+        $fixturesPath = $this->resolveFixturePath();
 
-        if (!$configuredPath) {
-            $logger->warning('No fixture path configured.');
+        if (!$fixturesPath) {
+            $logger->warning('No valid fixture path resolved.');
             return null;
         }
-
-        // Ensure the configured path is a string
-        $configuredPath = (string)$configuredPath;
-
-        // Resolve the path relative to the project root
-        $fixturesPath = Director::baseFolder() . '/' . ltrim($configuredPath, '/');
 
         if (!file_exists($fixturesPath)) {
             $logger->warning('Fixture file does not exist: ' . $fixturesPath);
@@ -64,10 +58,37 @@ class FixtureDataService
 
             $logger->debug('Fixture data found for class: ' . $className);
             return $populateData;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $logger->error('Error parsing fixture file: ' . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Resolve the fixture path dynamically based on the environment.
+     *
+     * @return string|null
+     */
+    private function resolveFixturePath(): ?string
+    {
+        $logger = Injector::inst()->get(LoggerInterface::class);
+
+        // Get the fixture path from the configuration
+        $configuredPath = Config::inst()->get(BaseElementDataExtension::class, 'fixtures');
+
+        if (!$configuredPath) {
+            $logger->warning('No fixture path configured.');
+            return null;
+        }
+
+        // Ensure the configured path is a string
+        $configuredPath = (string)$configuredPath;
+
+        // Resolve the path relative to the project root
+        $resolvedPath = Director::baseFolder() . '/' . ltrim($configuredPath, '/');
+        $logger->debug('Resolved fixture path: ' . $resolvedPath);
+
+        return $resolvedPath;
     }
 
     /**

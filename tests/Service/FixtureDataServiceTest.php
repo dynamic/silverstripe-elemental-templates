@@ -28,19 +28,25 @@ class FixtureDataServiceTest extends SapphireTest
         $mockLogger = $this->createMock(LoggerInterface::class);
         Injector::inst()->registerService($mockLogger, LoggerInterface::class);
 
+        // Dynamically resolve the path to the test fixture file
+        $testFixturePath = __DIR__ . '/test-element-placeholder.yml';
+
+        // Debugging: Output the resolved path
+        echo "Resolved fixture path: $testFixturePath\n";
+
+        // Ensure the test fixture file exists
+        if (!file_exists($testFixturePath)) {
+            throw new \RuntimeException("Test fixture file not found: $testFixturePath");
+        }
+
         // Override the fixtures path to use the test YAML file
-        Config::modify()->set(BaseElementDataExtension::class, 'fixtures', '../fixtures/test-element-placeholder.yml');
+        Config::modify()->set(BaseElementDataExtension::class, 'fixtures', $testFixturePath);
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
-
-        // Remove the test fixture file
-        $testFixturePath = BASE_PATH . '../fixtures/test-element-placeholder.yml';
-        if (file_exists($testFixturePath)) {
-            unlink($testFixturePath);
-        }
+        // No need to delete the static fixture file
     }
 
     public function testGetFixtureData(): void
@@ -50,6 +56,8 @@ class FixtureDataServiceTest extends SapphireTest
         // Test with a valid class name
         $className = ElementContent::class;
         $data = $service->getFixtureData($className);
+
+        echo print_r($data); // Debugging output
 
         $this->assertNotNull($data, 'Fixture data should not be null for a valid class name.');
         $this->assertIsArray($data, 'Fixture data should be an array.');
