@@ -213,18 +213,6 @@ class FixtureDataService
 
         $logger->debug("Validated class: $relatedClassName as a subclass of DataObject.");
 
-        // Handle Image creation
-        if (is_a($relatedClassName, Image::class, true)) {
-            $logger->debug("Detected $relatedClassName class for relation. Calling createImageFromFile().");
-            return $this->createImageFromFile($data);
-        }
-
-        // Handle Link creation
-        if (is_a($relatedClassName, Link::class, true)) {
-            $logger->debug("Detected $relatedClassName class for relation. Calling createLinkFromData().");
-            return $this->createLinkFromData($data);
-        }
-
         $duplicateCheckFields = $data['DuplicateCheck'] ?? [];
         unset($data['DuplicateCheck']);
 
@@ -244,6 +232,18 @@ class FixtureDataService
         }
 
         $logger->debug("No existing record found. Creating new $relatedClassName object.");
+
+        // Handle Image creation
+        if (is_a($relatedClassName, Image::class, true)) {
+            $logger->debug("Detected $relatedClassName class for relation. Calling createImageFromFile().");
+            return $this->createImageFromFile($data);
+        }
+
+        // Handle Link creation
+        if (is_a($relatedClassName, Link::class, true)) {
+            $logger->debug("Detected $relatedClassName class for relation. Calling createLinkFromData().");
+            return $this->createLinkFromData($data);
+        }
 
         // Generic DataObject creation
         $logger->debug("Creating $relatedClassName object with data: " . json_encode($data));

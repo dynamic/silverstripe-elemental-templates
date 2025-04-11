@@ -141,7 +141,7 @@ class BaseElementDataExtension extends DataExtension
         $fixtureService->populateElementData($this->owner);
 
         // Mark populateElementData as having run
-        //self::$hasRunPopulateElementData = true;
+        self::$hasRunPopulateElementData = true;
     }
 
     /**

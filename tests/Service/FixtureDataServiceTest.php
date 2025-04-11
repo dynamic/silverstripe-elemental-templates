@@ -213,25 +213,26 @@ class FixtureDataServiceTest extends SapphireTest
         // Test with a local image path
         $localImageData = [
             'PopulateFileFrom' => $localPath,
-            'Filename' => 'assets/Placeholder/placeholder.png',
+            'Filename' => 'test-placeholder1.png',
+            'Folder' => 'Placeholder',
         ];
 
         $localImage = $service->createImageFromFile($localImageData);
         $this->assertNotNull($localImage, 'Local image should be created successfully.');
         $this->assertInstanceOf(Image::class, $localImage, 'Created object should be an instance of Image.');
-        $this->assertEquals('assets/Placeholder/placeholder.png', $localImage->Filename, 'Local image filename should match the provided value.');
+        $this->assertEquals('Placeholder/test-placeholder1.png', $localImage->Filename, 'Local image filename should match the provided value.');
 
         // Test with a URL image path
         $urlImageData = [
             'PopulateFileFrom' => 'https://placehold.co/600x400.png',
-            'Filename' => 'test-placeholder.png',
+            'Filename' => 'test-placeholder2.png',
             'Folder' => 'Placeholder',
         ];
 
         $urlImage = $service->createImageFromFile($urlImageData);
         $this->assertNotNull($urlImage, 'URL image should be created successfully.');
         $this->assertInstanceOf(Image::class, $urlImage, 'Created object should be an instance of Image.');
-        $this->assertEquals('Placeholder/test-placeholder.png', $urlImage->Filename, 'URL image filename should match the provided value.');
+        $this->assertEquals('Placeholder/test-placeholder2.png', $urlImage->Filename, 'URL image filename should match the provided value.');
     }
 
     public function testCreateImageFromFile(): void
@@ -242,7 +243,7 @@ class FixtureDataServiceTest extends SapphireTest
 
         $imageData = [
             'PopulateFileFrom' => $populateFileFrom,
-            'Filename' => 'test-placeholder.png',
+            'Filename' => 'test-placeholder3.png',
             'Folder' => 'Placeholder',
         ];
 
@@ -250,7 +251,7 @@ class FixtureDataServiceTest extends SapphireTest
 
         $this->assertNotNull($image, 'Image should be created successfully.');
         $this->assertInstanceOf(Image::class, $image, 'Created object should be an instance of Image.');
-        $this->assertEquals('Placeholder/test-placeholder.png', $image->Filename, 'Image filename should match the provided value.');
+        $this->assertEquals('Placeholder/test-placeholder3.png', $image->Filename, 'Image filename should match the provided value.');
     }
 
     public function testDuplicateCheck(): void
