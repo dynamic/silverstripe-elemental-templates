@@ -12,6 +12,8 @@ use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\LinkField\Models\Link;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\ORM\ValidationException;
+use SilverStripe\Assets\Storage\AssetStore;
 use Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension;
 
 class FixtureDataService
@@ -278,11 +280,32 @@ class FixtureDataService
      * @param string $filePath
      * @return Image|null
      */
-    private function createImageFromFile(string $filePath): ?Image
+    public function createImageFromFile(string $filePath): ?Image
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
 
-        // Resolve the absolute path
+        // Use importRemoteImage for handling remote images
+        if (filter_var($filePath, FILTER_VALIDATE_URL)) {
+            $logger->debug("Detected URL for image: $filePath");
+
+            try {
+                // Use importRemoteImage to handle the remote image
+                $image = $this->importRemoteImage($filePath);
+
+                if ($image) {
+                    $logger->debug("Successfully created Image record from URL: $filePath");
+                    return $image;
+                } else {
+                    $logger->warning("Failed to create Image record from URL: $filePath");
+                }
+            } catch (Exception $e) {
+                $logger->error("Error creating Image from URL: $filePath. Error: " . $e->getMessage());
+            }
+
+            return null;
+        }
+
+        // Resolve the absolute path for local files
         $absolutePath = Director::baseFolder() . '/' . ltrim($filePath, '/');
         $logger->debug("Attempting to create Image from file: $absolutePath");
 
@@ -352,5 +375,91 @@ class FixtureDataService
         $logger->debug("Created Link record with ID: {$link->ID} and ClassName: $className");
 
         return $link;
+    }
+
+    // Add debugging to importRemoteImage to log its behavior
+    public function importRemoteImage($url, $filename = null, $folder = '')
+    {
+        $logger = Injector::inst()->get(LoggerInterface::class);
+        $logger->debug("Starting importRemoteImage for URL: $url");
+
+        // Get file contents from remote URL
+        $contents = @file_get_contents($url);
+        if (!$contents) {
+            $logger->warning("Failed to download file from URL: $url");
+            return null;
+        }
+
+        // Determine file name and extension
+        $parsedUrl = parse_url($url);
+        $basename = basename($parsedUrl['path']);
+        $filename = $filename ?: $basename;
+        $extension = pathinfo($filename, PATHINFO_EXTENSION);
+
+        // Handle missing file extensions in importRemoteImage
+        if (!$extension) {
+            $logger->warning("File extension is missing for URL: $url. Attempting to infer from MIME type.");
+
+            // Use finfo to determine the MIME type of the file
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->buffer($contents);
+
+            // Map MIME type to file extension
+            $mimeToExtension = [
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+            ];
+
+            $extension = $mimeToExtension[$mimeType] ?? 'jpg'; // Default to jpg if MIME type is unknown
+            $logger->debug("Inferred file extension: $extension for MIME type: $mimeType");
+
+            // Append the inferred extension to the filename
+            $filename .= ".$extension";
+        }
+
+        // Ensure filename is safe
+        $filename = preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $filename);
+
+        // Generate target path in assets
+        $folder = trim($folder, '/');
+        $targetFolder = $folder ? ASSETS_PATH . "/$folder" : ASSETS_PATH;
+        if (!file_exists($targetFolder)) {
+            mkdir($targetFolder, 0755, true);
+        }
+
+        $localPath = $folder ? "$folder/$filename" : $filename;
+        $fullLocalPath = ASSETS_PATH . "/$localPath";
+
+        // Log the URL and filename
+        $logger->debug("URL: $url, Filename: $filename");
+
+        // Log the folder where the file will be saved
+        $logger->debug("Target folder: $targetFolder");
+
+        // Log the full local path of the file
+        $logger->debug("Full local path: $fullLocalPath");
+
+        // Log the result of file_put_contents
+        if (file_put_contents($fullLocalPath, $contents)) {
+            $logger->debug("File successfully saved to: $fullLocalPath");
+        } else {
+            $logger->warning("Failed to save file to: $fullLocalPath");
+        }
+
+        // Use AssetStore to create the file record
+        $store = Injector::inst()->get(AssetStore::class);
+        $image = Image::create();
+        $image->setFromLocalFile($fullLocalPath, $localPath);
+
+        try {
+            $image->write();
+            $logger->debug("Successfully created Image record with ID: {$image->ID}");
+        } catch (ValidationException $e) {
+            $logger->warning("Failed to write image record: " . $e->getMessage());
+            return null;
+        }
+
+        return $image;
     }
 }

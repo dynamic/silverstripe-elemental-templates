@@ -190,4 +190,21 @@ class FixtureDataServiceTest extends SapphireTest
 
         $this->assertInstanceOf(Image::class, $elementCard->Image());
     }
+
+    // Add a test for URL vs local image in FixtureDataServiceTest
+    public function testImageCreationFromLocalAndURL(): void
+    {
+        $service = new FixtureDataService();
+
+        // Test with a local image path
+        $localImagePath = 'app/images/placeholder.png';
+        $localImage = $service->createImageFromFile($localImagePath);
+        $this->assertInstanceOf(Image::class, $localImage, 'Local image should be created successfully.');
+
+        // Test with a URL image path
+        $urlImagePath = 'https://picsum.photos/200/300';
+        $urlImage = $service->createImageFromFile($urlImagePath);
+        $this->assertInstanceOf(Image::class, $urlImage, 'URL image should be created successfully.');
+        $this->assertStringContainsString('temp_image.jpg', $urlImage->Filename, 'URL image should be downloaded and processed correctly.');
+    }
 }

@@ -44,7 +44,7 @@ Dynamic\Elements\Carousel\Elements\ElementCarousel:
         Content: '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>'
         Image:
           Title: 'Slide 2 Image'
-          Filename: 'app/images/placeholder.png'
+          Filename: 'https://picsum.photos/200/300'
         ElementLink:
           ClassName: 'SilverStripe\LinkField\Models\SiteTreeLink'
           PageID: 1
