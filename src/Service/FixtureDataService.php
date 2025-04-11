@@ -84,8 +84,15 @@ class FixtureDataService
         // Ensure the configured path is a string
         $configuredPath = (string)$configuredPath;
 
-        // Resolve the path relative to the project root
-        $resolvedPath = Director::baseFolder() . '/' . ltrim($configuredPath, '/');
+        // Check if the path is absolute
+        if (strpos($configuredPath, '/') === 0) {
+            // Absolute path
+            $resolvedPath = $configuredPath;
+        } else {
+            // Relative path (from the project root)
+            $resolvedPath = Director::baseFolder() . '/' . ltrim($configuredPath, '/');
+        }
+
         $logger->debug('Resolved fixture path: ' . $resolvedPath);
 
         return $resolvedPath;
