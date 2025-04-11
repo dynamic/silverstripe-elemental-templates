@@ -173,6 +173,7 @@ class FixtureDataService
                 $element->setField($identifier, $fields);
             }
         }
+
         // Log the final state of the element
         $logger->debug('Final state of element: ' . json_encode($element->toMap()));
     }
@@ -281,18 +282,27 @@ class FixtureDataService
 
         $populateFileFrom = $data['PopulateFileFrom'] ?? null;
         $filename = $data['Filename'] ?? null;
+        $folder = $data['Folder'] ?? '';
 
         if (!$populateFileFrom || !$filename) {
             $logger->warning("Both PopulateFileFrom and Filename must be provided for image creation.");
             return null;
         }
 
-        $logger->debug("Creating image from PopulateFileFrom: $populateFileFrom with Filename: $filename");
+        // Sanitize folder and filename
+        $folder = preg_replace('/[^a-zA-Z0-9_\-\/]/', '_', trim($folder, '/'));
+        $filename = preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $filename);
+
+        // Ensure the folder and filename use forward slashes
+        $folder = str_replace('_', '/', $folder);
+        $filename = str_replace('_', '/', $filename);
+
+        $logger->debug("Creating image from PopulateFileFrom: $populateFileFrom with Filename: $filename in Folder: $folder");
 
         // Check if PopulateFileFrom is a URL
         if (filter_var($populateFileFrom, FILTER_VALIDATE_URL)) {
             $logger->debug("Detected URL for PopulateFileFrom. Using importRemoteImage.");
-            return $this->importRemoteImage($populateFileFrom, $filename, $folder = null);
+            return $this->importRemoteImage($populateFileFrom, $filename, $folder);
         }
 
         // Resolve the absolute path for PopulateFileFrom (local file)
@@ -308,9 +318,23 @@ class FixtureDataService
             return null;
         }
 
+        // Generate target path in assets
+        $targetFolder = $folder ? ASSETS_PATH . "/$folder" : ASSETS_PATH;
+
+        // Ensure the target folder exists
+        if (!file_exists($targetFolder)) {
+            if (!mkdir($targetFolder, 0755, true) && !is_dir($targetFolder)) {
+                $logger->warning("Failed to create directory: $targetFolder");
+                return null;
+            }
+        }
+
+        $localPath = $folder ? "$folder/$filename" : $filename;
+        $fullLocalPath = ASSETS_PATH . "/$localPath";
+
         try {
             $image = Image::create();
-            $image->setFromLocalFile($absolutePath, $filename);
+            $image->setFromLocalFile($absolutePath, $localPath);
             $image->write();
 
             $logger->debug("Successfully created Image record with ID: {$image->ID}");
@@ -412,12 +436,10 @@ class FixtureDataService
         $filename = preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $filename);
 
         // Generate target path in assets
-        if ($folder) {
-            $folder = trim($folder, '/');
-            $targetFolder = $folder ? ASSETS_PATH . "/$folder" : ASSETS_PATH;
-            if (!file_exists($targetFolder)) {
-                mkdir($targetFolder, 0755, true);
-            }
+        $folder = trim($folder, '/');
+        $targetFolder = $folder ? ASSETS_PATH . "/$folder" : ASSETS_PATH;
+        if (!file_exists($targetFolder)) {
+            mkdir($targetFolder, 0755, true);
         }
 
         $localPath = $folder ? "$folder/$filename" : $filename;
