@@ -326,7 +326,7 @@ class FixtureDataService
             $logger->warning("Invalid Link class: $className");
             return null;
         }
-        
+
         $logger->debug("Creating Link record of class: $className");
 
         // Create a new Link record
