@@ -37,7 +37,7 @@ class FixtureDataServiceTest extends SapphireTest
         parent::tearDown();
 
         // Remove the test fixture file
-        $testFixturePath = BASE_PATH . '/app/fixtures/test-element-placeholder.yml';
+        $testFixturePath = BASE_PATH . '../fixtures/test-element-placeholder.yml';
         if (file_exists($testFixturePath)) {
             unlink($testFixturePath);
         }
