@@ -5,6 +5,7 @@ namespace Dynamic\ElementalTemplates\Tests\Service;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Assets\Image;
 use Symfony\Component\Yaml\Yaml;
+use SilverStripe\Control\Director;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Core\Config\Config;
 use Dynamic\Carousel\Model\ImageSlide;
@@ -52,8 +53,8 @@ class FixtureDataServiceTest extends SapphireTest
             throw new \RuntimeException("Test fixture file not found: $testFixturePath");
         }
 
-        // Override the fixtures path to use the test YAML file
-        Config::modify()->set(BaseElementDataExtension::class, 'fixtures', $testFixturePath);
+        // Override the fixtures path to use the correct YAML file
+        Config::modify()->set(BaseElementDataExtension::class, 'fixtures', 'app/fixtures/element-placeholder.yml');
     }
 
     protected function tearDown(): void
@@ -207,24 +208,45 @@ class FixtureDataServiceTest extends SapphireTest
     {
         $service = new FixtureDataService();
 
+        $localPath = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+
         // Test with a local image path
-        $localImagePath = __DIR__ . '/placeholder.png';
-        error_log("Local image path: $localImagePath");
-        // Add debugging to verify file path and permissions
-        error_log("Resolved local image path: $localImagePath");
-        if (!file_exists($localImagePath)) {
-            $this->fail("Local image file does not exist: $localImagePath");
-        }
-        if (!is_readable($localImagePath)) {
-            $this->fail("Local image file is not readable: $localImagePath");
-        }
-        $localImage = $service->createImageFromFile($localImagePath);
-        $this->assertInstanceOf(Image::class, $localImage, 'Local image should be created successfully.');
+        $localImageData = [
+            'PopulateFileFrom' => $localPath,
+            'Filename' => 'assets/Placeholder/placeholder.png',
+        ];
+
+        $localImage = $service->createImageFromFile($localImageData);
+        $this->assertNotNull($localImage, 'Local image should be created successfully.');
+        $this->assertInstanceOf(Image::class, $localImage, 'Created object should be an instance of Image.');
+        $this->assertEquals('assets/Placeholder/placeholder.png', $localImage->Filename, 'Local image filename should match the provided value.');
 
         // Test with a URL image path
-        $urlImagePath = 'https://picsum.photos/200/300';
-        $urlImage = $service->createImageFromFile($urlImagePath);
-        $this->assertInstanceOf(Image::class, $urlImage, 'URL image should be created successfully.');
-        $this->assertStringContainsString('300.jpg', $urlImage->Filename, 'URL image should be downloaded and processed correctly.');
+        $urlImageData = [
+            'PopulateFileFrom' => 'https://placehold.co/400',
+            'Filename' => 'assets/Placeholder/placeholder.jpg',
+        ];
+
+        $urlImage = $service->createImageFromFile($urlImageData);
+        error_log("URL Image: " . print_r($urlImage, true));
+        $this->assertNotNull($urlImage, 'URL image should be created successfully.');
+        $this->assertInstanceOf(Image::class, $urlImage, 'Created object should be an instance of Image.');
+        $this->assertEquals('assets/Placeholder/placeholder.jpg', $urlImage->Filename, 'URL image filename should match the provided value.');
+    }
+
+    public function testCreateImageFromFile(): void
+    {
+        $service = new FixtureDataService();
+
+        $imageData = [
+            'PopulateFileFrom' => __DIR__ . '/placeholder.png',
+            'Filename' => 'assets/Placeholder/Image.png',
+        ];
+
+        $image = $service->createImageFromFile($imageData);
+
+        $this->assertNotNull($image, 'Image should be created successfully.');
+        $this->assertInstanceOf(Image::class, $image, 'Created object should be an instance of Image.');
+        $this->assertEquals('assets/Placeholder/Image.png', $image->Filename, 'Image filename should match the provided value.');
     }
 }

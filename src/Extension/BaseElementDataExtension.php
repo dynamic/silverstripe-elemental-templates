@@ -32,6 +32,11 @@ class BaseElementDataExtension extends DataExtension
     private static $fixtures = null;
 
     /**
+     * Ensures populateElementData runs only once per request.
+     */
+    private static $hasRunPopulateElementData = false;
+
+    /**
      * Sets the flag to skip populateElementData().
      */
     public function setSkipPopulateData(bool $skip): void
@@ -102,7 +107,7 @@ class BaseElementDataExtension extends DataExtension
     }
 
     /**
-     * Skips the populateElementData logic if the flag is set.
+     * Skips the populateElementData logic if the flag is set or if it has already run.
      */
     public function onBeforeWrite(): void
     {
@@ -112,12 +117,10 @@ class BaseElementDataExtension extends DataExtension
         $fixtureService = Injector::inst()->get(FixtureDataService::class);
 
         // Reset available globally if the flag is set
-        //if ($this->resetAvailableGlobally) {
-            $this->getOwner()->AvailableGlobally = true;
-        //}
+        $this->getOwner()->AvailableGlobally = true;
 
         // Skip if the skipPopulateData flag is set to true
-        if ($this->skipPopulateData) {
+        if ($this->skipPopulateData || self::$hasRunPopulateElementData) {
             return;
         }
 
@@ -136,6 +139,9 @@ class BaseElementDataExtension extends DataExtension
 
         // Call the FixtureDataService to populate fields
         $fixtureService->populateElementData($this->owner);
+
+        // Mark populateElementData as having run
+        self::$hasRunPopulateElementData = true;
     }
 
     /**

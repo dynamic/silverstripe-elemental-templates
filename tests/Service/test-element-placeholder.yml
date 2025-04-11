@@ -20,7 +20,8 @@ Dynamic\Elements\Card\Elements\ElementCard:
       OwnerRelation: 'ElementLink'
     Image:
       Title: 'Card Image'
-      Filename: 'https://picsum.photos/800'
+      PopulateFileFrom: 'app/images/placeholder.png'
+      Filename: 'assets/placeholder/CardImages/CardImage.png'
 
 Dynamic\Elements\Carousel\Elements\ElementCarousel:
   ExampleCarouselBlock:
@@ -32,7 +33,8 @@ Dynamic\Elements\Carousel\Elements\ElementCarousel:
         Content: '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>'
         Image:
           Title: 'Slide 1 Image'
-          Filename: 'https://picsum.photos/1000/400'
+          PopulateFileFrom: 'placeholder.png'
+          Filename: 'assets/Placeholder/Slides/Slide1.png'
         ElementLink:
           ClassName: 'SilverStripe\LinkField\Models\SiteTreeLink'
           PageID: 1
@@ -44,7 +46,8 @@ Dynamic\Elements\Carousel\Elements\ElementCarousel:
         Content: '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>'
         Image:
           Title: 'Slide 2 Image'
-          Filename: 'https://picsum.photos/1000/400'
+          PopulateFileFrom: 'placeholder.png'
+          Filename: 'assets/Placeholder/Slides/Slide2.png'
         ElementLink:
           ClassName: 'SilverStripe\LinkField\Models\SiteTreeLink'
           PageID: 1

@@ -120,61 +120,57 @@ class FixtureDataService
             return;
         }
 
+        // Enhance populateElementData to handle nested relationships more robustly
         foreach ($populateData as $identifier => $fields) {
             $logger->debug("Processing fixture identifier: $identifier");
 
-            foreach ($fields as $field => $value) {
-                if ($value === '') {
-                    $logger->debug("Setting field: $field to null because the value is empty.");
-                    $element->setField($field, null);
-                    continue;
-                }
+            if (is_array($fields)) {
+                foreach ($fields as $field => $value) {
+                    if (is_array($value)) {
+                        // Handle nested relationships
+                        $logger->debug("Processing nested relationship for field: $field");
 
-                // Check if the field exists as a static $db property
-                $dbFields = $element->config()->get('db');
-                if (isset($dbFields[$field])) {
-                    $logger->debug("Setting field: $field with value: " . json_encode($value));
-                    $element->setField($field, $value);
-                    continue;
-                }
+                        $relationships = [
+                            'has_one' => $element->config()->get('has_one'),
+                            'has_many' => $element->config()->get('has_many'),
+                            'many_many' => $element->config()->get('many_many'),
+                        ];
 
-                // Generalize relationship handling in populateElementData
-                $relationships = [
-                    'has_one' => $element->config()->get('has_one'),
-                    'has_many' => $element->config()->get('has_many'),
-                    'many_many' => $element->config()->get('many_many'),
-                ];
+                        foreach ($relationships as $relationType => $relationConfig) {
+                            if (isset($relationConfig[$field])) {
+                                $relationName = $field;
+                                $relationClassName = $relationConfig[$field];
 
-                foreach ($relationships as $relationType => $relationConfig) {
-                    if (isset($relationConfig[$field])) {
-                        $relationName = $field;
-                        $relationClassName = $relationConfig[$field];
-
-                        if ($relationType === 'has_one') {
-                            $relatedObject = $this->createRelatedObject($relationClassName, $value);
-                            if ($relatedObject) {
-                                $element->setField("{$relationName}ID", $relatedObject->ID);
-                                $logger->debug("Set has_one relation: $relationName with ID: " . $relatedObject->ID);
-                            }
-                        } elseif (in_array($relationType, ['has_many', 'many_many'])) {
-                            // Clear the relationship before adding new related objects
-                            $element->{$relationName}()->removeAll();
-                            $logger->debug("Cleared existing $relationType relation: $relationName before adding new objects.");
-                            if (is_array($value)) {
-                                foreach ($value as $relatedData) {
-                                    $relatedObject = $this->createRelatedObject($relationClassName, $relatedData);
+                                if ($relationType === 'has_one') {
+                                    $relatedObject = $this->createRelatedObject($relationClassName, $value);
                                     if ($relatedObject) {
-                                        $element->{$relationName}()->add($relatedObject);
-                                        $logger->debug("Added related $relationClassName object with ID: " . $relatedObject->ID . " to $relationType relation: $relationName");
+                                        $element->setField("{$relationName}ID", $relatedObject->ID);
+                                        $logger->debug("Set has_one relation: $relationName with ID: " . $relatedObject->ID);
+                                    }
+                                } elseif (in_array($relationType, ['has_many', 'many_many'])) {
+                                    $element->{$relationName}()->removeAll();
+                                    $logger->debug("Cleared existing $relationType relation: $relationName before adding new objects.");
+                                    foreach ($value as $relatedData) {
+                                        $relatedObject = $this->createRelatedObject($relationClassName, $relatedData);
+                                        if ($relatedObject) {
+                                            $element->{$relationName}()->add($relatedObject);
+                                            $logger->debug("Added related $relationClassName object with ID: " . $relatedObject->ID . " to $relationType relation: $relationName");
+                                        }
                                     }
                                 }
-                            } else {
-                                $logger->warning("Field: $field is not a valid array for $relationType relation: $relationName.");
+                                continue;
                             }
                         }
-                        continue;
+                    } else {
+                        // Handle scalar fields
+                        $logger->debug("Setting scalar field: $field with value: " . json_encode($value));
+                        $element->setField($field, $value);
                     }
                 }
+            } else {
+                // Handle scalar fields directly
+                $logger->debug("Setting scalar field: $identifier with value: " . json_encode($fields));
+                $element->setField($identifier, $fields);
             }
         }
 
@@ -220,7 +216,7 @@ class FixtureDataService
         // Handle Image creation
         if (is_a($relatedClassName, Image::class, true)) {
             $logger->debug("Detected $relatedClassName class for relation. Calling createImageFromFile().");
-            return $this->createImageFromFile($data['Filename'] ?? '');
+            return $this->createImageFromFile($data);
         }
 
         // Handle Link creation
@@ -243,7 +239,7 @@ class FixtureDataService
 
                     if ($relationClassName && is_subclass_of($relationClassName, DataObject::class)) {
                         if (is_a($relationClassName, Image::class, true)) {
-                            $nestedObject = $this->createImageFromFile($value['Filename'] ?? '');
+                            $nestedObject = $this->createImageFromFile($value);
                         } elseif (is_a($relationClassName, Link::class, true)) {
                             $nestedObject = $this->createLinkFromData($value);
                         } else {
@@ -277,72 +273,51 @@ class FixtureDataService
     /**
      * Helper method to create an Image record based on a file path.
      *
-     * @param string $filePath
+     * @param array $data
      * @return Image|null
      */
-    public function createImageFromFile(string $filePath): ?Image
+    public function createImageFromFile(array $data): ?Image
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
 
-        // Use importRemoteImage for handling remote images
-        if (filter_var($filePath, FILTER_VALIDATE_URL)) {
-            $logger->debug("Detected URL for image: $filePath");
+        $populateFileFrom = $data['PopulateFileFrom'] ?? null;
+        $filename = $data['Filename'] ?? null;
 
-            try {
-                // Use importRemoteImage to handle the remote image
-                $image = $this->importRemoteImage($filePath);
-
-                if ($image) {
-                    $logger->debug("Successfully created Image record from URL: $filePath");
-                    return $image;
-                } else {
-                    $logger->warning("Failed to create Image record from URL: $filePath");
-                }
-            } catch (Exception $e) {
-                $logger->error("Error creating Image from URL: $filePath. Error: " . $e->getMessage());
-            }
-
+        if (!$populateFileFrom || !$filename) {
+            $logger->warning("Both PopulateFileFrom and Filename must be provided for image creation.");
             return null;
         }
 
-        // Correct the regular expression to escape the backslash properly
-        if (!preg_match('/^(\/|[a-zA-Z]:\\\\)/', $filePath)) {
-            $absolutePath = Director::baseFolder() . '/' . ltrim($filePath, '/');
-        } else {
-            $absolutePath = $filePath;
+        $logger->debug("Creating image from PopulateFileFrom: $populateFileFrom with Filename: $filename");
+
+        // Check if PopulateFileFrom is a URL
+        if (filter_var($populateFileFrom, FILTER_VALIDATE_URL)) {
+            $logger->debug("Detected URL for PopulateFileFrom. Using importRemoteImage.");
+            return $this->importRemoteImage($populateFileFrom, $filename);
         }
 
-        $logger->debug("Resolved absolute path for local file: $absolutePath");
+        // Resolve the absolute path for PopulateFileFrom (local file)
+        $absolutePath = Director::baseFolder() . '/' . ltrim($populateFileFrom, '/');
 
-        // Check if the file exists
         if (!file_exists($absolutePath)) {
-            $logger->warning("Image file does not exist: $absolutePath");
+            $logger->warning("Image file does not exist at path: $absolutePath");
             return null;
         }
 
         if (!is_readable($absolutePath)) {
-            $logger->warning("Image file is not readable: $absolutePath");
+            $logger->warning("Image file is not readable at path: $absolutePath");
             return null;
         }
 
-        // Add detailed debugging to log absolute path and asset handling
-        $logger->debug("Resolved absolute path for local file: $absolutePath");
-
         try {
-            // Log before calling setFromLocalFile
-            $logger->debug("Calling setFromLocalFile with path: $absolutePath and filename: " . basename($filePath));
-
-            // Create a new Image record
             $image = Image::create();
-            $image->Filename = $filePath;
-            $image->setFromLocalFile($absolutePath, basename($filePath));
+            $image->setFromLocalFile($absolutePath, $filename);
             $image->write();
 
             $logger->debug("Successfully created Image record with ID: {$image->ID}");
-
             return $image;
         } catch (Exception $e) {
-            $logger->error("Error in setFromLocalFile for file: $absolutePath. Error: " . $e->getMessage());
+            $logger->error("Error creating Image record: " . $e->getMessage());
             return null;
         }
     }
