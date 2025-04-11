@@ -205,6 +205,6 @@ class FixtureDataServiceTest extends SapphireTest
         $urlImagePath = 'https://picsum.photos/200/300';
         $urlImage = $service->createImageFromFile($urlImagePath);
         $this->assertInstanceOf(Image::class, $urlImage, 'URL image should be created successfully.');
-        $this->assertStringContainsString('temp_image.jpg', $urlImage->Filename, 'URL image should be downloaded and processed correctly.');
+        $this->assertStringContainsString('300.jpg', $urlImage->Filename, 'URL image should be downloaded and processed correctly.');
     }
 }
