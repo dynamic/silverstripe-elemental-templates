@@ -46,7 +46,7 @@ class FixtureDataServiceTest extends SapphireTest
         $testFixturePath = __DIR__ . '/test-element-placeholder.yml';
 
         // Debugging: Output the resolved path
-        echo "Resolved fixture path: $testFixturePath\n";
+        //echo "Resolved fixture path: $testFixturePath\n";
 
         // Ensure the test fixture file exists
         if (!file_exists($testFixturePath)) {
@@ -54,7 +54,7 @@ class FixtureDataServiceTest extends SapphireTest
         }
 
         // Override the fixtures path to use the correct YAML file
-        Config::modify()->set(BaseElementDataExtension::class, 'fixtures', 'app/fixtures/element-placeholder.yml');
+        Config::modify()->set(BaseElementDataExtension::class, 'fixtures', $testFixturePath);
     }
 
     protected function tearDown(): void
@@ -100,8 +100,8 @@ class FixtureDataServiceTest extends SapphireTest
         $element->write();
 
         // Verify that the fields were populated correctly by FixtureDataService
-        $this->assertEquals('Example Content Block', $element->getField('Title'));
-        $this->assertEquals('<p>This is placeholder content for the example block.</p>', $element->getField('HTML'));
+        $this->assertEquals('Test Content Block Title', $element->getField('Title'));
+        $this->assertEquals('<p>Test Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris elementum congue erat, accumsan tincidunt velit porta lobortis. Sed at efficitur ex. Nulla quis porta neque. In hac habitasse platea dictumst. Nullam et malesuada sem. Pellentesque eros eros, rutrum sit amet erat in, finibus ultrices tortor. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>', $element->getField('HTML'));
         $this->assertFalse((bool)$element->getField('AvailableGlobally'));
     }
 
@@ -124,8 +124,8 @@ class FixtureDataServiceTest extends SapphireTest
         $element->write();
 
         // Verify that the fields were populated correctly by FixtureDataService
-        $this->assertEquals('Example Content Block', $element->getField('Title'));
-        $this->assertEquals('<p>This is placeholder content for the example block.</p>', $element->getField('HTML'));
+        $this->assertEquals('Test Content Block Title', $element->getField('Title'));
+        $this->assertEquals('<p>Test Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris elementum congue erat, accumsan tincidunt velit porta lobortis. Sed at efficitur ex. Nulla quis porta neque. In hac habitasse platea dictumst. Nullam et malesuada sem. Pellentesque eros eros, rutrum sit amet erat in, finibus ultrices tortor. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>', $element->getField('HTML'));
         $this->assertFalse((bool)$element->getField('AvailableGlobally'));
 
         // Create an ElementContent outside of an ElementalArea
@@ -223,30 +223,33 @@ class FixtureDataServiceTest extends SapphireTest
 
         // Test with a URL image path
         $urlImageData = [
-            'PopulateFileFrom' => 'https://placehold.co/400',
-            'Filename' => 'assets/Placeholder/placeholder.jpg',
+            'PopulateFileFrom' => 'https://placehold.co/600x400.png',
+            'Filename' => 'test-placeholder.png',
+            'Folder' => 'Placeholder',
         ];
 
         $urlImage = $service->createImageFromFile($urlImageData);
-        error_log("URL Image: " . print_r($urlImage, true));
         $this->assertNotNull($urlImage, 'URL image should be created successfully.');
         $this->assertInstanceOf(Image::class, $urlImage, 'Created object should be an instance of Image.');
-        $this->assertEquals('assets/Placeholder/placeholder.jpg', $urlImage->Filename, 'URL image filename should match the provided value.');
+        $this->assertEquals('test-placeholder.png', $urlImage->Filename, 'URL image filename should match the provided value.');
     }
 
     public function testCreateImageFromFile(): void
     {
         $service = new FixtureDataService();
 
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+
         $imageData = [
-            'PopulateFileFrom' => __DIR__ . '/placeholder.png',
-            'Filename' => 'assets/Placeholder/Image.png',
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'test-placeholder.png',
+            'Folder' => 'Placeholder',
         ];
 
         $image = $service->createImageFromFile($imageData);
 
         $this->assertNotNull($image, 'Image should be created successfully.');
         $this->assertInstanceOf(Image::class, $image, 'Created object should be an instance of Image.');
-        $this->assertEquals('assets/Placeholder/Image.png', $image->Filename, 'Image filename should match the provided value.');
+        $this->assertEquals('test-placeholder.png', $image->Filename, 'Image filename should match the provided value.');
     }
 }

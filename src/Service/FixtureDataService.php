@@ -171,6 +171,7 @@ class FixtureDataService
                 // Handle scalar fields directly
                 $logger->debug("Setting scalar field: $identifier with value: " . json_encode($fields));
                 $element->setField($identifier, $fields);
+                
             }
         }
 
@@ -293,7 +294,7 @@ class FixtureDataService
         // Check if PopulateFileFrom is a URL
         if (filter_var($populateFileFrom, FILTER_VALIDATE_URL)) {
             $logger->debug("Detected URL for PopulateFileFrom. Using importRemoteImage.");
-            return $this->importRemoteImage($populateFileFrom, $filename);
+            return $this->importRemoteImage($populateFileFrom, $filename, $folder = null);
         }
 
         // Resolve the absolute path for PopulateFileFrom (local file)
