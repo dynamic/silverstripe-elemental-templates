@@ -7,8 +7,12 @@ use SilverStripe\Security\Member;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
+use SilverStripe\Core\Config\Config;
 use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
+use Psr\Log\LoggerInterface;
+use SilverStripe\Core\Injector\Injector;
+use Dynamic\ElementalTemplates\Service\FixtureDataService;
 
 /**
  * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
@@ -20,6 +24,17 @@ class BaseElementDataExtension extends DataExtension
     protected $skipPopulateData = false;
 
     protected $resetAvailableGlobally = false;
+
+    /**
+     * @var string|null Path to the fixtures YAML file.
+     * @config
+     */
+    private static $fixtures = null;
+
+    /**
+     * Ensures populateElementData runs only once per request.
+     */
+    private static $hasRunPopulateElementData = false;
 
     /**
      * Sets the flag to skip populateElementData().
@@ -92,38 +107,41 @@ class BaseElementDataExtension extends DataExtension
     }
 
     /**
-     * Skips the populateElementData logic if the flag is set.
+     * Skips the populateElementData logic if the flag is set or if it has already run.
      */
     public function onBeforeWrite(): void
     {
         parent::onBeforeWrite();
 
-        // Reset available globally if the flag is set
-        if ($this->resetAvailableGlobally) {
-            $this->getOwner()->AvailableGlobally = true;
-        }
+        $logger = Injector::inst()->get(LoggerInterface::class);
+        $fixtureService = Injector::inst()->get(FixtureDataService::class);
 
-        if ($this->skipPopulateData) {
+        // Reset available globally if the flag is set
+        $this->getOwner()->AvailableGlobally = true;
+
+        // Skip if the skipPopulateData flag is set to true
+        if ($this->skipPopulateData || self::$hasRunPopulateElementData) {
             return;
         }
 
+        $logger->debug('onBeforeWrite triggered for ' . $this->owner->ClassName);
+
         $manager = $this->getOwnerPage();
 
-        if ($manager instanceof Template) {
-            // Explicitly set AvailableGlobally to false for Template instances
-            if ($this->getOwner()->hasField('AvailableGlobally')) {
-                $this->getOwner()->AvailableGlobally = false;
-            }
-
-            // Populate data from the fixtures if it exists
-            if ($populate = Template::config()->get('populate')) {
-                if (array_key_exists($this->getOwner()->ClassName, $populate)) {
-                    foreach ($populate[$this->getOwner()->ClassName] as $field => $value) {
-                        $this->getOwner()->$field = $value;
-                    }
-                }
-            }
+        if (!$manager instanceof Template || $this->owner->isInDB()) {
+            return;
         }
+
+        // Explicitly set AvailableGlobally to false for Template instances
+        if ($this->getOwner()->hasField('AvailableGlobally')) {
+            $this->getOwner()->AvailableGlobally = false;
+        }
+
+        // Call the FixtureDataService to populate fields
+        $fixtureService->populateElementData($this->owner);
+
+        // Mark populateElementData as having run
+        //self::$hasRunPopulateElementData = true;
     }
 
     /**
