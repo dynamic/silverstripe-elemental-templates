@@ -209,7 +209,8 @@ class Template extends DataObject implements PermissionProvider
      *
      * @return string
      */
-    public function Link() {
+    public function Link()
+    {
         return $this->getPreviewLink();
     }
 
@@ -218,7 +219,8 @@ class Template extends DataObject implements PermissionProvider
      *
      * @return SiteConfig
      */
-    public function Parent() {
+    public function Parent()
+    {
         return SiteConfig::current_site_config();
     }
 
