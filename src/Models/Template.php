@@ -17,6 +17,7 @@ use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\Control\Director;
+use SilverStripe\SiteConfig\SiteConfig;
 
 /**
  * Creates a Template of elements that can be used to set up a page
@@ -201,6 +202,26 @@ class Template extends DataObject implements PermissionProvider
             'template-preview',
             $this->ID
         );
+    }
+
+    /**
+     * Returns the link to the template preview.
+     *
+     * @return string
+     */
+    public function Link()
+    {
+        return $this->getPreviewLink();
+    }
+
+    /**
+     * Returns the parent site configuration.
+     *
+     * @return SiteConfig
+     */
+    public function Parent()
+    {
+        return SiteConfig::current_site_config();
     }
 
     /**
