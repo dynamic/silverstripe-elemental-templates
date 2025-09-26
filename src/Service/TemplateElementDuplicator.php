@@ -27,11 +27,11 @@ class TemplateElementDuplicator
             try {
                 $copy = $element->duplicate();
 
-                $logger->debug(sprintf(
-                    "Duplicating element (ID: %d) to new element (ID: %d).",
-                    $element->ID,
-                    $copy->ID
-                ));
+                // $logger->debug(sprintf(
+                //     "Duplicating element (ID: %d) to new element (ID: %d).",
+                //     $element->ID,
+                //     $copy->ID
+                // ));
                 // set skip populate flag to true to prevent populateElementData() from being called
                 if ($copy->hasMethod('setSkipPopulateData')) {
                     $copy->setSkipPopulateData(true);
@@ -52,11 +52,11 @@ class TemplateElementDuplicator
                 // Add the duplicated element to the target area.
                 $area->Elements()->add($copy);
 
-                $logger->debug(sprintf(
-                    "Duplicated element (ID: %d) to new element (ID: %d).",
-                    $element->ID,
-                    $copy->ID
-                ));
+                // $logger->debug(sprintf(
+                //     "Duplicated element (ID: %d) to new element (ID: %d).",
+                //     $element->ID,
+                //     $copy->ID
+                // ));
             } catch (\Exception $ex) {
                 $logger->error(sprintf(
                     "Error duplicating element (ID: %d): %s",

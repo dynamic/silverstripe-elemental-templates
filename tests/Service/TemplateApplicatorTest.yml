@@ -1,13 +1,3 @@
-Dynamic\ElememtalTemplates\Models\Template:
-  validTemplate:
-    Title: 'Valid Template'
-    Content: '<p>Valid template content</p>'
-    ElementalAreaID: validElementalArea
-
-  invalidTemplate:
-    Title: 'Invalid Template'
-    Content: ''
-
 DNADesign\Elemental\Models\ElementalArea:
   validElementalArea:
     Title: 'Valid Elemental Area'
@@ -15,11 +5,19 @@ DNADesign\Elemental\Models\ElementalArea:
   pageElementalArea:
     Title: 'Page Elemental Area'
 
+Dynamic\ElememtalTemplates\Models\Template:
+  validTemplate:
+    Title: 'Valid Template'
+    Elements: =>DNADesign\Elemental\Models\ElementalArea.validElementalArea
+
+  invalidTemplate:
+    Title: 'Invalid Template'
+
 SilverStripe\CMS\Model\SiteTree:
   recordWithElementalArea:
     Title: 'Page with Elemental Area'
     Content: '<p>Page content</p>'
-    ElementalAreaID: pageElementalArea
+    ElementalArea: =>DNADesign\Elemental\Models\ElementalArea.pageElementalArea
 
   recordWithoutElementalArea:
     Title: 'Page without Elemental Area'

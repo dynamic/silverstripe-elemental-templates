@@ -28,7 +28,7 @@ class FixtureDataService
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
 
-        $logger->debug('Starting getFixtureData() for class: ' . $className);
+        // $logger->debug('Starting getFixtureData() for class: ' . $className);
 
         // Resolve the fixture path dynamically
         $fixturesPath = $this->resolveFixturePath();
@@ -43,12 +43,12 @@ class FixtureDataService
             return null;
         }
 
-        $logger->debug('Loading fixtures from path: ' . $fixturesPath);
+        // $logger->debug('Loading fixtures from path: ' . $fixturesPath);
 
         try {
             // Parse the YAML file directly
             $fixtureData = Yaml::parseFile($fixturesPath);
-            $logger->debug('Fixture data parsed successfully from ' . $fixturesPath);
+            // $logger->debug('Fixture data parsed successfully from ' . $fixturesPath);
 
             // Find the fixture data for the given class
             $populateData = $fixtureData[$className] ?? null;
@@ -58,7 +58,7 @@ class FixtureDataService
                 return null;
             }
 
-            $logger->debug('Fixture data found for class: ' . $className);
+            // $logger->debug('Fixture data found for class: ' . $className);
             return $populateData;
         } catch (Exception $e) {
             $logger->error('Error parsing fixture file: ' . $e->getMessage());
@@ -95,7 +95,7 @@ class FixtureDataService
             $resolvedPath = Director::baseFolder() . '/' . ltrim($configuredPath, '/');
         }
 
-        $logger->debug('Resolved fixture path: ' . $resolvedPath);
+        // $logger->debug('Resolved fixture path: ' . $resolvedPath);
 
         return $resolvedPath;
     }
@@ -110,7 +110,7 @@ class FixtureDataService
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
 
-        $logger->debug('Starting populateElementData() for class: ' . get_class($element));
+        // $logger->debug('Starting populateElementData() for class: ' . get_class($element));
 
         // Use getFixtureData to retrieve the fixture data for the element
         $populateData = $this->getFixtureData(get_class($element));
@@ -122,13 +122,13 @@ class FixtureDataService
 
         // Enhance populateElementData to handle nested relationships more robustly
         foreach ($populateData as $identifier => $fields) {
-            $logger->debug("Processing fixture identifier: $identifier");
+            // $logger->debug("Processing fixture identifier: $identifier");
 
             if (is_array($fields)) {
                 foreach ($fields as $field => $value) {
                     if (is_array($value)) {
                         // Handle nested relationships
-                        $logger->debug("Processing nested relationship for field: $field");
+                        // $logger->debug("Processing nested relationship for field: $field");
 
                         $relationships = [
                             'has_one' => $element->config()->get('has_one'),
@@ -145,16 +145,16 @@ class FixtureDataService
                                     $relatedObject = $this->createRelatedObject($relationClassName, $value);
                                     if ($relatedObject) {
                                         $element->setField("{$relationName}ID", $relatedObject->ID);
-                                        $logger->debug("Set has_one relation: $relationName with ID: " . $relatedObject->ID);
+                                        // $logger->debug("Set has_one relation: $relationName with ID: " . $relatedObject->ID);
                                     }
                                 } elseif (in_array($relationType, ['has_many', 'many_many'])) {
                                     $element->{$relationName}()->removeAll();
-                                    $logger->debug("Cleared existing $relationType relation: $relationName before adding new objects.");
+                                    // $logger->debug("Cleared existing $relationType relation: $relationName before adding new objects.");
                                     foreach ($value as $relatedData) {
                                         $relatedObject = $this->createRelatedObject($relationClassName, $relatedData);
                                         if ($relatedObject) {
                                             $element->{$relationName}()->add($relatedObject);
-                                            $logger->debug("Added related $relationClassName object with ID: " . $relatedObject->ID . " to $relationType relation: $relationName");
+                                            // $logger->debug("Added related $relationClassName object with ID: " . $relatedObject->ID . " to $relationType relation: $relationName");
                                         }
                                     }
                                 }
@@ -163,19 +163,19 @@ class FixtureDataService
                         }
                     } else {
                         // Handle scalar fields
-                        $logger->debug("Setting scalar field: $field with value: " . json_encode($value));
+                        // $logger->debug("Setting scalar field: $field with value: " . json_encode($value));
                         $element->setField($field, $value);
                     }
                 }
             } else {
                 // Handle scalar fields directly
-                $logger->debug("Setting scalar field: $identifier with value: " . json_encode($fields));
+                // $logger->debug("Setting scalar field: $identifier with value: " . json_encode($fields));
                 $element->setField($identifier, $fields);
             }
         }
 
         // Log the final state of the element
-        $logger->debug('Final state of element: ' . json_encode($element->toMap()));
+        // $logger->debug('Final state of element: ' . json_encode($element->toMap()));
     }
 
     /**
@@ -189,7 +189,7 @@ class FixtureDataService
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
 
-        $logger->debug("Creating related object with class: $relatedClassName and data: " . json_encode($data));
+        // $logger->debug("Creating related object with class: $relatedClassName and data: " . json_encode($data));
 
         // Validate that $data is an array
         if (!is_array($data)) {
@@ -199,10 +199,10 @@ class FixtureDataService
 
         // Check if a specific ClassName is provided in the data
         if (isset($data['ClassName'])) {
-            $logger->debug("Overriding base class $relatedClassName with subclass " . $data['ClassName']);
+            // $logger->debug("Overriding base class $relatedClassName with subclass " . $data['ClassName']);
             $relatedClassName = $data['ClassName'];
         } else {
-            $logger->debug("Using base class $relatedClassName for related object creation.");
+            // $logger->debug("Using base class $relatedClassName for related object creation.");
         }
 
         // Validate that the resolved class is a valid subclass of DataObject
@@ -211,7 +211,7 @@ class FixtureDataService
             throw new RuntimeException("Invalid class: $relatedClassName is not a subclass of DataObject.");
         }
 
-        $logger->debug("Validated class: $relatedClassName as a subclass of DataObject.");
+        // $logger->debug("Validated class: $relatedClassName as a subclass of DataObject.");
 
         $duplicateCheckFields = $data['DuplicateCheck'] ?? [];
         unset($data['DuplicateCheck']);
@@ -226,33 +226,33 @@ class FixtureDataService
 
             $existingRecord = $query->first();
             if ($existingRecord) {
-                $logger->debug("Found existing record for $relatedClassName with matching fields: " . json_encode($duplicateCheckFields));
+                // $logger->debug("Found existing record for $relatedClassName with matching fields: " . json_encode($duplicateCheckFields));
 
                 // Update the existing record with the new data
                 $existingRecord->update($data);
                 $existingRecord->write();
-                $logger->debug("Updated existing record for $relatedClassName with ID: " . $existingRecord->ID);
+                // $logger->debug("Updated existing record for $relatedClassName with ID: " . $existingRecord->ID);
 
                 return $existingRecord;
             }
         }
 
-        $logger->debug("No existing record found. Creating new $relatedClassName object.");
+        // $logger->debug("No existing record found. Creating new $relatedClassName object.");
 
         // Handle Image creation
         if (is_a($relatedClassName, Image::class, true)) {
-            $logger->debug("Detected $relatedClassName class for relation. Calling createImageFromFile().");
+            // $logger->debug("Detected $relatedClassName class for relation. Calling createImageFromFile().");
             return $this->createImageFromFile($data);
         }
 
         // Handle Link creation
         if (is_a($relatedClassName, Link::class, true)) {
-            $logger->debug("Detected $relatedClassName class for relation. Calling createLinkFromData().");
+            // $logger->debug("Detected $relatedClassName class for relation. Calling createLinkFromData().");
             return $this->createLinkFromData($data);
         }
 
         // Generic DataObject creation
-        $logger->debug("Creating $relatedClassName object with data: " . json_encode($data));
+        // $logger->debug("Creating $relatedClassName object with data: " . json_encode($data));
 
         try {
             $relatedObject = $relatedClassName::create();
@@ -274,7 +274,7 @@ class FixtureDataService
 
                         if ($nestedObject) {
                             $relatedObject->setField("{$field}ID", $nestedObject->ID);
-                            $logger->debug("Created and linked nested $relationClassName object with ID: " . $nestedObject->ID . " to field: $field");
+                            // $logger->debug("Created and linked nested $relationClassName object with ID: " . $nestedObject->ID . " to field: $field");
                         }
                     } else {
                         $logger->warning("Field: $field does not map to a valid has_one relation in class: $relatedClassName");
@@ -287,7 +287,7 @@ class FixtureDataService
 
             $relatedObject->write();
 
-            $logger->debug("Successfully created $relatedClassName object with ID: " . $relatedObject->ID);
+            // $logger->debug("Successfully created $relatedClassName object with ID: " . $relatedObject->ID);
 
             return $relatedObject;
         } catch (Exception $e) {
@@ -323,11 +323,11 @@ class FixtureDataService
         $folder = str_replace('_', '/', $folder);
         $filename = str_replace('_', '/', $filename);
 
-        $logger->debug("Creating image from PopulateFileFrom: $populateFileFrom with Filename: $filename in Folder: $folder");
+        // $logger->debug("Creating image from PopulateFileFrom: $populateFileFrom with Filename: $filename in Folder: $folder");
 
         // Check if PopulateFileFrom is a URL
         if (filter_var($populateFileFrom, FILTER_VALIDATE_URL)) {
-            $logger->debug("Detected URL for PopulateFileFrom. Using importRemoteImage.");
+            // $logger->debug("Detected URL for PopulateFileFrom. Using importRemoteImage.");
             return $this->importRemoteImage($populateFileFrom, $filename, $folder);
         }
 
@@ -363,7 +363,7 @@ class FixtureDataService
             $image->setFromLocalFile($absolutePath, $localPath);
             $image->write();
 
-            $logger->debug("Successfully created Image record with ID: {$image->ID}");
+            // $logger->debug("Successfully created Image record with ID: {$image->ID}");
             return $image;
         } catch (Exception $e) {
             $logger->error("Error creating Image record: " . $e->getMessage());
@@ -381,7 +381,7 @@ class FixtureDataService
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
 
-        $logger->debug("Creating Link record with data: " . json_encode($data));
+        // $logger->debug("Creating Link record with data: " . json_encode($data));
 
         // Ensure $data is an array
         if (!is_array($data)) {
@@ -398,7 +398,7 @@ class FixtureDataService
             return null;
         }
 
-        $logger->debug("Creating Link record of class: $className");
+        // $logger->debug("Creating Link record of class: $className");
 
         // Create a new Link record
         /** @var Link $link */
@@ -412,7 +412,7 @@ class FixtureDataService
 
         $link->write();
 
-        $logger->debug("Created Link record with ID: {$link->ID} and ClassName: $className");
+        // $logger->debug("Created Link record with ID: {$link->ID} and ClassName: $className");
 
         return $link;
     }
@@ -421,7 +421,7 @@ class FixtureDataService
     public function importRemoteImage($url, $filename = null, $folder = '')
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
-        $logger->debug("Starting importRemoteImage for URL: $url");
+        // $logger->debug("Starting importRemoteImage for URL: $url");
 
         // Get file contents from remote URL
         $contents = @file_get_contents($url);
@@ -452,7 +452,7 @@ class FixtureDataService
             ];
 
             $extension = $mimeToExtension[$mimeType] ?? 'jpg'; // Default to jpg if MIME type is unknown
-            $logger->debug("Inferred file extension: $extension for MIME type: $mimeType");
+            // $logger->debug("Inferred file extension: $extension for MIME type: $mimeType");
 
             // Append the inferred extension to the filename
             $filename .= ".$extension";
@@ -472,17 +472,17 @@ class FixtureDataService
         $fullLocalPath = ASSETS_PATH . "/$localPath";
 
         // Log the URL and filename
-        $logger->debug("URL: $url, Filename: $filename");
+        // $logger->debug("URL: $url, Filename: $filename");
 
         // Log the folder where the file will be saved
-        $logger->debug("Target folder: $targetFolder");
+        // $logger->debug("Target folder: $targetFolder");
 
         // Log the full local path of the file
-        $logger->debug("Full local path: $fullLocalPath");
+        // $logger->debug("Full local path: $fullLocalPath");
 
         // Log the result of file_put_contents
         if (file_put_contents($fullLocalPath, $contents)) {
-            $logger->debug("File successfully saved to: $fullLocalPath");
+            // $logger->debug("File successfully saved to: $fullLocalPath");
         } else {
             $logger->warning("Failed to save file to: $fullLocalPath");
         }
@@ -494,7 +494,7 @@ class FixtureDataService
 
         try {
             $image->write();
-            $logger->debug("Successfully created Image record with ID: {$image->ID}");
+            // $logger->debug("Successfully created Image record with ID: {$image->ID}");
         } catch (ValidationException $e) {
             $logger->warning("Failed to write image record: " . $e->getMessage());
             return null;

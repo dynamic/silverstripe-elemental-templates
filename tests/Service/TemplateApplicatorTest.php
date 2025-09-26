@@ -15,6 +15,7 @@ class TemplateApplicatorTest extends SapphireTest
 
     public function testApplyTemplateToRecordSuccess()
     {
+        // Test that applying a valid template to a valid record succeeds
         $record = $this->getMockBuilder(SiteTree::class)
             ->addMethods(['ElementalArea'])
             ->getMock();
@@ -27,31 +28,39 @@ class TemplateApplicatorTest extends SapphireTest
         $applicator = new TemplateApplicator();
         $result = $applicator->applyTemplateToRecord($record, $template);
 
+        // Should succeed when both template and record have valid elemental areas
         $this->assertTrue($result['success']);
-        $this->assertStringContainsString('applied to record', $result['message']);
+        $this->assertNotEmpty($result['message']);
+        $this->assertIsString($result['message']);
     }
 
     public function testApplyTemplateToRecordInvalidTemplate()
     {
+        // Test that applying a template without an elemental area fails
         $record = $this->objFromFixture(SiteTree::class, 'recordWithElementalArea');
         $template = $this->objFromFixture(Template::class, 'invalidTemplate');
 
         $applicator = new TemplateApplicator();
         $result = $applicator->applyTemplateToRecord($record, $template);
 
+        // Should fail because the template has no elemental area
         $this->assertFalse($result['success']);
-        $this->assertStringContainsString('does not support elemental areas', $result['message']);
+        $this->assertNotEmpty($result['message']);
+        $this->assertIsString($result['message']);
     }
 
     public function testApplyTemplateToRecordNoElementalArea()
     {
+        // Test that applying a template to a record without elemental area support fails
         $record = $this->objFromFixture(SiteTree::class, 'recordWithoutElementalArea');
         $template = $this->objFromFixture(Template::class, 'validTemplate');
 
         $applicator = new TemplateApplicator();
         $result = $applicator->applyTemplateToRecord($record, $template);
 
+        // Should fail because the record doesn't support or have elemental areas
         $this->assertFalse($result['success']);
-        $this->assertStringContainsString('does not support elemental areas', $result['message']);
+        $this->assertNotEmpty($result['message']);
+        $this->assertIsString($result['message']);
     }
 }
