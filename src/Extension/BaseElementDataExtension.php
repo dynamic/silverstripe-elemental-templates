@@ -124,7 +124,7 @@ class BaseElementDataExtension extends DataExtension
             return;
         }
 
-        $logger->debug('onBeforeWrite triggered for ' . $this->owner->ClassName);
+        // $logger->debug('onBeforeWrite triggered for ' . $this->owner->ClassName);
 
         $manager = $this->getOwnerPage();
 
