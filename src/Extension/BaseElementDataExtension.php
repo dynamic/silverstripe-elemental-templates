@@ -147,7 +147,7 @@ class BaseElementDataExtension extends Extension
      */
     protected function onAfterWrite(): void
     {
-        // Extension hook - no parent call needed for Extension class
+        // Extension hook method in SilverStripe 6 - no parent call needed
     }
 
     /**

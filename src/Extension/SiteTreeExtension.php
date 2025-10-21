@@ -11,14 +11,14 @@ use LeKoala\CmsActions\CustomAction;
 use SilverStripe\Control\Controller;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Core\Injector\Injector;
-use Dynamic\ElememtalTemplates\Models\Template;
-use Dynamic\ElememtalTemplates\Service\TemplateApplicator;
+use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Service\TemplateApplicator;
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 
 /**
- * Class \Dynamic\ElememtalTemplates\Extension\SiteTreeExtension
+ * Class \Dynamic\ElementalTemplates\Extension\SiteTreeExtension
  *
- * @property \SilverStripe\CMS\Model\SiteTree|\Dynamic\ElememtalTemplates\Extension\SiteTreeExtension $owner
+ * @property \SilverStripe\CMS\Model\SiteTree|\Dynamic\ElementalTemplates\Extension\SiteTreeExtension $owner
  */
 class SiteTreeExtension extends Extension
 {
