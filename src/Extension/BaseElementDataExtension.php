@@ -17,7 +17,7 @@ use Dynamic\ElementalTemplates\Service\FixtureDataService;
 /**
  * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
  *
- * @property \DNADesign\Elemental\Models\BaseElement&\SilverStripe\Core\Extension $owner
+ * @property \DNADesign\Elemental\Models\BaseElement $owner
  * @method \DNADesign\Elemental\Models\BaseElement getOwner()
  */
 class BaseElementDataExtension extends Extension
@@ -121,7 +121,7 @@ class BaseElementDataExtension extends Extension
         }
 
         // Skip if the skipPopulateData flag is set to true
-        if ($this->skipPopulateData || self::$hasRunPopulateElementData) {
+        if ($this->skipPopulateData || self::config()->get('hasRunPopulateElementData')) {
             return;
         }
 

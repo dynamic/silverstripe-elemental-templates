@@ -18,7 +18,7 @@ use SilverStripe\ORM\DataObject;
 /**
  * Class \Dynamic\ElememtalTemplates\Extension\SiteTreeExtension
  *
- * @property \SilverStripe\CMS\Model\SiteTree&\SilverStripe\Core\Extension $owner
+ * @property \SilverStripe\CMS\Model\SiteTree $owner
  * @method \SilverStripe\CMS\Model\SiteTree getOwner()
  */
 class SiteTreeExtension extends Extension
@@ -161,21 +161,21 @@ class SiteTreeExtension extends Extension
             $template->Title = 'Template from ' . $page->Title;
             $template->PageType = $page->ClassName;
             $template->write();
-            
+
             if ($template->Elements()->exists()) {
                 $elements = $template->Elements()->Elements();
 
             // Duplicate elements from the page's ElementalArea
-            if ($page->hasMethod('ElementalArea') && $page->ElementalArea()->exists()) {
-                $elementalArea = $page->ElementalArea();
-                if ($elementalArea->Elements()->exists()) {
-                    foreach ($elementalArea->Elements() as $element) {
-                        $newElement = $element->duplicate();
-                        $newElement->write();
-                        $elements->add($newElement);
+                if ($page->hasMethod('ElementalArea') && $page->ElementalArea()->exists()) {
+                    $elementalArea = $page->ElementalArea();
+                    if ($elementalArea->Elements()->exists()) {
+                        foreach ($elementalArea->Elements() as $element) {
+                            $newElement = $element->duplicate();
+                            $newElement->write();
+                            $elements->add($newElement);
+                        }
                     }
                 }
-            }
             }
 
             $template->write();

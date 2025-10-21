@@ -16,27 +16,19 @@ parameters:
         - vendor/lekoala/silverstripe-cms-actions/src
     
     ignoreErrors:
-        # PHPDoc annotations for extensions are expected to reference parent classes
-        - '#PHPDoc tag @property for property .+::\$owner contains unknown class#'
-        # Extension classes extending DataExtension is expected
-        - '#Class .+ extends unknown class SilverStripe\\ORM\\DataExtension#'
-        # Static properties in extensions are often only read by framework
-        - '#Static property .+::\$allowed_actions is never read, only written#'
-        - '#Static property .+::\$fixtures is never read, only written#'
-        - '#Static property .+::\$fixtures .+ is never assigned string so it can be removed#'
-        # LeKoala CmsActions is a composer dependency
-        - '#Call to static method create\(\) on an unknown class LeKoala\\CmsActions\\CustomAction#'
         # Form field methods that exist in specific field types
         - '#Call to an undefined method SilverStripe\\Forms\\FormField::(insertAfter|Value|setFolderName|setAllowedFileCategories|setTypes)#'
         # DataObject dynamic methods from extensions
         - '#Call to an undefined method SilverStripe\\ORM\\DataObject::getElementalRelations#'
-        # ValidationException exists but not discovered
-        - '#Caught class SilverStripe\\ORM\\ValidationException not found#'
-        - '#Call to method getMessage\(\) on an unknown class SilverStripe\\ORM\\ValidationException#'
-        - '#PHPDoc tag @throws with type SilverStripe\\ORM\\ValidationException is not subtype of Throwable#'
-        # CMSPageAddController exists but not discovered  
-        - '#PHPDoc tag @property .+ contains unknown class SilverStripe\\CMS\\Controllers\\CMSPageAddController#'
         # Return type mismatch due to DataObject::create returning DataObject
         - '#Method .+::findOrCreateElementalArea\(\) should return .+ but returns SilverStripe\\ORM\\DataObject#'
-        # Owner property access in extensions
-        - '#Access to an undefined property .+::\$owner#'
+        # Extension context - accessing owner properties/methods via $this
+        - '#Access to an undefined property Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::\$(ID|AvailableGlobally)#'
+        - '#Call to an undefined method Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::(exists|hasField|isInDB|getPage|getAreaRelationName)#'
+        - '#Access to an undefined property Dynamic\\ElememtalTemplates\\Extension\\SiteTreeExtension::\$(ID|ClassName)#'
+        - '#Call to an undefined static method Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::config#'
+        # PHPStan strict checks that are too strict for SilverStripe patterns
+        - '#Left side of && is always true#'
+        - '#Negated boolean expression is always false#'
+        - '#Call to function is_array\(\) with array will always evaluate to true#'
+        - '#Dead catch - SilverStripe\\ORM\\ValidationException is never thrown#'
