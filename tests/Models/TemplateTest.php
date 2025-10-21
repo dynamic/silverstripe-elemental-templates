@@ -23,7 +23,7 @@ class TemplateTest extends SapphireTest
      * @var string
      */
     protected static $fixture_file = 'TemplateTest.yml';
-    
+
     /**
      * @var bool
      */

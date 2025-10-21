@@ -118,7 +118,7 @@ class BaseElementDataExtension extends Extension
         $this->getOwner()->AvailableGlobally = true;
 
         // Skip if the skipPopulateData flag is set to true
-        if ($this->skipPopulateData || self::$hasRunPopulateElementData) {
+        if ($this->skipPopulateData || Config::inst()->get(self::class, 'hasRunPopulateElementData')) {
             return;
         }
 
@@ -160,7 +160,7 @@ class BaseElementDataExtension extends Extension
 
     /**
      * Extension hook for canCreate permission check
-     * 
+     *
      * @param Member|null $member
      * @param array $context Additional context for permission checking
      * @param bool &$result The result of the permission check (passed by reference)
@@ -181,7 +181,7 @@ class BaseElementDataExtension extends Extension
 
     /**
      * Extension hook for canEdit permission check
-     * 
+     *
      * @param Member|null $member
      * @param array $context Additional context for permission checking
      * @param bool &$result The result of the permission check (passed by reference)
@@ -202,7 +202,7 @@ class BaseElementDataExtension extends Extension
 
     /**
      * Extension hook for canDelete permission check
-     * 
+     *
      * @param Member|null $member
      * @param array $context Additional context for permission checking
      * @param bool &$result The result of the permission check (passed by reference)

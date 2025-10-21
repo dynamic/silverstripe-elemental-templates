@@ -18,7 +18,7 @@ use Dynamic\ElementalTemplates\Extension\CMSPageAddControllerExtension;
 class CMSPageAddControllerExtensionTest extends SapphireTest
 {
     protected static $fixture_file = 'CMSPageAddControllerExtensionTest.yml';
-    
+
     /**
      * @var bool
      */

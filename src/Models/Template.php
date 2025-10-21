@@ -399,12 +399,14 @@ class Template extends DataObject implements PermissionProvider
     {
         $actions = parent::getCMSActions();
 
-        // Add a custom CMS action for previewing the template
-        $actions->push(
-            CustomAction::create('PreviewTemplate', 'Preview Template')
-                ->setUseButtonTag(true)
-                ->setAttribute('onclick', "window.open('{$this->getPreviewLink()}', '_blank')") // Open the URL in a new window
-        );
+        // Add a custom CMS action for previewing the template if CmsActions is available
+        if (class_exists('LeKoala\\CmsActions\\CustomAction')) {
+            $actions->push(
+                CustomAction::create('PreviewTemplate', 'Preview Template')
+                    ->setUseButtonTag(true)
+                    ->setAttribute('onclick', "window.open('{$this->getPreviewLink()}', '_blank')") // Open the URL in a new window
+            );
+        }
 
         return $actions;
     }

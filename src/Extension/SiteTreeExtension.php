@@ -73,12 +73,14 @@ class SiteTreeExtension extends Extension
             }
 
             // Ensure the CreateTemplate action calls the method in AddTemplateExtension
-            $moreOptions->insertAfter(
-                'Information',
-                CustomAction::create('CreateTemplate', 'Create Blocks Template')
-                    ->setUseButtonTag(true)
-                    ->setAttribute('data-url', $this->owner->Link('CreateTemplate'))
-            );
+            if (class_exists('LeKoala\CmsActions\CustomAction')) {
+                $moreOptions->insertAfter(
+                    'Information',
+                    CustomAction::create('CreateTemplate', 'Create Blocks Template')
+                        ->setUseButtonTag(true)
+                        ->setAttribute('data-url', $this->owner->Link('CreateTemplate'))
+                );
+            }
 
             // "Apply Blocks Template" action if this is an existing page.
             if ($this->getOwner()->ID) {
@@ -160,7 +162,14 @@ class SiteTreeExtension extends Extension
             $template->Title = 'Template from ' . $page->Title;
             $template->PageType = $page->ClassName;
             $template->write();
-            $elements = $template->Elements()->Elements();
+            
+            // Initialize elements variable
+            $elements = null;
+            
+            // Ensure template has elemental area before accessing elements
+            if ($template->Elements() && $template->Elements()->exists()) {
+                $elements = $template->Elements()->Elements();
+            }
 
             // Duplicate elements from the page's ElementalArea
             if ($page->hasMethod('ElementalArea') && $page->ElementalArea()->exists()) {
