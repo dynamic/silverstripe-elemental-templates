@@ -76,7 +76,8 @@ class TemplateApplicatorTest extends SapphireTest
         // Create test data programmatically
         $invalidTemplate = Template::create();
         $invalidTemplate->Title = 'Invalid Template';
-        $invalidTemplate->write(); // No ElementsID set, making it invalid
+        // Do NOT write() - Template 'owns' Elements, so write() would auto-create ElementalArea
+        // We want to test with no ElementsID to validate proper error handling
 
         $pageElementalArea = ElementalArea::create();
         $pageElementalArea->Title = 'Page Elemental Area';
@@ -111,8 +112,8 @@ class TemplateApplicatorTest extends SapphireTest
 
         $record = SamplePage::create();
         $record->Title = 'Test Page No Elements';
-        $record->write();
-        // No ElementsID set, so record has no elemental area
+        // Do NOT write() - Page 'owns' ElementalArea, so write() would auto-create it
+        // We want to test with no ElementalAreaID to validate proper error handling
 
         $applicator = new TemplateApplicator();
         $result = $applicator->applyTemplateToRecord($record, $validTemplate);
