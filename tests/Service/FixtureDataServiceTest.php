@@ -26,7 +26,7 @@ class FixtureDataServiceTest extends SapphireTest
     /**
      * @var bool
      */
-    protected $usesDatabase = true;
+    protected $usesDatabase = false;
 
     protected function setUp(): void
     {
