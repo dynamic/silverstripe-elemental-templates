@@ -18,7 +18,8 @@ use SilverStripe\ORM\DataObject;
 /**
  * Class \Dynamic\ElememtalTemplates\Extension\SiteTreeExtension
  *
- * @property \SilverStripe\CMS\Model\SiteTree|\Dynamic\ElememtalTemplates\Extension\SiteTreeExtension $owner
+ * @property \SilverStripe\CMS\Model\SiteTree&\SilverStripe\ORM\DataExtension $owner
+ * @method \SilverStripe\CMS\Model\SiteTree getOwner()
  */
 class SiteTreeExtension extends DataExtension
 {
@@ -160,15 +161,21 @@ class SiteTreeExtension extends DataExtension
             $template->Title = 'Template from ' . $page->Title;
             $template->PageType = $page->ClassName;
             $template->write();
-            $elements = $template->Elements()->Elements();
+            
+            if ($template->Elements()->exists()) {
+                $elements = $template->Elements()->Elements();
 
             // Duplicate elements from the page's ElementalArea
             if ($page->hasMethod('ElementalArea') && $page->ElementalArea()->exists()) {
-                foreach ($page->ElementalArea()->Elements() as $element) {
-                    $newElement = $element->duplicate();
-                    $newElement->write();
-                    $elements->add($newElement);
+                $elementalArea = $page->ElementalArea();
+                if ($elementalArea->Elements()->exists()) {
+                    foreach ($elementalArea->Elements() as $element) {
+                        $newElement = $element->duplicate();
+                        $newElement->write();
+                        $elements->add($newElement);
+                    }
                 }
+            }
             }
 
             $template->write();

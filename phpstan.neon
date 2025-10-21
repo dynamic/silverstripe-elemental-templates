@@ -1,0 +1,42 @@
+includes:
+    - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+    level: 4
+    paths:
+        - src
+    
+    bootstrapFiles:
+        - vendor/silverstripe/framework/tests/bootstrap/init.php
+    
+    scanDirectories:
+        - vendor/silverstripe/framework/src
+        - vendor/silverstripe/cms/code
+        - vendor/dnadesign/silverstripe-elemental/src
+        - vendor/lekoala/silverstripe-cms-actions/src
+    
+    ignoreErrors:
+        # PHPDoc annotations for extensions are expected to reference parent classes
+        - '#PHPDoc tag @property for property .+::\$owner contains unknown class#'
+        # Extension classes extending DataExtension is expected
+        - '#Class .+ extends unknown class SilverStripe\\ORM\\DataExtension#'
+        # Static properties in extensions are often only read by framework
+        - '#Static property .+::\$allowed_actions is never read, only written#'
+        - '#Static property .+::\$fixtures is never read, only written#'
+        - '#Static property .+::\$fixtures .+ is never assigned string so it can be removed#'
+        # LeKoala CmsActions is a composer dependency
+        - '#Call to static method create\(\) on an unknown class LeKoala\\CmsActions\\CustomAction#'
+        # Form field methods that exist in specific field types
+        - '#Call to an undefined method SilverStripe\\Forms\\FormField::(insertAfter|Value|setFolderName|setAllowedFileCategories|setTypes)#'
+        # DataObject dynamic methods from extensions
+        - '#Call to an undefined method SilverStripe\\ORM\\DataObject::getElementalRelations#'
+        # ValidationException exists but not discovered
+        - '#Caught class SilverStripe\\ORM\\ValidationException not found#'
+        - '#Call to method getMessage\(\) on an unknown class SilverStripe\\ORM\\ValidationException#'
+        - '#PHPDoc tag @throws with type SilverStripe\\ORM\\ValidationException is not subtype of Throwable#'
+        # CMSPageAddController exists but not discovered  
+        - '#PHPDoc tag @property .+ contains unknown class SilverStripe\\CMS\\Controllers\\CMSPageAddController#'
+        # Return type mismatch due to DataObject::create returning DataObject
+        - '#Method .+::findOrCreateElementalArea\(\) should return .+ but returns SilverStripe\\ORM\\DataObject#'
+        # Owner property access in extensions
+        - '#Access to an undefined property .+::\$owner#'

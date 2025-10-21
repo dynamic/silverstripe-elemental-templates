@@ -22,16 +22,18 @@
     ],
     "require": {
         "php": "^8.1",
-        "dnadesign/silverstripe-elemental": "^5.0",
-        "lekoala/silverstripe-cms-actions": "^1.7",
+        "dnadesign/silverstripe-elemental": "^5.0 || ^6.0",
+        "lekoala/silverstripe-cms-actions": "^1.7 || ^2.0",
         "silverstripe/vendor-plugin": "^2"
     },
     "require-dev": {
-        "dynamic/silverstripe-elemental-card":"^2.0",
-        "dynamic/silverstripe-elemental-carousel":"^2.0",
-        "silverstripe/frameworktest": "^1",
-        "silverstripe/recipe-testing": "^3",
-        "silverstripe/standards": "^1"
+        "dynamic/silverstripe-elemental-card":"^2.0 || ^3.0",
+        "dynamic/silverstripe-elemental-carousel":"^2.0 || ^3.0",
+        "phpstan/phpstan": "^1.10",
+        "silverstripe/cms": "^5.0 || ^6.0",
+        "silverstripe/frameworktest": "^1.0 || ^2.0",
+        "silverstripe/recipe-testing": "^3.0 || ^4.0",
+        "silverstripe/standards": "^1.0 || ^2.0"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,

@@ -374,7 +374,7 @@ class FixtureDataService
     /**
      * Helper method to create a Link record based on the provided data.
      *
-     * @param array $linkData
+     * @param array $data
      * @return Link|null
      */
     private function createLinkFromData($data): ?Link

@@ -33,7 +33,7 @@ class CMSPageAddControllerExtension extends Extension
         $templates = ['' => 'Select template'] + Template::get()->map('ID', 'Title')->toArray();
 
         $title = '<span class="step-label"><span class="flyout">Step 3. </span><span class="title">(Optional) Select template to create page with</span></span>';
-        $templateField = new DropdownField('TemplateID', DBField::create_field('HTMLFragment', $title), $templates);
+        $templateField = DropdownField::create('TemplateID', DBField::create_field('HTMLFragment', $title), $templates);
         $fields->insertAfter('PageType', $templateField);
     }
 
