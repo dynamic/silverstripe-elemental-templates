@@ -65,8 +65,8 @@ class TemplateApplicatorTest extends SapphireTest
         $applicator = new TemplateApplicator();
         $result = $applicator->applyTemplateToRecord($record, $validTemplate);
 
-        // Should succeed when both template and record have valid elemental areas
-        $this->assertTrue($result['success'], 'Result message: ' . ($result['message'] ?? 'no message'));
+                // Should succeed when both template and record have valid elemental areas
+        $this->assertTrue($result['success'], 'Expected successful template application but got: ' . ($result['message'] ?? 'no message'));
         $this->assertNotEmpty($result['message']);
         $this->assertIsString($result['message']);
     }
