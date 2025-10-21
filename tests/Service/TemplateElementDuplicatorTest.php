@@ -10,12 +10,25 @@ use DNADesign\Elemental\Models\BaseElement;
 
 class TemplateElementDuplicatorTest extends SapphireTest
 {
+    /**
+     * @var bool
+     */
+    protected $usesDatabase = true;
+
     public function testAvailableGloballyResetOnDuplicate()
     {
         // Create test data programmatically
         $templateArea = ElementalArea::create();
         $templateArea->Title = 'Template Elemental Area';
         $templateArea->write();
+
+        // Add an element to the template's elemental area
+        $templateElement = \DNADesign\Elemental\Models\ElementContent::create();
+        $templateElement->Title = 'Template Element';
+        $templateElement->HTML = '<p>Template content</p>';
+        $templateElement->AvailableGlobally = true; // Set to true so we can test it gets reset
+        $templateElement->ParentID = $templateArea->ID;
+        $templateElement->write();
 
         $template = Template::create();
         $template->Title = 'Test Template';

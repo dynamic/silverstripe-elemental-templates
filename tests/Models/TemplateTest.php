@@ -23,6 +23,11 @@ class TemplateTest extends SapphireTest
      * @var string
      */
     protected static $fixture_file = 'TemplateTest.yml';
+    
+    /**
+     * @var bool
+     */
+    protected $usesDatabase = true;
 
     /**
      * @var string[]
@@ -42,6 +47,11 @@ class TemplateTest extends SapphireTest
             ElementalPageExtension::class,
         ],
     ];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+    }
 
     /**
      * @return void

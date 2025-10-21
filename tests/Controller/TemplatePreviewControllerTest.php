@@ -7,15 +7,15 @@ use Dynamic\ElementalTemplates\Models\Template;
 
 class TemplatePreviewControllerTest extends FunctionalTest
 {
-    //protected static $fixture_file = 'template-preview-test.yml';
+    /**
+     * @var bool
+     */
+    protected $usesDatabase = true;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Tests are currently skipped, so no database setup needed
         $this->logInWithPermission('ADMIN');
-        // Note: dev/build removed to avoid ActionsPage table conflicts from cms-actions dependency
     }
 
     public function testTemplatePreviewPageLoadsSuccessfully()

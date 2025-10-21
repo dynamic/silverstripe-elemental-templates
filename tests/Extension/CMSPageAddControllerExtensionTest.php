@@ -18,6 +18,11 @@ use Dynamic\ElementalTemplates\Extension\CMSPageAddControllerExtension;
 class CMSPageAddControllerExtensionTest extends SapphireTest
 {
     protected static $fixture_file = 'CMSPageAddControllerExtensionTest.yml';
+    
+    /**
+     * @var bool
+     */
+    protected $usesDatabase = true;
 
     /**
      * @var string[]
@@ -76,7 +81,7 @@ class CMSPageAddControllerExtensionTest extends SapphireTest
         $mockFields = $this->createMock(\SilverStripe\Forms\FieldList::class);
         $mockField = $this->createMock(\SilverStripe\Forms\FormField::class);
 
-        $mockField->method('Value')->willReturn($template->ID);
+        $mockField->method('getValue')->willReturn($template->ID);
         $mockFields->method('dataFieldByName')->with('TemplateID')->willReturn($mockField);
         $mockForm->method('Fields')->willReturn($mockFields);
 

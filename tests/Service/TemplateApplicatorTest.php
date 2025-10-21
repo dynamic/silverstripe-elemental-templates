@@ -8,15 +8,44 @@ use DNADesign\Elemental\Tests\Src\TestElement\ElementOne;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Dev\SapphireTest;
 use DNADesign\Elemental\Models\ElementalArea;
+use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
 
 class TemplateApplicatorTest extends SapphireTest
 {
+    /**
+     * @var bool
+     */
+    protected $usesDatabase = true;
+
+    /**
+     * @var string[]
+     */
+    protected static $extra_dataobjects = [
+        SamplePage::class,
+    ];
+
+    /**
+     * @var string[]
+     */
+    protected static $required_extensions = [
+        SamplePage::class => [
+            \DNADesign\Elemental\Extensions\ElementalPageExtension::class,
+        ],
+    ];
+
     public function testApplyTemplateToRecordSuccess()
     {
         // Create test data programmatically instead of using fixtures
         $validElementalArea = ElementalArea::create();
         $validElementalArea->Title = 'Valid Elemental Area';
         $validElementalArea->write();
+
+        // Add an element to the valid template
+        $templateElement = \DNADesign\Elemental\Models\ElementContent::create();
+        $templateElement->Title = 'Template Content Element';
+        $templateElement->HTML = '<p>This is template content</p>';
+        $templateElement->ParentID = $validElementalArea->ID;
+        $templateElement->write();
 
         $pageElementalArea = ElementalArea::create();
         $pageElementalArea->Title = 'Page Elemental Area';
@@ -28,18 +57,16 @@ class TemplateApplicatorTest extends SapphireTest
         $validTemplate->write();
 
         // Test that applying a valid template to a valid record succeeds
-        $record = $this->getMockBuilder(SiteTree::class)
-            ->addMethods(['ElementalArea'])
-            ->getMock();
-
-        // Mock the ElementalArea method to return a valid ElementalArea.
-        $record->method('ElementalArea')->willReturn($pageElementalArea);
+        $record = SamplePage::create();
+        $record->Title = 'Test Page';
+        $record->ElementalAreaID = $pageElementalArea->ID;
+        $record->write();
 
         $applicator = new TemplateApplicator();
         $result = $applicator->applyTemplateToRecord($record, $validTemplate);
 
         // Should succeed when both template and record have valid elemental areas
-        $this->assertTrue($result['success']);
+        $this->assertTrue($result['success'], 'Result message: ' . ($result['message'] ?? 'no message'));
         $this->assertNotEmpty($result['message']);
         $this->assertIsString($result['message']);
     }
@@ -55,10 +82,11 @@ class TemplateApplicatorTest extends SapphireTest
         $pageElementalArea->Title = 'Page Elemental Area';
         $pageElementalArea->write();
 
-        $record = $this->getMockBuilder(SiteTree::class)
-            ->addMethods(['ElementalArea'])
-            ->getMock();
-        $record->method('ElementalArea')->willReturn($pageElementalArea);
+        $record = SamplePage::create();
+        $record->Title = 'Test Page';
+        $record->write();
+        $record->ElementalAreaID = $pageElementalArea->ID;
+        $record->write();
 
         $applicator = new TemplateApplicator();
         $result = $applicator->applyTemplateToRecord($record, $invalidTemplate);
@@ -81,10 +109,10 @@ class TemplateApplicatorTest extends SapphireTest
         $validTemplate->ElementsID = $validElementalArea->ID;
         $validTemplate->write();
 
-        $record = $this->getMockBuilder(SiteTree::class)
-            ->addMethods(['ElementalArea'])
-            ->getMock();
-        $record->method('ElementalArea')->willReturn(null); // No elemental area
+        $record = SamplePage::create();
+        $record->Title = 'Test Page No Elements';
+        $record->write();
+        // No ElementsID set, so record has no elemental area
 
         $applicator = new TemplateApplicator();
         $result = $applicator->applyTemplateToRecord($record, $validTemplate);
