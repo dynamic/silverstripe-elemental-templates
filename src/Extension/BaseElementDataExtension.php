@@ -157,7 +157,7 @@ class BaseElementDataExtension extends Extension
      */
     protected function getOwnerPage(): mixed
     {
-        if ($this->getOwner()->exists()) {
+        if ($this->getOwner() && $this->getOwner()->exists()) {
             return $this->getOwner()->getPage();
         }
         return null;
