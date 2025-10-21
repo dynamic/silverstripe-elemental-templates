@@ -23,7 +23,7 @@
     "require": {
         "php": "^8.1",
         "dnadesign/silverstripe-elemental": "^6.0",
-        "lekoala/silverstripe-cms-actions": "^3.0",
+        "lekoala/silverstripe-cms-actions": "^2.0",
         "silverstripe/vendor-plugin": "^3"
     },
     "require-dev": {
