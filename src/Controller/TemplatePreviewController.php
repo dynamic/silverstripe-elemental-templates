@@ -7,7 +7,7 @@ use SilverStripe\Dev\Debug;
 use SilverStripe\View\Requirements;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\ORM\FieldType\DBField;
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 
 class TemplatePreviewController extends \PageController
 {

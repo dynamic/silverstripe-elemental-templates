@@ -1,6 +1,6 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Models;
+namespace Dynamic\ElementalTemplates\Models;
 
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 use DNADesign\Elemental\Forms\ElementalAreaField;

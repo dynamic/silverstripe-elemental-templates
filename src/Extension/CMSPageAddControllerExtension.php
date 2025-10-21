@@ -1,6 +1,6 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Extension;
+namespace Dynamic\ElementalTemplates\Extension;
 
 use Psr\Log\LoggerInterface;
 use SilverStripe\Forms\Form;
