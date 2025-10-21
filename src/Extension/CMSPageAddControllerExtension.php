@@ -16,9 +16,9 @@ use Dynamic\ElementalTemplates\Models\Template;
 use Dynamic\ElementalTemplates\Service\TemplateApplicator;
 
 /**
- * Class \Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension
+ * Class \Dynamic\ElementalTemplates\Extension\CMSPageAddControllerExtension
  *
- * @property \SilverStripe\CMS\Controllers\CMSPageAddController|\Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension $owner
+ * @property \SilverStripe\CMS\Controllers\CMSPageAddController|\Dynamic\ElementalTemplates\Extension\CMSPageAddControllerExtension $owner
  */
 class CMSPageAddControllerExtension extends Extension
 {
@@ -53,7 +53,8 @@ class CMSPageAddControllerExtension extends Extension
 
         $record->write();
 
-        $templateID = $form->getRequestData()['TemplateID'] ?? null;
+        $requestData = $form->getRequestData();
+        $templateID = (is_array($requestData) && array_key_exists('TemplateID', $requestData)) ? $requestData['TemplateID'] : null;
         if (!$templateID || !$template = Template::get()->byID($templateID)) {
             Injector::inst()->get(LoggerInterface::class)->warning(
                 "Invalid or missing template ID: {$templateID}."
