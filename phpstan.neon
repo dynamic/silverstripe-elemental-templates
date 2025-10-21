@@ -26,9 +26,9 @@ parameters:
         - '#Access to an undefined property Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::\$(ID|AvailableGlobally)#'
         - '#Call to an undefined method Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::(exists|hasField|isInDB|getPage|getAreaRelationName)#'
         - '#Access to an undefined property Dynamic\\ElememtalTemplates\\Extension\\SiteTreeExtension::\$(ID|ClassName)#'
-        - '#Call to an undefined static method Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::config#'
+        - '#Instanceof between static\(Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension\) and Dynamic\\ElememtalTemplates\\Models\\Template will always evaluate to false#'
+        - '#Unsafe access to configuration property Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::\$hasRunPopulateElementData#'
         # PHPStan strict checks that are too strict for SilverStripe patterns
-        - '#Left side of && is always true#'
         - '#Negated boolean expression is always false#'
         - '#Call to function is_array\(\) with array will always evaluate to true#'
         - '#Dead catch - SilverStripe\\ORM\\ValidationException is never thrown#'
