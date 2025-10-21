@@ -162,10 +162,10 @@ class SiteTreeExtension extends Extension
             $template->Title = 'Template from ' . $page->Title;
             $template->PageType = $page->ClassName;
             $template->write();
-            
+
             // Initialize elements variable
             $elements = null;
-            
+
             // Ensure template has elemental area before accessing elements
             if ($template->Elements() && $template->Elements()->exists()) {
                 $elements = $template->Elements()->Elements();
