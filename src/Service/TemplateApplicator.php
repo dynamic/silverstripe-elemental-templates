@@ -24,7 +24,7 @@ class TemplateApplicator
         $logger = Injector::inst()->get(LoggerInterface::class);
 
         // Validate that the template exists.
-        if (!$template || !$template->exists()) {
+        if (!$template->exists()) {
             $message = "Template with ID {$template->ID} does not exist.";
             $logger->error($message);
             return ['success' => false, 'message' => $message];

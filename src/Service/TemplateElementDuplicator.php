@@ -22,6 +22,11 @@ class TemplateElementDuplicator
         /** @var LoggerInterface $logger */
         $logger = Injector::inst()->get(LoggerInterface::class);
 
+        // Check if template has elements before accessing
+        if (!$template->Elements()->exists()) {
+            return;
+        }
+
         // Loop over the template's inner elements.
         foreach ($template->Elements()->Elements() as $element) {
             try {
@@ -36,11 +41,6 @@ class TemplateElementDuplicator
                 if ($copy->hasMethod('setSkipPopulateData')) {
                     $copy->setSkipPopulateData(true);
                 }
-
-                // set AvailableGlobally to default
-                //if ($copy->hasMethod('setResetAvailableGlobally')) {
-                    $copy->setResetAvailableGlobally(true);
-                //}
 
                 $copy->write();
 

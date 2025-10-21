@@ -176,14 +176,19 @@ class Template extends DataObject implements PermissionProvider
                 );
             }
 
-            $fields->dataFieldByName('LayoutImage')
-                ->setFolderName('Uploads/templates')
-                ->setAllowedFileCategories('image');
+            $layoutImage = $fields->dataFieldByName('LayoutImage');
+            if ($layoutImage && method_exists($layoutImage, 'setFolderName')) {
+                $layoutImage->setFolderName('Uploads/templates');
+            }
+            if ($layoutImage && method_exists($layoutImage, 'setAllowedFileCategories')) {
+                $layoutImage->setAllowedFileCategories('image');
+            }
         });
 
         $fields = parent::getCMSFields();
 
-        if ($el = $fields->dataFieldByName('Elements')) {
+        $el = $fields->dataFieldByName('Elements');
+        if ($el && method_exists($el, 'setTypes')) {
             $el->setTypes($this->getAllowedTypes());
         }
 

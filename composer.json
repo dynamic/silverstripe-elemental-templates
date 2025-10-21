@@ -21,17 +21,16 @@
         }
     ],
     "require": {
-        "php": "^8.1",
-        "dnadesign/silverstripe-elemental": "^5.0",
-        "lekoala/silverstripe-cms-actions": "^1.7",
-        "silverstripe/vendor-plugin": "^2"
+        "php": "^8.3 || ^8.4",
+        "dnadesign/silverstripe-elemental": "^6.0",
+        "lekoala/silverstripe-cms-actions": "^2.0",
+        "silverstripe/vendor-plugin": "^3"
     },
     "require-dev": {
-        "dynamic/silverstripe-elemental-card":"^2.0",
-        "dynamic/silverstripe-elemental-carousel":"^2.0",
-        "silverstripe/frameworktest": "^1",
-        "silverstripe/recipe-testing": "^3",
-        "silverstripe/standards": "^1"
+        "phpstan/phpstan": "^1.10",
+        "silverstripe/cms": "^6.0",
+        "silverstripe/frameworktest": "^2.0",
+        "silverstripe/recipe-testing": "^4.0"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,

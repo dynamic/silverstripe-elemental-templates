@@ -4,7 +4,7 @@ namespace Dynamic\ElememtalTemplates\Extension;
 
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
-use SilverStripe\ORM\DataExtension;
+use SilverStripe\Core\Extension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Config\Config;
@@ -17,9 +17,10 @@ use Dynamic\ElementalTemplates\Service\FixtureDataService;
 /**
  * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
  *
- * @property \DNADesign\Elemental\Models\BaseElement|\Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension $owner
+ * @property \DNADesign\Elemental\Models\BaseElement $owner
+ * @method \DNADesign\Elemental\Models\BaseElement getOwner()
  */
-class BaseElementDataExtension extends DataExtension
+class BaseElementDataExtension extends Extension
 {
     protected $skipPopulateData = false;
 
@@ -53,7 +54,6 @@ class BaseElementDataExtension extends DataExtension
     }
 
     /**
-     * @var string
      * @config
      */
     public function updateCMSFields(FieldList $fields): void
@@ -69,7 +69,7 @@ class BaseElementDataExtension extends DataExtension
      * @param string|null $link
      * @return void
      */
-    public function updateCMSEditLink(string &$link = null): void
+    public function updateCMSEditLink(?string &$link = null): void
     {
         $owner = $this->getOwner();
 
@@ -111,13 +111,19 @@ class BaseElementDataExtension extends DataExtension
      */
     public function onBeforeWrite(): void
     {
-        parent::onBeforeWrite();
 
         $logger = Injector::inst()->get(LoggerInterface::class);
         $fixtureService = Injector::inst()->get(FixtureDataService::class);
 
-        // Reset available globally if the flag is set
-        $this->getOwner()->AvailableGlobally = true;
+        $manager = $this->getOwnerPage();
+
+        // Reset available globally to true for elements NOT in a Template
+        if (
+            $this->getOwner()->hasField('AvailableGlobally') &&
+            !($manager instanceof Template)
+        ) {
+            $this->getOwner()->AvailableGlobally = true;
+        }
 
         // Skip if the skipPopulateData flag is set to true
         if ($this->skipPopulateData || self::$hasRunPopulateElementData) {
@@ -126,9 +132,7 @@ class BaseElementDataExtension extends DataExtension
 
         // $logger->debug('onBeforeWrite triggered for ' . $this->owner->ClassName);
 
-        $manager = $this->getOwnerPage();
-
-        if (!$manager instanceof Template || $this->owner->isInDB()) {
+        if (!$manager instanceof Template || ($this->getOwner()->exists() && $this->getOwner()->isInDB())) {
             return;
         }
 
@@ -138,7 +142,7 @@ class BaseElementDataExtension extends DataExtension
         }
 
         // Call the FixtureDataService to populate fields
-        $fixtureService->populateElementData($this->owner);
+        $fixtureService->populateElementData($this->getOwner());
 
         // Mark populateElementData as having run
         //self::$hasRunPopulateElementData = true;
@@ -149,7 +153,6 @@ class BaseElementDataExtension extends DataExtension
      */
     public function onAfterWrite(): void
     {
-        parent::onAfterWrite();
     }
 
     /**
@@ -176,7 +179,7 @@ class BaseElementDataExtension extends DataExtension
             }
         }
 
-        parent::canCreate($member);
+        return null;
     }
 
     /**
@@ -195,7 +198,7 @@ class BaseElementDataExtension extends DataExtension
             }
         }
 
-        parent::canEdit($member);
+        return null;
     }
 
     /**
@@ -214,7 +217,7 @@ class BaseElementDataExtension extends DataExtension
             }
         }
 
-        parent::canDelete($member);
+        return null;
     }
 
     /**
