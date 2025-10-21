@@ -1,14 +1,14 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Tests\Models;
+namespace Dynamic\ElementalTemplates\Tests\Models;
 
 use DNADesign\Elemental\Extensions\ElementalPageExtension;
 use DNADesign\Elemental\Forms\ElementalAreaField;
-use Dynamic\ElememtalTemplates\Models\Template;
-use Dynamic\ElememtalTemplates\Tests\TestOnly\ElementOne;
-use Dynamic\ElememtalTemplates\Tests\TestOnly\ElementTwo;
-use Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePage;
-use Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePageTwo;
+use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Tests\TestOnly\ElementOne;
+use Dynamic\ElementalTemplates\Tests\TestOnly\ElementTwo;
+use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
+use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePageTwo;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FormField;
@@ -23,6 +23,11 @@ class TemplateTest extends SapphireTest
      * @var string
      */
     protected static $fixture_file = 'TemplateTest.yml';
+
+    /**
+     * @var bool
+     */
+    protected $usesDatabase = true;
 
     /**
      * @var string[]
@@ -42,6 +47,11 @@ class TemplateTest extends SapphireTest
             ElementalPageExtension::class,
         ],
     ];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+    }
 
     /**
      * @return void

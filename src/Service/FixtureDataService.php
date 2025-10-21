@@ -12,9 +12,8 @@ use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\LinkField\Models\Link;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\ORM\ValidationException;
 use SilverStripe\Assets\Storage\AssetStore;
-use Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension;
+use Dynamic\ElementalTemplates\Extension\BaseElementDataExtension;
 
 class FixtureDataService
 {
@@ -495,7 +494,7 @@ class FixtureDataService
         try {
             $image->write();
             // $logger->debug("Successfully created Image record with ID: {$image->ID}");
-        } catch (ValidationException $e) {
+        } catch (Exception $e) {
             $logger->warning("Failed to write image record: " . $e->getMessage());
             return null;
         }

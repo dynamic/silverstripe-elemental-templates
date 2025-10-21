@@ -1,26 +1,26 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Extension;
+namespace Dynamic\ElementalTemplates\Extension;
 
-use DNADesign\Elemental\Extensions\ElementalAreasExtension;
-use Dynamic\ElememtalTemplates\Models\Template;
-use Dynamic\ElememtalTemplates\Service\TemplateApplicator;
-use LeKoala\CmsActions\CustomAction;
 use Psr\Log\LoggerInterface;
-use SilverStripe\Control\Controller;
-use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Forms\DropdownField;
-use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
-use SilverStripe\ORM\DataExtension;
+use SilverStripe\Core\Extension;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\Forms\FieldList;
+use LeKoala\CmsActions\CustomAction;
+use SilverStripe\Control\Controller;
+use SilverStripe\Forms\DropdownField;
+use SilverStripe\Core\Injector\Injector;
+use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Service\TemplateApplicator;
+use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 
 /**
- * Class \Dynamic\ElememtalTemplates\Extension\SiteTreeExtension
+ * Class \Dynamic\ElementalTemplates\Extension\SiteTreeExtension
  *
- * @property \SilverStripe\CMS\Model\SiteTree|\Dynamic\ElememtalTemplates\Extension\SiteTreeExtension $owner
+ * @property \SilverStripe\CMS\Model\SiteTree|\Dynamic\ElementalTemplates\Extension\SiteTreeExtension $owner
  */
-class SiteTreeExtension extends DataExtension
+class SiteTreeExtension extends Extension
 {
     private static $allowed_actions = [
         'applyTemplate'
@@ -73,12 +73,14 @@ class SiteTreeExtension extends DataExtension
             }
 
             // Ensure the CreateTemplate action calls the method in AddTemplateExtension
-            $moreOptions->insertAfter(
-                'Information',
-                CustomAction::create('CreateTemplate', 'Create Blocks Template')
-                    ->setUseButtonTag(true)
-                    ->setAttribute('data-url', $this->owner->Link('CreateTemplate'))
-            );
+            if (class_exists('LeKoala\CmsActions\CustomAction')) {
+                $moreOptions->insertAfter(
+                    'Information',
+                    CustomAction::create('CreateTemplate', 'Create Blocks Template')
+                        ->setUseButtonTag(true)
+                        ->setAttribute('data-url', $this->owner->Link('CreateTemplate'))
+                );
+            }
 
             // "Apply Blocks Template" action if this is an existing page.
             if ($this->getOwner()->ID) {
@@ -160,7 +162,14 @@ class SiteTreeExtension extends DataExtension
             $template->Title = 'Template from ' . $page->Title;
             $template->PageType = $page->ClassName;
             $template->write();
-            $elements = $template->Elements()->Elements();
+
+            // Initialize elements variable
+            $elements = null;
+
+            // Ensure template has elemental area before accessing elements
+            if ($template->Elements() && $template->Elements()->exists()) {
+                $elements = $template->Elements()->Elements();
+            }
 
             // Duplicate elements from the page's ElementalArea
             if ($page->hasMethod('ElementalArea') && $page->ElementalArea()->exists()) {

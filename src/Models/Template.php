@@ -1,6 +1,6 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Models;
+namespace Dynamic\ElementalTemplates\Models;
 
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 use DNADesign\Elemental\Forms\ElementalAreaField;
@@ -257,10 +257,10 @@ class Template extends DataObject implements PermissionProvider
         return Controller::join_links(
             'admin',
             'elemental-templates',
-            'Dynamic-ElememtalTemplates-Models-Template',
+            'Dynamic-ElementalTemplates-Models-Template',
             'EditForm',
             'field',
-            'Dynamic-ElememtalTemplates-Models-Template',
+            'Dynamic-ElementalTemplates-Models-Template',
             'item',
             $this->ID,
             'edit'
@@ -399,12 +399,14 @@ class Template extends DataObject implements PermissionProvider
     {
         $actions = parent::getCMSActions();
 
-        // Add a custom CMS action for previewing the template
-        $actions->push(
-            CustomAction::create('PreviewTemplate', 'Preview Template')
-                ->setUseButtonTag(true)
-                ->setAttribute('onclick', "window.open('{$this->getPreviewLink()}', '_blank')") // Open the URL in a new window
-        );
+        // Add a custom CMS action for previewing the template if CmsActions is available
+        if (class_exists('LeKoala\\CmsActions\\CustomAction')) {
+            $actions->push(
+                CustomAction::create('PreviewTemplate', 'Preview Template')
+                    ->setUseButtonTag(true)
+                    ->setAttribute('onclick', "window.open('{$this->getPreviewLink()}', '_blank')") // Open the URL in a new window
+            );
+        }
 
         return $actions;
     }

@@ -3,11 +3,9 @@
 namespace Dynamic\ElementalTemplates\Controller;
 
 use App\PageController;
-use SilverStripe\Dev\Debug;
 use SilverStripe\View\Requirements;
 use SilverStripe\Control\HTTPRequest;
-use SilverStripe\ORM\FieldType\DBField;
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 
 class TemplatePreviewController extends \PageController
 {
@@ -37,27 +35,9 @@ class TemplatePreviewController extends \PageController
 
         $page = $pageType::create();
         $page->Title = $template->Title;
-
-        // Explicitly assign the Template's ElementalArea to the PreviewPage
         $page->ElementalArea = $template->Elements();
 
-        $templatePath = str_replace('\\', '/', $pageType);
-        $templateSegments = explode('/', $templatePath);
-
-        // Inject 'Layout' between the second-to-last and last segments
-        if (count($templateSegments) > 1) {
-            array_splice($templateSegments, -1, 0, 'Layout');
-        }
-
-        $adjustedTemplatePath = implode('/', $templateSegments);
-
-        // Render the BlockPage layout template and store it in the Layout variable
-        $layoutContent = $this->customise($page)->renderWith($adjustedTemplatePath);
-
-        // Render the Page.ss template with the Layout variable properly set
-        return $this->customise([
-            'Page' => $page,
-            'Layout' => DBField::create_field('HTMLText', $layoutContent) // Ensure the layout is treated as HTML
-        ])->renderWith('Page');
+        // Render with the page type template which will automatically include Layout
+        return $this->customise($page)->renderWith([$pageType, 'Page']);
     }
 }

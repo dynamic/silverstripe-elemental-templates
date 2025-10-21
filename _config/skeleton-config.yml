@@ -3,12 +3,12 @@ name: skeleton-config
 ---
 DNADesign\Elemental\Models\BaseElement:
   extensions:
-    - Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension
+    - Dynamic\ElementalTemplates\Extension\BaseElementDataExtension
 
 SilverStripe\CMS\Controllers\CMSPageAddController:
     extensions:
-        - Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension
+        - Dynamic\ElementalTemplates\Extension\CMSPageAddControllerExtension
 
 SilverStripe\CMS\Model\SiteTree:
   extensions:
-    - Dynamic\ElememtalTemplates\Extension\SiteTreeExtension
+    - Dynamic\ElementalTemplates\Extension\SiteTreeExtension

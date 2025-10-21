@@ -1,40 +1,40 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Extension;
+namespace Dynamic\ElementalTemplates\Extension;
 
+use Psr\Log\LoggerInterface;
+use SilverStripe\Core\Extension;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
-use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Config\Config;
-use Dynamic\ElememtalTemplates\Models\Template;
-use SilverStripe\CMS\Controllers\CMSPageEditController;
-use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Injector\Injector;
+use Dynamic\ElementalTemplates\Models\Template;
+use SilverStripe\CMS\Controllers\CMSPageEditController;
 use Dynamic\ElementalTemplates\Service\FixtureDataService;
 
 /**
- * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
+ * Class BaseElementDataExtension
  *
- * @property \DNADesign\Elemental\Models\BaseElement|\Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension $owner
+ * @property \DNADesign\Elemental\Models\BaseElement|\Dynamic\ElementalTemplates\Extension\BaseElementDataExtension $owner
  */
-class BaseElementDataExtension extends DataExtension
+class BaseElementDataExtension extends Extension
 {
-    protected $skipPopulateData = false;
+    protected bool $skipPopulateData = false;
 
-    protected $resetAvailableGlobally = false;
+    protected bool $resetAvailableGlobally = false;
+
+    /**
+     * Ensures populateElementData runs only once per element instance.
+     */
+    protected bool $hasRunPopulateElementData = false;
 
     /**
      * @var string|null Path to the fixtures YAML file.
      * @config
      */
     private static $fixtures = null;
-
-    /**
-     * Ensures populateElementData runs only once per request.
-     */
-    private static $hasRunPopulateElementData = false;
 
     /**
      * Sets the flag to skip populateElementData().
@@ -69,7 +69,7 @@ class BaseElementDataExtension extends DataExtension
      * @param string|null $link
      * @return void
      */
-    public function updateCMSEditLink(string &$link = null): void
+    public function updateCMSEditLink(?string &$link = null): void
     {
         $owner = $this->getOwner();
 
@@ -109,18 +109,16 @@ class BaseElementDataExtension extends DataExtension
     /**
      * Skips the populateElementData logic if the flag is set or if it has already run.
      */
-    public function onBeforeWrite(): void
+    protected function onBeforeWrite(): void
     {
-        parent::onBeforeWrite();
-
         $logger = Injector::inst()->get(LoggerInterface::class);
         $fixtureService = Injector::inst()->get(FixtureDataService::class);
 
         // Reset available globally if the flag is set
         $this->getOwner()->AvailableGlobally = true;
 
-        // Skip if the skipPopulateData flag is set to true
-        if ($this->skipPopulateData || self::$hasRunPopulateElementData) {
+        // Skip if the skipPopulateData flag is set to true or if already run for this instance
+        if ($this->skipPopulateData || $this->hasRunPopulateElementData) {
             return;
         }
 
@@ -140,16 +138,16 @@ class BaseElementDataExtension extends DataExtension
         // Call the FixtureDataService to populate fields
         $fixtureService->populateElementData($this->owner);
 
-        // Mark populateElementData as having run
-        //self::$hasRunPopulateElementData = true;
+        // Mark populateElementData as having run for this instance
+        $this->hasRunPopulateElementData = true;
     }
 
     /**
      * @return void
      */
-    public function onAfterWrite(): void
+    protected function onAfterWrite(): void
     {
-        parent::onAfterWrite();
+        // Extension hook method in SilverStripe 6 - no parent call needed
     }
 
     /**
@@ -161,60 +159,66 @@ class BaseElementDataExtension extends DataExtension
     }
 
     /**
-     * @param $member
-     * @return true|void
+     * Extension hook for canCreate permission check
+     *
+     * @param Member|null $member
+     * @param array $context Additional context for permission checking
+     * @param bool &$result The result of the permission check (passed by reference)
+     * @return void
      */
-    public function canCreate($member)
+    public function updateCanCreate(?Member $member, array $context, bool &$result): void
     {
         if (!$member instanceof Member) {
             $member = $this->getCurrentUser();
         }
 
         if ($ownerPage = $this->getOwnerPage()) {
-            if ($ownerPage->canCreate($member)) {
-                return true;
+            if (!$ownerPage->canCreate($member)) {
+                $result = false;
             }
         }
-
-        parent::canCreate($member);
     }
 
     /**
-     * @param $member
-     * @return true|void
+     * Extension hook for canEdit permission check
+     *
+     * @param Member|null $member
+     * @param array $context Additional context for permission checking
+     * @param bool &$result The result of the permission check (passed by reference)
+     * @return void
      */
-    public function canEdit($member)
+    public function updateCanEdit(?Member $member, array $context, bool &$result): void
     {
         if (!$member instanceof Member) {
             $member = $this->getCurrentUser();
         }
 
         if ($ownerPage = $this->getOwnerPage()) {
-            if ($ownerPage->canEdit($member)) {
-                return true;
+            if (!$ownerPage->canEdit($member)) {
+                $result = false;
             }
         }
-
-        parent::canEdit($member);
     }
 
     /**
-     * @param $member
-     * @return true|void
+     * Extension hook for canDelete permission check
+     *
+     * @param Member|null $member
+     * @param array $context Additional context for permission checking
+     * @param bool &$result The result of the permission check (passed by reference)
+     * @return void
      */
-    public function canDelete($member)
+    public function updateCanDelete(?Member $member, array $context, bool &$result): void
     {
         if (!$member instanceof Member) {
             $member = $this->getCurrentUser();
         }
 
         if ($ownerPage = $this->getOwnerPage()) {
-            if ($ownerPage->canDelete($member)) {
-                return true;
+            if (!$ownerPage->canDelete($member)) {
+                $result = false;
             }
         }
-
-        parent::canDelete($member);
     }
 
     /**
