@@ -30,7 +30,7 @@
         "silverstripe/recipe-testing": "^4",
         "phpstan/extension-installer": "^1.4",
         "cambis/silverstan": "^2.1",
-        "squizlabs/php_codesniffer": "^4.0"
+        "squizlabs/php_codesniffer": "^3.7"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
