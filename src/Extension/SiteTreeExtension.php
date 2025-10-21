@@ -12,16 +12,16 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
-use SilverStripe\ORM\DataExtension;
+use SilverStripe\Core\Extension;
 use SilverStripe\ORM\DataObject;
 
 /**
  * Class \Dynamic\ElememtalTemplates\Extension\SiteTreeExtension
  *
- * @property \SilverStripe\CMS\Model\SiteTree&\SilverStripe\ORM\DataExtension $owner
+ * @property \SilverStripe\CMS\Model\SiteTree&\SilverStripe\Core\Extension $owner
  * @method \SilverStripe\CMS\Model\SiteTree getOwner()
  */
-class SiteTreeExtension extends DataExtension
+class SiteTreeExtension extends Extension
 {
     private static $allowed_actions = [
         'applyTemplate'

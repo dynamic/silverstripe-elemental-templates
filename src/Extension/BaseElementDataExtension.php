@@ -4,7 +4,7 @@ namespace Dynamic\ElememtalTemplates\Extension;
 
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
-use SilverStripe\ORM\DataExtension;
+use SilverStripe\Core\Extension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Config\Config;
@@ -17,10 +17,10 @@ use Dynamic\ElementalTemplates\Service\FixtureDataService;
 /**
  * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
  *
- * @property \DNADesign\Elemental\Models\BaseElement&\SilverStripe\ORM\DataExtension $owner
+ * @property \DNADesign\Elemental\Models\BaseElement&\SilverStripe\Core\Extension $owner
  * @method \DNADesign\Elemental\Models\BaseElement getOwner()
  */
-class BaseElementDataExtension extends DataExtension
+class BaseElementDataExtension extends Extension
 {
     protected $skipPopulateData = false;
 
