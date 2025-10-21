@@ -26,15 +26,15 @@ class BaseElementDataExtension extends Extension
     protected bool $resetAvailableGlobally = false;
 
     /**
+     * Ensures populateElementData runs only once per element instance.
+     */
+    protected bool $hasRunPopulateElementData = false;
+
+    /**
      * @var string|null Path to the fixtures YAML file.
      * @config
      */
     private static $fixtures = null;
-
-    /**
-     * Ensures populateElementData runs only once per request.
-     */
-    private static $hasRunPopulateElementData = false;
 
     /**
      * Sets the flag to skip populateElementData().
@@ -117,8 +117,8 @@ class BaseElementDataExtension extends Extension
         // Reset available globally if the flag is set
         $this->getOwner()->AvailableGlobally = true;
 
-        // Skip if the skipPopulateData flag is set to true
-        if ($this->skipPopulateData || Config::inst()->get(self::class, 'hasRunPopulateElementData')) {
+        // Skip if the skipPopulateData flag is set to true or if already run for this instance
+        if ($this->skipPopulateData || $this->hasRunPopulateElementData) {
             return;
         }
 
@@ -138,8 +138,8 @@ class BaseElementDataExtension extends Extension
         // Call the FixtureDataService to populate fields
         $fixtureService->populateElementData($this->owner);
 
-        // Mark populateElementData as having run
-        //self::$hasRunPopulateElementData = true;
+        // Mark populateElementData as having run for this instance
+        $this->hasRunPopulateElementData = true;
     }
 
     /**

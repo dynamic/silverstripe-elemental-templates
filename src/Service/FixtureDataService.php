@@ -495,7 +495,7 @@ class FixtureDataService
         try {
             $image->write();
             // $logger->debug("Successfully created Image record with ID: {$image->ID}");
-        } catch (Exception $e) {
+        } catch (ValidationException $e) {
             $logger->warning("Failed to write image record: " . $e->getMessage());
             return null;
         }

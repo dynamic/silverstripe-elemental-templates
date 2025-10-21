@@ -105,7 +105,6 @@ class FixtureDataServiceTest extends SapphireTest
         $element->write();
 
         // Verify that the fields were populated correctly by FixtureDataService
-        // Note: Using actual value from test fixture
         $this->assertEquals('Test Content Block Title', $element->getField('Title'));
         $this->assertEquals('<p>Test Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris elementum congue erat, accumsan tincidunt velit porta lobortis. Sed at efficitur ex. Nulla quis porta neque. In hac habitasse platea dictumst. Nullam et malesuada sem. Pellentesque eros eros, rutrum sit amet erat in, finibus ultrices tortor. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>', $element->getField('HTML'));
         $this->assertFalse((bool)$element->getField('AvailableGlobally'));
@@ -130,7 +129,6 @@ class FixtureDataServiceTest extends SapphireTest
         $element->write();
 
         // Verify that the fields were populated correctly by FixtureDataService
-        // Note: Using actual value from test fixture
         $this->assertEquals('Test Content Block Title', $element->getField('Title'));
         $this->assertEquals('<p>Test Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris elementum congue erat, accumsan tincidunt velit porta lobortis. Sed at efficitur ex. Nulla quis porta neque. In hac habitasse platea dictumst. Nullam et malesuada sem. Pellentesque eros eros, rutrum sit amet erat in, finibus ultrices tortor. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>', $element->getField('HTML'));
         $this->assertFalse((bool)$element->getField('AvailableGlobally'));
