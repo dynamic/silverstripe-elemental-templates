@@ -24,16 +24,13 @@
         "php": "^8.3 || ^8.4",
         "dnadesign/silverstripe-elemental": "^6.0",
         "lekoala/silverstripe-cms-actions": "^2.0",
-        "silverstripe/vendor-plugin": "^2"
+        "silverstripe/vendor-plugin": "^3"
     },
     "require-dev": {
-        "dynamic/silverstripe-elemental-card":"^3.0",
-        "dynamic/silverstripe-elemental-carousel":"^3.0",
         "phpstan/phpstan": "^1.10",
         "silverstripe/cms": "^6.0",
         "silverstripe/frameworktest": "^2.0",
-        "silverstripe/recipe-testing": "^4.0",
-        "silverstripe/standards": "^2.0"
+        "silverstripe/recipe-testing": "^4.0"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
