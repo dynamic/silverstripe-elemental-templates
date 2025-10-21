@@ -115,11 +115,12 @@ class BaseElementDataExtension extends Extension
         $logger = Injector::inst()->get(LoggerInterface::class);
         $fixtureService = Injector::inst()->get(FixtureDataService::class);
 
-        // Reset available globally if the flag is set (but not for Template instances)
+        $manager = $this->getOwnerPage();
+
+        // Reset available globally to true for elements NOT in a Template
         if (
-            $this->getOwner()->exists() &&
             $this->getOwner()->hasField('AvailableGlobally') &&
-            !($this->getOwner() instanceof Template)
+            !($manager instanceof Template)
         ) {
             $this->getOwner()->AvailableGlobally = true;
         }
@@ -131,14 +132,12 @@ class BaseElementDataExtension extends Extension
 
         // $logger->debug('onBeforeWrite triggered for ' . $this->owner->ClassName);
 
-        $manager = $this->getOwnerPage();
-
         if (!$manager instanceof Template || ($this->getOwner()->exists() && $this->getOwner()->isInDB())) {
             return;
         }
 
         // Explicitly set AvailableGlobally to false for Template instances
-        if ($this->getOwner()->exists() && $this->getOwner()->hasField('AvailableGlobally')) {
+        if ($this->getOwner()->hasField('AvailableGlobally')) {
             $this->getOwner()->AvailableGlobally = false;
         }
 
@@ -161,10 +160,7 @@ class BaseElementDataExtension extends Extension
      */
     protected function getOwnerPage(): mixed
     {
-        if ($this->getOwner()->exists()) {
-            return $this->getOwner()->getPage();
-        }
-        return null;
+        return $this->getOwner()->getPage();
     }
 
     /**
