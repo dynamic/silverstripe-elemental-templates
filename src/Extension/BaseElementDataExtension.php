@@ -2,16 +2,16 @@
 
 namespace Dynamic\ElememtalTemplates\Extension;
 
+use Psr\Log\LoggerInterface;
+use SilverStripe\Core\Extension;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
-use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Config\Config;
+use SilverStripe\Core\Injector\Injector;
 use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
-use Psr\Log\LoggerInterface;
-use SilverStripe\Core\Injector\Injector;
 use Dynamic\ElementalTemplates\Service\FixtureDataService;
 
 /**
@@ -19,7 +19,7 @@ use Dynamic\ElementalTemplates\Service\FixtureDataService;
  *
  * @property \DNADesign\Elemental\Models\BaseElement|\Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension $owner
  */
-class BaseElementDataExtension extends DataExtension
+class BaseElementDataExtension extends Extension
 {
     protected $skipPopulateData = false;
 

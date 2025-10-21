@@ -2,25 +2,25 @@
 
 namespace Dynamic\ElememtalTemplates\Extension;
 
-use DNADesign\Elemental\Extensions\ElementalAreasExtension;
+use Psr\Log\LoggerInterface;
+use SilverStripe\Forms\Form;
+use SilverStripe\Core\Extension;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Forms\FieldList;
+use LeKoala\CmsActions\CustomAction;
+use SilverStripe\Control\Controller;
+use SilverStripe\Forms\DropdownField;
+use SilverStripe\Core\Injector\Injector;
 use Dynamic\ElememtalTemplates\Models\Template;
 use Dynamic\ElememtalTemplates\Service\TemplateApplicator;
-use LeKoala\CmsActions\CustomAction;
-use Psr\Log\LoggerInterface;
-use SilverStripe\Control\Controller;
-use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Forms\DropdownField;
-use SilverStripe\Forms\FieldList;
-use SilverStripe\Forms\Form;
-use SilverStripe\ORM\DataExtension;
-use SilverStripe\ORM\DataObject;
+use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 
 /**
  * Class \Dynamic\ElememtalTemplates\Extension\SiteTreeExtension
  *
  * @property \SilverStripe\CMS\Model\SiteTree|\Dynamic\ElememtalTemplates\Extension\SiteTreeExtension $owner
  */
-class SiteTreeExtension extends DataExtension
+class SiteTreeExtension extends Extension
 {
     private static $allowed_actions = [
         'applyTemplate'
