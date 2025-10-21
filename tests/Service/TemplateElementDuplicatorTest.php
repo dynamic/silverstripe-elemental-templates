@@ -1,20 +1,27 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Tests\Service;
+namespace Dynamic\ElementalTemplates\Tests\Service;
 
 use SilverStripe\Dev\SapphireTest;
-use Dynamic\ElememtalTemplates\Models\Template;
-use Dynamic\ElememtalTemplates\Service\TemplateElementDuplicator;
+use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Service\TemplateElementDuplicator;
 use DNADesign\Elemental\Models\ElementalArea;
 use DNADesign\Elemental\Models\BaseElement;
 
 class TemplateElementDuplicatorTest extends SapphireTest
 {
-    protected static $fixture_file = 'TemplateElementDuplicatorTest.yml';
-
     public function testAvailableGloballyResetOnDuplicate()
     {
-        $template = $this->objFromFixture(Template::class, 'default');
+        // Create test data programmatically
+        $templateArea = ElementalArea::create();
+        $templateArea->Title = 'Template Elemental Area';
+        $templateArea->write();
+
+        $template = Template::create();
+        $template->Title = 'Test Template';
+        $template->AvailableGlobally = true;
+        $template->ElementsID = $templateArea->ID;
+        $template->write();
         $template->copyVersionToStage('Stage', 'Stage');
 
         $area = ElementalArea::create();

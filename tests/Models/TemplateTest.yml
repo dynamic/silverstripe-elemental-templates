@@ -35,16 +35,16 @@ SilverStripe\Security\Member:
 
 DNADesign\Elemental\Models\ElementalArea:
   areaone:
-    OwnerClassName: 'Dynamic\ElememtalTemplates\Models\Template'
+    OwnerClassName: 'Dynamic\ElementalTemplates\Models\Template'
   areatwo:
-    OwnerClassName: 'Dynamic\ElememtalTemplates\Models\Template'
+    OwnerClassName: 'Dynamic\ElementalTemplates\Models\Template'
 
-Dynamic\ElememtalTemplates\Models\Template:
+Dynamic\ElementalTemplates\Models\Template:
   templateone:
     Title: 'Template One'
-    PageType: 'Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePage'
+    PageType: 'Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage'
     Elements: =>DNADesign\Elemental\Models\ElementalArea.areaone
   templatetwo:
     Title: 'Template Two'
-    PageType: 'Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePageTwo'
+    PageType: 'Dynamic\ElementalTemplates\Tests\TestOnly\SamplePageTwo'
     Elements: =>DNADesign\Elemental\Models\ElementalArea.areatwo
