@@ -252,50 +252,101 @@ class Template extends DataObject implements PermissionProvider
 
     /**
      * Returns a better sized thumbnail for the layout image in summary fields.
-     * Includes click-to-enlarge functionality.
+     * Includes click-to-enlarge functionality with accessibility support.
      *
-     * @return DBHTMLText|string
+     * @return DBHTMLText
      */
     public function getLayoutImageThumbnail()
     {
         if ($this->LayoutImage() && $this->LayoutImage()->exists()) {
             // Get a scaled version that maintains aspect ratio
             $thumbnail = $this->LayoutImage()->ScaleWidth(200);
-            $fullImage = $this->LayoutImage()->ScaleWidth(800);
+            // Use original image for enlarged view to avoid extra scaling
+            $fullUrl = $this->LayoutImage()->getURL();
             
-            if ($thumbnail && $fullImage) {
+            if ($thumbnail) {
                 $thumbnailUrl = $thumbnail->getURL();
-                $fullUrl = $fullImage->getURL();
-                $title = htmlspecialchars($this->Title);
+                // Properly escape for JavaScript context
+                $title = htmlspecialchars($this->Title, ENT_QUOTES, 'UTF-8');
+                $titleJs = json_encode($this->Title);
+                $fullUrlJs = json_encode($fullUrl);
                 
                 $html = sprintf(
                     '<div style="position: relative; display: inline-block;">
-                        <img src="%s" alt="%s" style="max-width: 200px; height: auto; display: block; cursor: pointer;" 
+                        <img src="%s" 
+                             alt="%s" 
+                             role="button"
+                             tabindex="0"
+                             aria-label="View larger version of %s"
+                             style="max-width: 200px; height: auto; display: block; cursor: pointer;" 
                              onclick="
                                 event.stopPropagation();
+                                // Remove any existing overlay
+                                if (window.__templateOverlay && window.__templateOverlay.parentNode) {
+                                    window.__templateOverlay.parentNode.removeChild(window.__templateOverlay);
+                                    window.__templateOverlay = null;
+                                }
+                                var previouslyFocused = document.activeElement;
                                 var overlay = document.createElement(\'div\');
+                                overlay.setAttribute(\'role\', \'dialog\');
+                                overlay.setAttribute(\'aria-modal\', \'true\');
+                                overlay.setAttribute(\'aria-label\', \'Enlarged template preview\');
                                 overlay.style.cssText = \'position: fixed; top: 0; left: 0; width: 100%%; height: 100%%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; cursor: pointer;\';
+                                overlay.tabIndex = -1;
                                 var img = document.createElement(\'img\');
-                                img.src = \'%s\';
-                                img.alt = \'%s\';
+                                img.src = %s;
+                                img.alt = %s;
                                 img.style.cssText = \'max-width: 90%%; max-height: 90%%; box-shadow: 0 0 20px rgba(0,0,0,0.5);\';
                                 overlay.appendChild(img);
-                                overlay.onclick = function() { document.body.removeChild(overlay); };
+                                var closeOverlay = function() {
+                                    if (overlay && overlay.parentNode) {
+                                        overlay.parentNode.removeChild(overlay);
+                                        if (window.__templateOverlay === overlay) {
+                                            window.__templateOverlay = null;
+                                        }
+                                        if (previouslyFocused && typeof previouslyFocused.focus === \'function\') {
+                                            previouslyFocused.focus();
+                                        }
+                                    }
+                                };
+                                overlay.onclick = function(event) {
+                                    if (event.target === overlay) {
+                                        closeOverlay();
+                                    }
+                                };
+                                overlay.addEventListener(\'keydown\', function(e) {
+                                    if (e.key === \'Escape\' || e.key === \'Esc\') {
+                                        e.preventDefault();
+                                        closeOverlay();
+                                    } else if (e.key === \'Tab\') {
+                                        e.preventDefault();
+                                        overlay.focus();
+                                    }
+                                });
                                 document.body.appendChild(overlay);
+                                window.__templateOverlay = overlay;
+                                overlay.focus();
+                             "
+                             onkeydown="
+                                if (event.key === \'Enter\' || event.key === \' \' || event.key === \'Spacebar\') {
+                                    event.preventDefault();
+                                    this.click();
+                                }
                              "
                              title="Click to view larger" />
                     </div>',
                     $thumbnailUrl,
                     $title,
-                    $fullUrl,
-                    $title
+                    $title,
+                    $fullUrlJs,
+                    $titleJs
                 );
                 
                 return DBHTMLText::create()->setValue($html);
             }
         }
         
-        return '';
+        return DBHTMLText::create()->setValue('');
     }
 
     /**
