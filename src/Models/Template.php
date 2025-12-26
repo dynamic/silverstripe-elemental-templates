@@ -12,6 +12,7 @@ use SilverStripe\Core\ClassInfo;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
@@ -106,8 +107,8 @@ class Template extends DataObject implements PermissionProvider
      * @config
      */
     private static array $summary_fields = [
+        'LayoutImageThumbnail' => 'Preview Image',
         'Title' => 'Layout Name',
-        'LayoutImage.CMSThumbnail' => 'Preview Image',
         'PageTypeName' => 'Page Type',
     ];
 
@@ -247,6 +248,54 @@ class Template extends DataObject implements PermissionProvider
             return '';
         }
         return singleton($this->PageType)->singular_name();
+    }
+
+    /**
+     * Returns a better sized thumbnail for the layout image in summary fields.
+     * Includes click-to-enlarge functionality.
+     *
+     * @return DBHTMLText|string
+     */
+    public function getLayoutImageThumbnail()
+    {
+        if ($this->LayoutImage() && $this->LayoutImage()->exists()) {
+            // Get a scaled version that maintains aspect ratio
+            $thumbnail = $this->LayoutImage()->ScaleWidth(200);
+            $fullImage = $this->LayoutImage()->ScaleWidth(800);
+            
+            if ($thumbnail && $fullImage) {
+                $thumbnailUrl = $thumbnail->getURL();
+                $fullUrl = $fullImage->getURL();
+                $title = htmlspecialchars($this->Title);
+                
+                $html = sprintf(
+                    '<div style="position: relative; display: inline-block;">
+                        <img src="%s" alt="%s" style="max-width: 200px; height: auto; display: block; cursor: pointer;" 
+                             onclick="
+                                event.stopPropagation();
+                                var overlay = document.createElement(\'div\');
+                                overlay.style.cssText = \'position: fixed; top: 0; left: 0; width: 100%%; height: 100%%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; cursor: pointer;\';
+                                var img = document.createElement(\'img\');
+                                img.src = \'%s\';
+                                img.alt = \'%s\';
+                                img.style.cssText = \'max-width: 90%%; max-height: 90%%; box-shadow: 0 0 20px rgba(0,0,0,0.5);\';
+                                overlay.appendChild(img);
+                                overlay.onclick = function() { document.body.removeChild(overlay); };
+                                document.body.appendChild(overlay);
+                             "
+                             title="Click to view larger" />
+                    </div>',
+                    $thumbnailUrl,
+                    $title,
+                    $fullUrl,
+                    $title
+                );
+                
+                return DBHTMLText::create()->setValue($html);
+            }
+        }
+        
+        return '';
     }
 
     /**
