@@ -8,7 +8,7 @@ DNADesign\Elemental\Models\ElementalArea:
     Title: 'Default Area'
     Elements: =>DNADesign\Elemental\Models\BaseElement.default_element
 
-Dynamic\ElememtalTemplates\Models\Template:
+Dynamic\ElementalTemplates\Models\Template:
   default:
     Title: 'Default Template'
     AvailableGlobally: false
