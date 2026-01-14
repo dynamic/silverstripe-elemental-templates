@@ -1,8 +1,8 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Tasks;
+namespace Dynamic\ElementalTemplates\Tasks;
 
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\Versioned\Versioned;
 

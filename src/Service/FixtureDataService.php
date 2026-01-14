@@ -14,7 +14,7 @@ use SilverStripe\LinkField\Models\Link;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Assets\Storage\AssetStore;
-use Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension;
+use Dynamic\ElementalTemplates\Extension\BaseElementDataExtension;
 
 class FixtureDataService
 {
