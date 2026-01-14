@@ -1,7 +1,7 @@
 SilverStripe\Security\Group:
   createGroup:
     Title: 'Create Group'
-    
+
   noCreateGroup:
     Title: 'No Create Group'
 

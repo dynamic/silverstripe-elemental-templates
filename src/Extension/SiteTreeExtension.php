@@ -2,18 +2,21 @@
 
 namespace Dynamic\ElementalTemplates\Extension;
 
-use Psr\Log\LoggerInterface;
-use SilverStripe\Forms\Form;
-use SilverStripe\Core\Extension;
-use SilverStripe\ORM\DataObject;
-use SilverStripe\Forms\FieldList;
-use LeKoala\CmsActions\CustomAction;
-use SilverStripe\Control\Controller;
-use SilverStripe\Forms\DropdownField;
-use SilverStripe\Core\Injector\Injector;
+use DNADesign\Elemental\Extensions\ElementalAreasExtension;
+use Dynamic\ElementalTemplates\Form\TemplatePickerField;
 use Dynamic\ElementalTemplates\Models\Template;
 use Dynamic\ElementalTemplates\Service\TemplateApplicator;
-use DNADesign\Elemental\Extensions\ElementalAreasExtension;
+use LeKoala\CmsActions\CustomAction;
+use Psr\Log\LoggerInterface;
+use SilverStripe\Control\Controller;
+use SilverStripe\Core\Extension;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Forms\DropdownField;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\Form;
+use SilverStripe\Forms\ToggleCompositeField;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\View\Requirements;
 
 /**
  * Class \Dynamic\ElementalTemplates\Extension\SiteTreeExtension
@@ -27,24 +30,48 @@ class SiteTreeExtension extends Extension
     ];
 
     /**
-     * Update Settings fields to add a dropdown for applying an existing template.
+     * Update CMS fields to add a visual template picker in the Content tab.
      *
      * @param FieldList $fields
      */
-    public function updateSettingsFields(FieldList $fields): void
+    public function updateCMSFields(FieldList $fields): void
     {
-        if ($this->owner->ID) {
-            $templates = Template::get()->map('ID', 'Title')->toArray();
-            $fields->addFieldToTab(
-                'Root.Settings',
-                DropdownField::create(
-                    'ApplyTemplateID',
-                    'Select Template to Apply',
-                    $templates
-                )
-                ->setEmptyString('-- Select a Template --')
-                ->setDescription('To apply a template, go to More Options and select Apply Blocks Template.')
-            );
+        // Only show template picker for saved pages that support elemental areas
+        if (!$this->owner->ID) {
+            return;
+        }
+
+        $hasElementalArea = Template::getDecoratedBy(ElementalAreasExtension::class, DataObject::class);
+        if (!array_key_exists($this->owner->ClassName, $hasElementalArea)) {
+            return;
+        }
+
+        // Load CSS and JS requirements
+        Requirements::css('dynamic/silverstripe-elemental-templates:client/dist/styles/template-picker.css');
+        Requirements::javascript('dynamic/silverstripe-elemental-templates:client/dist/js/template-picker.js');
+
+        // Create the visual template picker field
+        $templatePicker = TemplatePickerField::create(
+            'ApplyTemplateID',
+            null,
+            $this->owner->ClassName
+        );
+
+        // Wrap in a collapsible toggle field for cleaner UI
+        $templatePanel = ToggleCompositeField::create(
+            'TemplatePickerPanel',
+            _t(__CLASS__ . '.ApplyTemplate', 'Apply Template to Page'),
+            [$templatePicker]
+        )
+            ->setHeadingLevel(4)
+            ->addExtraClass('template-picker-panel');
+
+        // Add before the elemental area if possible, otherwise at start of Main tab
+        $elementalAreaField = $fields->dataFieldByName('ElementalArea');
+        if ($elementalAreaField) {
+            $fields->insertBefore('ElementalArea', $templatePanel);
+        } else {
+            $fields->addFieldToTab('Root.Main', $templatePanel);
         }
     }
 
