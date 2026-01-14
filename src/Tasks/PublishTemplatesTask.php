@@ -4,7 +4,7 @@ namespace Dynamic\ElementalTemplates\Tasks;
 
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\Versioned\Versioned;
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 
 class PublishTemplatesTask extends BuildTask
 {

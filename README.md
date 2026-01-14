@@ -65,7 +65,7 @@ The module supports pre-populating Elemental blocks with default values. This is
 ### Example YAML Configuration
 
 ```yaml
-Dynamic\ElememtalTemplates\Models\Template:
+Dynamic\ElementalTemplates\Models\Template:
   populate:
     DNADesign\Elemental\Models\ElementContent:
       Title: "Default Title"

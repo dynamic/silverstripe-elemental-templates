@@ -1,6 +1,6 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Extension;
+namespace Dynamic\ElementalTemplates\Extension;
 
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
@@ -8,7 +8,7 @@ use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Config\Config;
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Injector\Injector;
@@ -17,7 +17,7 @@ use Dynamic\ElementalTemplates\Service\FixtureDataService;
 /**
  * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
  *
- * @property \DNADesign\Elemental\Models\BaseElement|\Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension $owner
+ * @property \DNADesign\Elemental\Models\BaseElement|\Dynamic\ElementalTemplates\Extension\BaseElementDataExtension $owner
  */
 class BaseElementDataExtension extends DataExtension
 {

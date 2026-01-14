@@ -4,7 +4,7 @@ namespace Dynamic\ElementalTemplates\Tasks;
 
 use SilverStripe\Dev\BuildTask;
 use DNADesign\Elemental\Models\BaseElement;
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 
 class UpdateBaseElementGlobalAvailabilityTask extends BuildTask
 {

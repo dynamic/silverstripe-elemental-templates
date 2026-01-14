@@ -10,10 +10,10 @@ use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Injector\Injector;
 use DNADesign\Elemental\Models\ElementalArea;
 use Dynamic\ElementalTemplates\Models\Template;
-use Dynamic\ElememtalTemplates\Tests\TestOnly\SamplePage;
+use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
 use DNADesign\Elemental\Extensions\ElementalPageExtension;
-use Dynamic\ElememtalTemplates\Tests\TestOnly\TestTemplate;
-use Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension;
+use Dynamic\ElementalTemplates\Tests\TestOnly\TestTemplate;
+use Dynamic\ElementalTemplates\Extension\CMSPageAddControllerExtension;
 
 class CMSPageAddControllerExtensionTest extends SapphireTest
 {

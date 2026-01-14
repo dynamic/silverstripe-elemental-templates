@@ -1,8 +1,8 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Service;
+namespace Dynamic\ElementalTemplates\Service;
 
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 use DNADesign\Elemental\Models\ElementalArea;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Injector\Injector;
