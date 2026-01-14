@@ -1,10 +1,10 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Tests\Service;
+namespace Dynamic\ElementalTemplates\Tests\Service;
 
 use SilverStripe\Dev\SapphireTest;
-use Dynamic\ElememtalTemplates\Models\Template;
-use Dynamic\ElememtalTemplates\Service\TemplateElementDuplicator;
+use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Service\TemplateElementDuplicator;
 use DNADesign\Elemental\Models\ElementalArea;
 use DNADesign\Elemental\Models\BaseElement;
 

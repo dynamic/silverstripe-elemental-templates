@@ -1,6 +1,6 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Tests\TestOnly;
+namespace Dynamic\ElementalTemplates\Tests\TestOnly;
 
 use DNADesign\Elemental\Extensions\ElementalPageExtension;
 use SilverStripe\Dev\TestOnly;

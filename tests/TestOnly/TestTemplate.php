@@ -1,8 +1,8 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Tests\TestOnly;
+namespace Dynamic\ElementalTemplates\Tests\TestOnly;
 
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 
 class TestTemplate extends Template
 {

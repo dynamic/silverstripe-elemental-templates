@@ -1,9 +1,9 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Tests\Service;
+namespace Dynamic\ElementalTemplates\Tests\Service;
 
-use Dynamic\ElememtalTemplates\Models\Template;
-use Dynamic\ElememtalTemplates\Service\TemplateApplicator;
+use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Service\TemplateApplicator;
 use DNADesign\Elemental\Tests\Src\TestElement\ElementOne;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Dev\SapphireTest;
