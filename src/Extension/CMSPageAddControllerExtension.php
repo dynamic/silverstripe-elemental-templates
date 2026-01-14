@@ -1,6 +1,6 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Extension;
+namespace Dynamic\ElementalTemplates\Extension;
 
 use Psr\Log\LoggerInterface;
 use SilverStripe\Forms\Form;
@@ -12,13 +12,13 @@ use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\ValidationException;
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
-use Dynamic\ElememtalTemplates\Models\Template;
-use Dynamic\ElememtalTemplates\Service\TemplateApplicator;
+use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Service\TemplateApplicator;
 
 /**
- * Class \Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension
+ * Class \Dynamic\ElementalTemplates\Extension\CMSPageAddControllerExtension
  *
- * @property \SilverStripe\CMS\Controllers\CMSPageAddController|\Dynamic\ElememtalTemplates\Extension\CMSPageAddControllerExtension $owner
+ * @property \SilverStripe\CMS\Controllers\CMSPageAddController|\Dynamic\ElementalTemplates\Extension\CMSPageAddControllerExtension $owner
  */
 class CMSPageAddControllerExtension extends Extension
 {
