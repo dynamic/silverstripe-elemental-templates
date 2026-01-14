@@ -1,8 +1,8 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Tests\Models;
+namespace Dynamic\ElementalTemplates\Tests\Models;
 
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\Assets\Image;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\FieldType\DBHTMLText;
@@ -35,7 +35,7 @@ class TemplateLayoutImageTest extends SapphireTest
     public function testGetLayoutImageThumbnailWithImage()
     {
         $template = $this->objFromFixture(Template::class, 'template1');
-        
+
         if (!$template->LayoutImage() || !$template->LayoutImage()->exists()) {
             $this->markTestSkipped('Fixture template1 does not have a layout image');
         }
@@ -113,7 +113,7 @@ class TemplateLayoutImageTest extends SapphireTest
     public function testGetLayoutImageThumbnailHasAccessibilityAttributes()
     {
         $template = $this->objFromFixture(Template::class, 'template1');
-        
+
         if (!$template->LayoutImage() || !$template->LayoutImage()->exists()) {
             $this->markTestSkipped('Fixture template1 does not have a layout image');
         }
@@ -125,7 +125,7 @@ class TemplateLayoutImageTest extends SapphireTest
         $this->assertMatchesRegularExpression('/role=["\']button["\']/', $html);
         $this->assertMatchesRegularExpression('/tabindex=["\']0["\']/', $html);
         $this->assertMatchesRegularExpression('/aria-label=/', $html);
-        
+
         // Check for keyboard event handler
         $this->assertStringContainsString('onkeydown=', $html);
         $this->assertStringContainsString('Enter', $html);
@@ -138,7 +138,7 @@ class TemplateLayoutImageTest extends SapphireTest
     public function testGetLayoutImageThumbnailOverlayHasARIA()
     {
         $template = $this->objFromFixture(Template::class, 'template1');
-        
+
         if (!$template->LayoutImage() || !$template->LayoutImage()->exists()) {
             $this->markTestSkipped('Fixture template1 does not have a layout image');
         }
@@ -158,7 +158,7 @@ class TemplateLayoutImageTest extends SapphireTest
     public function testGetLayoutImageThumbnailPreventsMultipleOverlays()
     {
         $template = $this->objFromFixture(Template::class, 'template1');
-        
+
         if (!$template->LayoutImage() || !$template->LayoutImage()->exists()) {
             $this->markTestSkipped('Fixture template1 does not have a layout image');
         }
@@ -177,7 +177,7 @@ class TemplateLayoutImageTest extends SapphireTest
     public function testGetLayoutImageThumbnailStopsPropagation()
     {
         $template = $this->objFromFixture(Template::class, 'template1');
-        
+
         if (!$template->LayoutImage() || !$template->LayoutImage()->exists()) {
             $this->markTestSkipped('Fixture template1 does not have a layout image');
         }
