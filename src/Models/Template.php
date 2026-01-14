@@ -1,6 +1,6 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Models;
+namespace Dynamic\ElementalTemplates\Models;
 
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 use DNADesign\Elemental\Forms\ElementalAreaField;
@@ -357,10 +357,10 @@ class Template extends DataObject implements PermissionProvider
         return Controller::join_links(
             'admin',
             'elemental-templates',
-            'Dynamic-ElememtalTemplates-Models-Template',
+            'Dynamic-ElementalTemplates-Models-Template',
             'EditForm',
             'field',
-            'Dynamic-ElememtalTemplates-Models-Template',
+            'Dynamic-ElementalTemplates-Models-Template',
             'item',
             $this->ID,
             'edit'

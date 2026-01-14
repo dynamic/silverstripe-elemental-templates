@@ -1,12 +1,12 @@
 <?php
 
-namespace Dynamic\ElememtalTemplates\Admin;
+namespace Dynamic\ElementalTemplates\Admin;
 
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\Admin\ModelAdmin;
 
 /**
- * Class \Dynamic\ElememtalTemplates\Admin\TemplateAdmin
+ * Class \Dynamic\ElementalTemplates\Admin\TemplateAdmin
  *
  */
 class TemplateAdmin extends ModelAdmin
