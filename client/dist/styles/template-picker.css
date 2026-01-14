@@ -1,0 +1,268 @@
+/**
+ * Template Picker Field Styles
+ * Visual grid-based template selector for Silverstripe CMS
+ */
+
+/* ============================================
+   Field Container
+   ============================================ */
+.template-picker-field {
+    margin: 1rem 0;
+}
+
+/* ============================================
+   Grid Layout
+   ============================================ */
+.template-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 0.5rem 0;
+}
+
+/* ============================================
+   Card Styles
+   ============================================ */
+.template-picker__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid #dce0e3;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.template-picker__card:hover {
+    border-color: #0071c4;
+    box-shadow: 0 4px 12px rgba(0, 113, 196, 0.15);
+    transform: translateY(-2px);
+}
+
+.template-picker__card:focus-within {
+    outline: 2px solid #0071c4;
+    outline-offset: 2px;
+}
+
+.template-picker__card--selected {
+    border-color: #0071c4;
+    background: #f0f7fc;
+    box-shadow: 0 0 0 3px rgba(0, 113, 196, 0.2);
+}
+
+.template-picker__card--selected::after {
+    content: '\2713';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: #0071c4;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 1;
+}
+
+/* Hide the actual radio input */
+.template-picker__radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ============================================
+   Preview / Thumbnail
+   ============================================ */
+.template-picker__preview {
+    aspect-ratio: 16 / 10;
+    background: #f8f9fa;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.template-picker__thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.template-picker__card:hover .template-picker__thumbnail {
+    transform: scale(1.05);
+}
+
+.template-picker__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #b8c4ce;
+    font-size: 48px;
+}
+
+/* ============================================
+   Info Section
+   ============================================ */
+.template-picker__info {
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    border-top: 1px solid #eee;
+}
+
+.template-picker__title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #212529;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.template-picker__meta {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* ============================================
+   Actions (Preview Link)
+   ============================================ */
+.template-picker__actions {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.template-picker__card:hover .template-picker__actions,
+.template-picker__card:focus-within .template-picker__actions {
+    opacity: 1;
+}
+
+.template-picker__preview-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 4px;
+    color: #0071c4;
+    text-decoration: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: background 0.2s ease;
+}
+
+.template-picker__preview-link:hover {
+    background: #0071c4;
+    color: #fff;
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+.template-picker__empty {
+    text-align: center;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #dce0e3;
+    color: #6c757d;
+}
+
+.template-picker__empty-icon {
+    font-size: 48px;
+    color: #b8c4ce;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.template-picker__empty p {
+    margin: 0.5rem 0;
+}
+
+.template-picker__empty-hint {
+    font-size: 0.875rem;
+}
+
+.template-picker__empty a {
+    color: #0071c4;
+}
+
+/* ============================================
+   Toggle Panel Styles
+   ============================================ */
+.template-picker-panel .panel-heading {
+    cursor: pointer;
+    user-select: none;
+}
+
+.template-picker-panel .panel-body {
+    padding: 1rem;
+}
+
+/* ============================================
+   Dark Mode Support
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+    .cms .template-picker__card {
+        background: #2d3035;
+        border-color: #495057;
+    }
+    
+    .cms .template-picker__card:hover {
+        border-color: #3399ff;
+    }
+    
+    .cms .template-picker__card--selected {
+        background: #1a2533;
+        border-color: #3399ff;
+    }
+    
+    .cms .template-picker__preview {
+        background: #212529;
+    }
+    
+    .cms .template-picker__info {
+        border-top-color: #495057;
+    }
+    
+    .cms .template-picker__title {
+        color: #f8f9fa;
+    }
+    
+    .cms .template-picker__empty {
+        background: #2d3035;
+        border-color: #495057;
+    }
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+@media (max-width: 768px) {
+    .template-picker__grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.75rem;
+    }
+    
+    .template-picker__info {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .template-picker__title {
+        font-size: 0.8125rem;
+    }
+}
