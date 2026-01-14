@@ -14,12 +14,12 @@ use SilverStripe\Core\Injector\Injector;
 use DNADesign\Elemental\Models\BaseElement;
 use DNADesign\Elemental\Models\ElementalArea;
 use DNADesign\Elemental\Models\ElementContent;
-use Dynamic\ElememtalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Models\Template;
 use Dynamic\Elements\Card\Elements\ElementCard;
 use SilverStripe\LinkField\Models\SiteTreeLink;
 use Dynamic\Elements\Carousel\Elements\ElementCarousel;
 use Dynamic\ElementalTemplates\Service\FixtureDataService;
-use Dynamic\ElememtalTemplates\Extension\BaseElementDataExtension;
+use Dynamic\ElementalTemplates\Extension\BaseElementDataExtension;
 
 class FixtureDataServiceTest extends SapphireTest
 {

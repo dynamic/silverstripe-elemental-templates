@@ -5,7 +5,7 @@ DNADesign\Elemental\Models\ElementalArea:
   pageElementalArea:
     Title: 'Page Elemental Area'
 
-Dynamic\ElememtalTemplates\Models\Template:
+Dynamic\ElementalTemplates\Models\Template:
   validTemplate:
     Title: 'Valid Template'
     Elements: =>DNADesign\Elemental\Models\ElementalArea.validElementalArea
