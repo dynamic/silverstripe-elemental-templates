@@ -1,6 +1,6 @@
 /**
  * Template Picker Field Styles
- * 2-column layout: scrollable template list + sticky sidebar
+ * Full-width layout with sticky Apply button at bottom
  */
 
 /* ============================================
@@ -9,132 +9,25 @@
 .template-picker-field {
     margin: 1rem 0;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 /* ============================================
-   Main Layout - Grid with sidebar
-   ============================================ */
-.template-picker__layout {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 1rem;
-    width: 100%;
-    align-items: flex-start;
-}
-
-/* ============================================
-   Template List - Scrollable
+   Template List - Scrollable full width
    ============================================ */
 .template-picker__grid {
     display: flex !important;
     flex-direction: column !important;
     gap: 0.75rem;
-    flex: 1;
-    max-height: 350px;
+    width: 100%;
+    max-height: 400px;
     overflow-y: auto;
     border: 1px solid #e8eaec;
     border-radius: 6px;
     padding: 0.75rem;
     background: #fafbfc;
-}
-
-/* ============================================
-   Sticky Sidebar
-   ============================================ */
-.template-picker__sidebar {
-    position: sticky !important;
-    top: 0;
-    flex: 0 0 180px;
-    max-width: 180px;
-}
-
-.template-picker__actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
-    background: linear-gradient(135deg, #f8fafc 0%, #e8f4f8 100%);
-    border: 1px solid #d4e5eb;
-    border-radius: 8px;
-}
-
-.template-picker__hint {
-    font-size: 0.75rem;
-    color: #666;
-    margin: 0;
-    line-height: 1.4;
-}
-
-.template-picker__hint .font-icon-info-circled {
-    color: #3c8dbc;
-    margin-right: 4px;
-}
-
-/* Apply button */
-.template-picker__apply-btn {
-    padding: 0.6rem 1rem;
-    font-size: 0.825rem;
-    font-weight: 600;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    width: 100%;
-    white-space: nowrap;
-}
-
-.template-picker__apply-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: #adb5bd !important;
-    border-color: #adb5bd !important;
-}
-
-.template-picker__apply-btn:not(:disabled):hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 146, 180, 0.3);
-}
-
-.template-picker__apply-btn.loading {
-    background: #28a745 !important;
-    border-color: #28a745 !important;
-    pointer-events: none;
-}
-
-.template-picker__apply-btn.loading::before {
-    content: '';
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin-right: 6px;
-    vertical-align: middle;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Status message */
-.template-picker__status {
-    font-size: 0.75rem;
-    line-height: 1.4;
-    min-height: 1.2em;
-}
-
-.template-picker__status--loading {
-    color: #007bff;
-}
-
-.template-picker__status--success {
-    color: #28a745;
-}
-
-.template-picker__status--error {
-    color: #dc3545;
 }
 
 /* ============================================
@@ -195,11 +88,11 @@
    Preview Column (Left)
    ============================================ */
 .template-picker__preview {
-    flex: 0 0 140px !important;
-    width: 140px !important;
-    min-width: 140px !important;
-    max-width: 140px !important;
-    height: 90px;
+    flex: 0 0 200px !important;
+    width: 200px !important;
+    min-width: 200px !important;
+    max-width: 200px !important;
+    height: 140px;
     background: #f4f5f7;
     border-radius: 4px;
     overflow: hidden;
@@ -290,6 +183,88 @@
 }
 
 /* ============================================
+   Sticky Actions Bar (Bottom)
+   ============================================ */
+.template-picker__actions {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e8f4f8 100%);
+    border: 1px solid #d4e5eb;
+    border-radius: 8px;
+    z-index: 10;
+}
+
+/* Apply button */
+.template-picker__apply-btn {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.template-picker__apply-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #adb5bd !important;
+    border-color: #adb5bd !important;
+}
+
+.template-picker__apply-btn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 146, 180, 0.3);
+}
+
+.template-picker__apply-btn.loading {
+    background: #28a745 !important;
+    border-color: #28a745 !important;
+    pointer-events: none;
+}
+
+.template-picker__apply-btn.loading::before {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Status message */
+.template-picker__status {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: #666;
+}
+
+.template-picker__status--loading {
+    color: #007bff;
+}
+
+.template-picker__status--success {
+    color: #28a745;
+}
+
+.template-picker__status--error {
+    color: #dc3545;
+}
+
+/* ============================================
    Empty State
    ============================================ */
 .template-picker__empty {
@@ -323,24 +298,9 @@
 }
 
 /* ============================================
-   Responsive: Stack on narrow screens
+   Responsive: Stack card columns on narrow
    ============================================ */
-@media (max-width: 600px) {
-    .template-picker__layout {
-        flex-direction: column !important;
-    }
-
-    .template-picker__sidebar {
-        position: static !important;
-        flex: 1 1 auto;
-        max-width: 100%;
-        width: 100%;
-    }
-
-    .template-picker__grid {
-        max-height: 300px;
-    }
-
+@media (max-width: 500px) {
     .template-picker__card {
         flex-direction: column !important;
         align-items: flex-start;
@@ -351,7 +311,7 @@
         width: 100% !important;
         max-width: 100% !important;
         min-width: auto !important;
-        height: 120px;
+        height: 140px;
     }
 
     .template-picker__content {
@@ -391,7 +351,7 @@
         border-color: #444;
     }
 
-    .template-picker__hint {
+    .template-picker__status {
         color: #aaa;
     }
 }

@@ -109,7 +109,7 @@ class TemplatePickerField extends FormField
 
             if ($template->LayoutImage() && $template->LayoutImage()->exists()) {
                 // Use Fit to maintain uniform aspect ratio without cropping
-                $thumbnail = $template->LayoutImage()->Fit(280, 180);
+                $thumbnail = $template->LayoutImage()->Fit(400, 280);
                 $thumbnailUrl = $thumbnail ? $thumbnail->getURL() : null;
             }
 
