@@ -53,10 +53,11 @@
         <div class="template-picker__actions">
             <button type="button" 
                     class="template-picker__apply-btn btn btn-primary font-icon-plus-circled"
+                    aria-describedby="{$ID}_template_status"
                     disabled>
                 Apply Template to Page
             </button>
-            <span class="template-picker__status"></span>
+            <span class="template-picker__status" id="{$ID}_template_status" aria-live="polite"></span>
         </div>
     <% else %>
         <div class="template-picker__empty">
