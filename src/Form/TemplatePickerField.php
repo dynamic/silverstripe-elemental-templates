@@ -108,8 +108,8 @@ class TemplatePickerField extends FormField
             $thumbnailUrl = null;
 
             if ($template->LayoutImage() && $template->LayoutImage()->exists()) {
-                // Use Fit to maintain uniform aspect ratio without cropping
-                $thumbnail = $template->LayoutImage()->Fit(400, 280);
+                // Use ScaleWidth for fixed width but auto height to show full template preview
+                $thumbnail = $template->LayoutImage()->ScaleWidth(200);
                 $thumbnailUrl = $thumbnail ? $thumbnail->getURL() : null;
             }
 

@@ -93,7 +93,7 @@ class SiteTreeExtension extends DataExtension
                 return;
             }
 
-            // Ensure the CreateTemplate action calls the method in AddTemplateExtension
+            // "Create Blocks Template" action - creates a template from current page's blocks
             $moreOptions->insertAfter(
                 'Information',
                 CustomAction::create('CreateTemplate', 'Create Blocks Template')
@@ -101,7 +101,7 @@ class SiteTreeExtension extends DataExtension
                     ->setAttribute('data-url', $this->owner->Link('CreateTemplate'))
             );
 
-            // "Apply Blocks Template" action if this is an existing page.
+            // "Apply Blocks Template" action - used by the template picker's Apply button
             if ($this->getOwner()->ID) {
                 $moreOptions->insertAfter(
                     'CreateTemplate',

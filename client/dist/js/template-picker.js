@@ -166,6 +166,7 @@
 
                 // Show loading state
                 this.prop('disabled', true).addClass('loading');
+                this.text('Applying...');
                 picker.showStatus('Applying template...', 'loading');
 
                 // Find and trigger the CMS Actions "Apply Blocks Template" button
@@ -179,6 +180,7 @@
                     // Button not found - show error
                     picker.showStatus('Apply action not available. Use "More Options → Apply Blocks Template" instead.', 'error');
                     this.prop('disabled', false).removeClass('loading');
+                    this.text('Apply Template to Page');
                 }
             }
         });

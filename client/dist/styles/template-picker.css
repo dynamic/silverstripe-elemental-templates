@@ -92,12 +92,12 @@
     width: 200px !important;
     min-width: 200px !important;
     max-width: 200px !important;
-    height: 140px;
+    min-height: 100px;
     background: #f4f5f7;
     border-radius: 4px;
     overflow: hidden;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
 }
 
