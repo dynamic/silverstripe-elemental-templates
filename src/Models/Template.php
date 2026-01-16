@@ -111,6 +111,7 @@ class Template extends DataObject implements PermissionProvider
         'LayoutImageThumbnail' => 'Preview Image',
         'Title' => 'Layout Name',
         'PageTypeName' => 'Page Type',
+        'ElementCount' => 'Blocks',
     ];
 
     /**
@@ -249,6 +250,19 @@ class Template extends DataObject implements PermissionProvider
             return '';
         }
         return singleton($this->PageType)->singular_name();
+    }
+
+    /**
+     * Returns the number of elements in this template.
+     *
+     * @return int
+     */
+    public function getElementCount(): int
+    {
+        if ($this->Elements() && $this->Elements()->Elements()) {
+            return $this->Elements()->Elements()->count();
+        }
+        return 0;
     }
 
     /**
