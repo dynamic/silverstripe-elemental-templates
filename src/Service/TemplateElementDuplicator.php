@@ -12,6 +12,7 @@ class TemplateElementDuplicator
 {
     /**
      * Duplicate all elements from the given template into the provided ElementalArea.
+     * Elements are appended to the end of any existing elements in the area.
      *
      * @param Template $template
      * @param ElementalArea $area
@@ -22,25 +23,35 @@ class TemplateElementDuplicator
         /** @var LoggerInterface $logger */
         $logger = Injector::inst()->get(LoggerInterface::class);
 
-        // Loop over the template's inner elements.
-        foreach ($template->Elements()->Elements() as $element) {
+        // Get the current maximum Sort value from existing elements in the target area
+        $existingElements = $area->Elements();
+        $maxSort = 0;
+        if ($existingElements->count() > 0) {
+            $maxSort = (int) $existingElements->max('Sort');
+        }
+
+        // Track the sort order for new elements starting after existing ones
+        $sortOrder = $maxSort;
+
+        // Loop over the template's inner elements in their current order
+        foreach ($template->Elements()->Elements()->sort('Sort') as $element) {
             try {
                 $copy = $element->duplicate();
 
-                // $logger->debug(sprintf(
-                //     "Duplicating element (ID: %d) to new element (ID: %d).",
-                //     $element->ID,
-                //     $copy->ID
-                // ));
                 // set skip populate flag to true to prevent populateElementData() from being called
                 if ($copy->hasMethod('setSkipPopulateData')) {
                     $copy->setSkipPopulateData(true);
                 }
 
                 // set AvailableGlobally to default
-                //if ($copy->hasMethod('setResetAvailableGlobally')) {
-                    $copy->setResetAvailableGlobally(true);
-                //}
+                $copy->setResetAvailableGlobally(true);
+
+                // Set the Sort order to append after existing elements
+                $sortOrder++;
+                $copy->Sort = $sortOrder;
+
+                // Set the parent to the target area
+                $copy->ParentID = $area->ID;
 
                 $copy->write();
 
@@ -49,14 +60,9 @@ class TemplateElementDuplicator
                     $copy->writeToStage(Versioned::DRAFT);
                 }
 
-                // Add the duplicated element to the target area.
+                // Add the duplicated element to the target area
                 $area->Elements()->add($copy);
 
-                // $logger->debug(sprintf(
-                //     "Duplicated element (ID: %d) to new element (ID: %d).",
-                //     $element->ID,
-                //     $copy->ID
-                // ));
             } catch (\Exception $ex) {
                 $logger->error(sprintf(
                     "Error duplicating element (ID: %d): %s",
