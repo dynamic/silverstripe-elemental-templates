@@ -1,6 +1,7 @@
 /**
  * Template Picker Field Styles
  * Visual grid-based template selector for Silverstripe CMS
+ * 2-column layout: image left, content right
  */
 
 /* ============================================
@@ -11,22 +12,22 @@
 }
 
 /* ============================================
-   Grid Layout
+   Grid Layout - Vertical stack of cards
    ============================================ */
 .template-picker__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
     padding: 0.5rem 0;
 }
 
 /* ============================================
-   Card Styles
+   Card Styles - Horizontal 2-column layout
    ============================================ */
 .template-picker__card {
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     border: 2px solid #dce0e3;
     border-radius: 8px;
     background: #fff;
@@ -37,67 +38,68 @@
 
 .template-picker__card:hover {
     border-color: #0071c4;
-    box-shadow: 0 4px 12px rgba(0, 113, 196, 0.15);
-    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 113, 196, 0.15);
 }
 
+.template-picker__card:focus,
 .template-picker__card:focus-within {
-    outline: 2px solid #0071c4;
-    outline-offset: 2px;
+    outline: none;
+    border-color: #0071c4;
+    box-shadow: 0 0 0 3px rgba(0, 113, 196, 0.25);
 }
 
 .template-picker__card--selected {
     border-color: #0071c4;
     background: #f0f7fc;
-    box-shadow: 0 0 0 3px rgba(0, 113, 196, 0.2);
+    box-shadow: 0 0 0 3px rgba(0, 113, 196, 0.3);
 }
 
-.template-picker__card--selected::after {
-    content: '\2713';
+.template-picker__card--selected::before {
+    content: '';
     position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 24px;
-    height: 24px;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
     background: #0071c4;
-    color: #fff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: bold;
-    z-index: 1;
 }
 
-/* Hide the actual radio input */
+/* Hide the actual radio input - visually hidden but accessible */
 .template-picker__radio {
     position: absolute;
-    opacity: 0;
-    pointer-events: none;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* ============================================
-   Preview / Thumbnail
+   Left Column: Preview / Thumbnail
    ============================================ */
 .template-picker__preview {
-    aspect-ratio: 16 / 10;
+    flex: 0 0 180px;
+    min-height: 120px;
     background: #f8f9fa;
-    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
 }
 
 .template-picker__thumbnail {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
+    object-fit: contain;
+    background: #f8f9fa;
+    padding: 4px;
 }
 
 .template-picker__card:hover .template-picker__thumbnail {
-    transform: scale(1.05);
+    opacity: 0.9;
 }
 
 .template-picker__placeholder {
@@ -107,67 +109,67 @@
     width: 100%;
     height: 100%;
     color: #b8c4ce;
-    font-size: 48px;
+    font-size: 40px;
 }
 
 /* ============================================
-   Info Section
+   Right Column: Content (Title, Description, Footer)
    ============================================ */
-.template-picker__info {
-    padding: 0.75rem 1rem;
+.template-picker__content {
+    flex: 1;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    border-top: 1px solid #eee;
+    justify-content: space-between;
+    min-width: 0; /* Enable text truncation */
 }
 
 .template-picker__title {
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 1rem;
     color: #212529;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.3;
+}
+
+.template-picker__description {
+    font-size: 0.875rem;
+    color: #6c757d;
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
+    flex-grow: 1;
+}
+
+.template-picker__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #eee;
 }
 
 .template-picker__meta {
     font-size: 0.75rem;
     color: #6c757d;
-}
-
-/* ============================================
-   Actions (Preview Link)
-   ============================================ */
-.template-picker__actions {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.template-picker__card:hover .template-picker__actions,
-.template-picker__card:focus-within .template-picker__actions {
-    opacity: 1;
+    font-weight: 500;
 }
 
 .template-picker__preview-link {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 4px;
+    gap: 0.375rem;
+    font-size: 0.75rem;
     color: #0071c4;
     text-decoration: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
     transition: background 0.2s ease;
 }
 
 .template-picker__preview-link:hover {
-    background: #0071c4;
-    color: #fff;
+    background: rgba(0, 113, 196, 0.1);
+    text-decoration: none;
 }
 
 /* ============================================
@@ -235,12 +237,20 @@
         background: #212529;
     }
     
-    .cms .template-picker__info {
-        border-top-color: #495057;
+    .cms .template-picker__content {
+        border-left-color: #495057;
     }
     
     .cms .template-picker__title {
         color: #f8f9fa;
+    }
+    
+    .cms .template-picker__description {
+        color: #adb5bd;
+    }
+    
+    .cms .template-picker__footer {
+        border-top-color: #495057;
     }
     
     .cms .template-picker__empty {
@@ -252,17 +262,22 @@
 /* ============================================
    Responsive Adjustments
    ============================================ */
-@media (max-width: 768px) {
-    .template-picker__grid {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 0.75rem;
+@media (max-width: 600px) {
+    .template-picker__card {
+        flex-direction: column;
     }
     
-    .template-picker__info {
-        padding: 0.5rem 0.75rem;
+    .template-picker__preview {
+        flex: 0 0 auto;
+        min-height: 100px;
+        width: 100%;
+    }
+    
+    .template-picker__content {
+        padding: 0.75rem;
     }
     
     .template-picker__title {
-        font-size: 0.8125rem;
+        font-size: 0.9375rem;
     }
 }

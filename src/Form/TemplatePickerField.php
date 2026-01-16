@@ -81,13 +81,15 @@ class TemplatePickerField extends FormField
             $thumbnailUrl = null;
 
             if ($template->LayoutImage() && $template->LayoutImage()->exists()) {
-                $thumbnail = $template->LayoutImage()->ScaleWidth(280);
+                // Use Fit to maintain uniform aspect ratio without cropping
+                $thumbnail = $template->LayoutImage()->Fit(280, 180);
                 $thumbnailUrl = $thumbnail ? $thumbnail->getURL() : null;
             }
 
             $list->push(ArrayData::create([
                 'ID' => $template->ID,
                 'Title' => $template->Title,
+                'Description' => $template->dbObject('Description'),
                 'HasThumbnail' => (bool) $thumbnailUrl,
                 'ThumbnailURL' => $thumbnailUrl,
                 'PreviewLink' => $template->getPreviewLink(),

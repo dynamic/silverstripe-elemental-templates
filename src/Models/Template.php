@@ -58,6 +58,7 @@ class Template extends DataObject implements PermissionProvider
     private static array $db = [
         'Title' => 'Varchar',
         'PageType' => 'Varchar',
+        'Description' => 'HTMLText',
     ];
 
     /**
