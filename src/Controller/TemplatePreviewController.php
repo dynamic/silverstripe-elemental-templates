@@ -2,13 +2,17 @@
 
 namespace Dynamic\ElementalTemplates\Controller;
 
-use App\PageController;
-use SilverStripe\Dev\Debug;
 use SilverStripe\View\Requirements;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\ORM\FieldType\DBField;
 use Dynamic\ElementalTemplates\Models\Template;
 
+/**
+ * Controller for rendering template previews.
+ * Supports two modes:
+ * - Full page preview (default): Renders template within Page.ss wrapper
+ * - Content-only mode (?content_only=1): Renders only elemental area for screenshots
+ */
 class TemplatePreviewController extends \PageController
 {
     private static $allowed_actions = [
@@ -18,7 +22,6 @@ class TemplatePreviewController extends \PageController
     protected function init()
     {
         parent::init();
-        // Removed unnecessary CSS requirement for preview.css
     }
 
     public function index()
@@ -35,6 +38,45 @@ class TemplatePreviewController extends \PageController
             return $this->httpError(500, 'Invalid Page Type');
         }
 
+        // Check for content-only mode (for screenshots)
+        $contentOnly = $this->getRequest()->getVar('content_only');
+
+        if ($contentOnly) {
+            return $this->renderContentOnly($template, $pageType);
+        }
+
+        return $this->renderFullPage($template, $pageType);
+    }
+
+    /**
+     * Render content-only mode for clean screenshots.
+     * Shows only the elemental area without page wrapper (header/footer).
+     *
+     * @param Template $template
+     * @param string $pageType
+     * @return \SilverStripe\ORM\FieldType\DBHTMLText
+     */
+    protected function renderContentOnly(Template $template, string $pageType)
+    {
+        $page = $pageType::create();
+        $page->Title = $template->Title;
+        $page->ElementalArea = $template->Elements();
+
+        return $this->customise([
+            'Template' => $template,
+            'Page' => $page,
+        ])->renderWith('Dynamic\\ElementalTemplates\\Layout\\TemplatePreviewContent');
+    }
+
+    /**
+     * Render full page preview with page wrapper (header/footer).
+     *
+     * @param Template $template
+     * @param string $pageType
+     * @return \SilverStripe\ORM\FieldType\DBHTMLText
+     */
+    protected function renderFullPage(Template $template, string $pageType)
+    {
         $page = $pageType::create();
         $page->Title = $template->Title;
 
@@ -57,7 +99,7 @@ class TemplatePreviewController extends \PageController
         // Render the Page.ss template with the Layout variable properly set
         return $this->customise([
             'Page' => $page,
-            'Layout' => DBField::create_field('HTMLText', $layoutContent) // Ensure the layout is treated as HTML
+            'Layout' => DBField::create_field('HTMLText', $layoutContent)
         ])->renderWith('Page');
     }
 }

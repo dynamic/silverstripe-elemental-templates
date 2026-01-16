@@ -460,6 +460,33 @@ class Template extends DataObject implements PermissionProvider
                 ->setAttribute('onclick', "window.open('{$this->getPreviewLink()}', '_blank')")
         );
 
+        // Add screenshot capture button (only for saved templates with elements)
+        if ($this->exists() && $this->Elements() && $this->Elements()->Elements()->count() > 0) {
+            $contentOnlyUrl = $this->getPreviewLink() . '?content_only=1';
+            $templateID = $this->ID;
+            $securityToken = \SilverStripe\Security\SecurityToken::getSecurityID();
+            
+            $actions->push(
+                CustomAction::create('CaptureScreenshot', 'Capture Preview Image')
+                    ->setUseButtonTag(true)
+                    ->addExtraClass('btn-outline-secondary font-icon-upload')
+                    ->setAttribute('data-template-id', $templateID)
+                    ->setAttribute('data-preview-url', $contentOnlyUrl)
+                    ->setAttribute('data-upload-url', '/template-screenshot-upload/upload')
+                    ->setAttribute('data-security-id', $securityToken)
+            );
+        }
+
         return $actions;
+    }
+
+    /**
+     * Get the content-only preview URL for screenshot capture.
+     *
+     * @return string
+     */
+    public function getContentOnlyPreviewLink(): string
+    {
+        return $this->getPreviewLink() . '?content_only=1';
     }
 }
