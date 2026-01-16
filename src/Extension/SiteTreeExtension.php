@@ -15,7 +15,6 @@ use SilverStripe\Forms\Form;
 use SilverStripe\Forms\ToggleCompositeField;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\View\Requirements;
 
 /**
  * Class \Dynamic\ElementalTemplates\Extension\SiteTreeExtension
@@ -44,10 +43,6 @@ class SiteTreeExtension extends DataExtension
         if (!array_key_exists($this->owner->ClassName, $hasElementalArea)) {
             return;
         }
-
-        // Load CSS and JS requirements
-        Requirements::css('dynamic/silverstripe-elemental-templates:client/dist/styles/template-picker.css');
-        Requirements::javascript('dynamic/silverstripe-elemental-templates:client/dist/js/template-picker.js');
 
         // Create the visual template picker field
         $templatePicker = TemplatePickerField::create(
