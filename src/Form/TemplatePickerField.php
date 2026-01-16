@@ -88,7 +88,6 @@ class TemplatePickerField extends FormField
             $list->push(ArrayData::create([
                 'ID' => $template->ID,
                 'Title' => $template->Title,
-                'PageType' => $template->PageTypeName(),
                 'HasThumbnail' => (bool) $thumbnailUrl,
                 'ThumbnailURL' => $thumbnailUrl,
                 'PreviewLink' => $template->getPreviewLink(),
