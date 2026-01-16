@@ -4,7 +4,6 @@ namespace Dynamic\ElementalTemplates\Controller;
 
 use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\Assets\Image;
-use SilverStripe\Assets\Upload;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
@@ -120,10 +119,10 @@ class ScreenshotUploadController extends Controller
     {
         // Remove data URL prefix if present
         if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $matches)) {
-            $extension = $matches[1];
+            $declaredExtension = $matches[1];
             $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
         } else {
-            $extension = 'png';
+            $declaredExtension = 'png';
         }
 
         $data = base64_decode($base64Data);
@@ -131,17 +130,43 @@ class ScreenshotUploadController extends Controller
             return null;
         }
 
+        // Validate that the decoded data is actually a valid image
+        $imageInfo = @getimagesizefromstring($data);
+        if ($imageInfo === false) {
+            return null;
+        }
+
+        // Map IMAGETYPE constants to extensions
+        $typeToExtension = [
+            IMAGETYPE_PNG => 'png',
+            IMAGETYPE_JPEG => 'jpg',
+            IMAGETYPE_GIF => 'gif',
+            IMAGETYPE_WEBP => 'webp',
+        ];
+
+        $actualExtension = $typeToExtension[$imageInfo[2]] ?? null;
+        if (!$actualExtension) {
+            return null; // Unsupported image type
+        }
+
+        // Normalize declared extension
+        $normalizedDeclared = ($declaredExtension === 'jpeg') ? 'jpg' : $declaredExtension;
+
+        // Ensure actual image type matches declared extension
+        if ($actualExtension !== $normalizedDeclared) {
+            return null;
+        }
+
         $mimeTypes = [
             'png' => 'image/png',
             'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
             'gif' => 'image/gif',
             'webp' => 'image/webp',
         ];
 
         return [
-            'extension' => $extension,
-            'mime' => $mimeTypes[$extension] ?? 'image/png',
+            'extension' => $actualExtension,
+            'mime' => $mimeTypes[$actualExtension] ?? 'image/png',
             'data' => $data,
         ];
     }
@@ -155,27 +180,31 @@ class ScreenshotUploadController extends Controller
      */
     protected function saveScreenshot(Template $template, array $imageData): Image
     {
-        $filename = 'template-preview-' . $template->ID . '-' . time() . '.' . $imageData['extension'];
+        // Use uniqid for better filename uniqueness than time()
+        $filename = 'template-preview-' . $template->ID . '-' . uniqid('', true) . '.' . $imageData['extension'];
         $folderPath = 'Uploads/template-screenshots';
 
         // Create temp file
         $tempPath = TEMP_PATH . '/' . $filename;
-        file_put_contents($tempPath, $imageData['data']);
 
-        // Create new image (always create new to avoid issues with existing)
-        $image = Image::create();
-        $image->setFromLocalFile($tempPath, $folderPath . '/' . $filename);
-        $image->write();
+        try {
+            file_put_contents($tempPath, $imageData['data']);
 
-        // Clean up temp file
-        if (file_exists($tempPath)) {
-            unlink($tempPath);
+            // Create new image (always create new to avoid issues with existing)
+            $image = Image::create();
+            $image->setFromLocalFile($tempPath, $folderPath . '/' . $filename);
+            $image->write();
+
+            // Publish the image
+            $image->publishSingle();
+
+            return $image;
+        } finally {
+            // Clean up temp file
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
         }
-
-        // Publish the image
-        $image->publishSingle();
-
-        return $image;
     }
 
     /**
