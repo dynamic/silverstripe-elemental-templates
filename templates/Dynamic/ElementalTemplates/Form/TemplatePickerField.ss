@@ -59,7 +59,7 @@
         <div class="template-picker__empty">
             <span class="font-icon-block-layout template-picker__empty-icon"></span>
             <p>No templates available.</p>
-            <p class="template-picker__empty-hint">Create templates in the <a href="admin/elemental-templates">Element Templates</a> section.</p>
+            <p class="template-picker__empty-hint">Create templates in the <a href="{$AdminURL}elemental-templates">Element Templates</a> section.</p>
         </div>
     <% end_if %>
 </div>

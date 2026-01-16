@@ -172,6 +172,7 @@ class TemplatePickerField extends FormField
             'Templates' => $this->getTemplates(),
             'hasTemplates' => $this->hasTemplates(),
             'PageID' => $this->getPageID(),
+            'AdminURL' => \SilverStripe\Admin\AdminRootController::admin_url(),
         ]);
 
         return $this->customise($properties)->renderWith(
