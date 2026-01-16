@@ -49,7 +49,9 @@ class SiteTreeExtension extends DataExtension
             'ApplyTemplateID',
             _t(__CLASS__ . '.SelectTemplate', 'Select template'),
             $this->owner->ClassName
-        )->setPageID($this->owner->ID);
+        )
+            ->setPageID($this->owner->ID)
+            ->addExtraClass('stacked');
 
         // Wrap in a collapsible toggle field for cleaner UI
         $templatePanel = ToggleCompositeField::create(
