@@ -40,5 +40,10 @@
             "Dynamic\\ElementalTemplates\\": "src/",
             "Dynamic\\ElementalTemplates\\Tests\\": "tests/"
         }
+    },
+    "extra": {
+        "expose": [
+            "client/dist"
+        ]
     }
 }

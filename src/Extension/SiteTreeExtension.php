@@ -16,7 +16,6 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\ToggleCompositeField;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\View\Requirements;
 
 /**
  * Class \Dynamic\ElementalTemplates\Extension\SiteTreeExtension
@@ -46,16 +45,14 @@ class SiteTreeExtension extends Extension
             return;
         }
 
-        // Load CSS and JS requirements
-        Requirements::css('dynamic/silverstripe-elemental-templates:client/dist/styles/template-picker.css');
-        Requirements::javascript('dynamic/silverstripe-elemental-templates:client/dist/js/template-picker.js');
-
         // Create the visual template picker field
         $templatePicker = TemplatePickerField::create(
             'ApplyTemplateID',
-            null,
+            _t(__CLASS__ . '.SelectTemplate', 'Select template'),
             $this->owner->ClassName
-        );
+        )
+            ->setPageID($this->owner->ID)
+            ->addExtraClass('stacked');
 
         // Wrap in a collapsible toggle field for cleaner UI
         $templatePanel = ToggleCompositeField::create(
@@ -99,17 +96,15 @@ class SiteTreeExtension extends Extension
                 return;
             }
 
-            // Ensure the CreateTemplate action calls the method in AddTemplateExtension
-            if (class_exists('LeKoala\CmsActions\CustomAction')) {
-                $moreOptions->insertAfter(
-                    'Information',
-                    CustomAction::create('CreateTemplate', 'Create Blocks Template')
-                        ->setUseButtonTag(true)
-                        ->setAttribute('data-url', $this->owner->Link('CreateTemplate'))
-                );
-            }
+            // "Create Blocks Template" action - creates a template from current page's blocks
+            $moreOptions->insertAfter(
+                'Information',
+                CustomAction::create('CreateTemplate', 'Create Blocks Template')
+                    ->setUseButtonTag(true)
+                    ->setAttribute('data-url', $this->owner->Link('CreateTemplate'))
+            );
 
-            // "Apply Blocks Template" action if this is an existing page.
+            // "Apply Blocks Template" action - used by the template picker's Apply button
             if ($this->getOwner()->ID) {
                 $moreOptions->insertAfter(
                     'CreateTemplate',
