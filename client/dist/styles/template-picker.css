@@ -1,7 +1,6 @@
 /**
  * Template Picker Field Styles
- * Visual grid-based template selector for Silverstripe CMS
- * 2-column layout: image left, content right
+ * One row per template, image left, content right
  */
 
 /* ============================================
@@ -9,31 +8,36 @@
    ============================================ */
 .template-picker-field {
     margin: 1rem 0;
+    width: 100%;
 }
 
 /* ============================================
-   Grid Layout - Vertical stack of cards
+   List Layout - One card per row
    ============================================ */
 .template-picker__grid {
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 0.75rem;
     padding: 0.5rem 0;
+    width: 100%;
 }
 
 /* ============================================
-   Card Styles - Horizontal 2-column layout
+   Card Styles - Horizontal layout
    ============================================ */
 .template-picker__card {
     position: relative;
-    display: flex;
-    flex-direction: row;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch;
     border: 2px solid #dce0e3;
     border-radius: 8px;
     background: #fff;
     cursor: pointer;
     transition: all 0.2s ease;
     overflow: hidden;
+    width: 100%;
+    min-height: 100px;
 }
 
 .template-picker__card:hover {
@@ -62,32 +66,37 @@
     width: 4px;
     height: 100%;
     background: #0071c4;
+    z-index: 1;
 }
 
-/* Hide the actual radio input - visually hidden but accessible */
+/* Hide radio buttons completely */
 .template-picker__radio {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 /* ============================================
-   Left Column: Preview / Thumbnail
+   Left Column: Preview / Thumbnail (fixed width)
    ============================================ */
 .template-picker__preview {
-    flex: 0 0 180px;
+    flex: 0 0 200px !important;
+    width: 200px !important;
     min-height: 120px;
     background: #f8f9fa;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    border-right: 1px solid #eee;
 }
 
 .template-picker__thumbnail {
@@ -95,7 +104,7 @@
     height: 100%;
     object-fit: contain;
     background: #f8f9fa;
-    padding: 4px;
+    padding: 8px;
 }
 
 .template-picker__card:hover .template-picker__thumbnail {
@@ -113,15 +122,15 @@
 }
 
 /* ============================================
-   Right Column: Content (Title, Description, Footer)
+   Right Column: Content
    ============================================ */
 .template-picker__content {
-    flex: 1;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-width: 0; /* Enable text truncation */
+    flex: 1 1 auto !important;
+    padding: 1rem 1.25rem;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center;
+    min-width: 0;
 }
 
 .template-picker__title {
@@ -137,20 +146,17 @@
     color: #6c757d;
     line-height: 1.4;
     margin-bottom: 0.75rem;
-    flex-grow: 1;
 }
 
 .template-picker__footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid #eee;
+    gap: 1.5rem;
+    margin-top: auto;
 }
 
 .template-picker__meta {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: #6c757d;
     font-weight: 500;
 }
@@ -159,7 +165,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: #0071c4;
     text-decoration: none;
     padding: 0.25rem 0.5rem;
@@ -223,36 +229,29 @@
         background: #2d3035;
         border-color: #495057;
     }
-    
+
     .cms .template-picker__card:hover {
         border-color: #3399ff;
     }
-    
+
     .cms .template-picker__card--selected {
         background: #1a2533;
         border-color: #3399ff;
     }
-    
+
     .cms .template-picker__preview {
         background: #212529;
+        border-right-color: #495057;
     }
-    
-    .cms .template-picker__content {
-        border-left-color: #495057;
-    }
-    
+
     .cms .template-picker__title {
         color: #f8f9fa;
     }
-    
+
     .cms .template-picker__description {
         color: #adb5bd;
     }
-    
-    .cms .template-picker__footer {
-        border-top-color: #495057;
-    }
-    
+
     .cms .template-picker__empty {
         background: #2d3035;
         border-color: #495057;
@@ -260,24 +259,22 @@
 }
 
 /* ============================================
-   Responsive Adjustments
+   Responsive: Stack on very narrow screens
    ============================================ */
-@media (max-width: 600px) {
+@media (max-width: 500px) {
     .template-picker__card {
-        flex-direction: column;
+        flex-direction: column !important;
     }
-    
+
     .template-picker__preview {
-        flex: 0 0 auto;
-        min-height: 100px;
-        width: 100%;
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        min-height: 80px;
+        border-right: none;
+        border-bottom: 1px solid #eee;
     }
-    
+
     .template-picker__content {
         padding: 0.75rem;
-    }
-    
-    .template-picker__title {
-        font-size: 0.9375rem;
     }
 }
