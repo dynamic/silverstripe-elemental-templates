@@ -29,7 +29,7 @@
                     
                     <%-- Right column: Title, Description, Preview, Meta --%>
                     <div class="template-picker__content">
-                        <h4 class="template-picker__title">$Title</h4>
+                        <h3 class="template-picker__title">$Title</h3>
                         <% if $Description %>
                             <div class="template-picker__description">$Description.LimitCharacters(120)</div>
                         <% end_if %>
