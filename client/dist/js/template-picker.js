@@ -184,5 +184,63 @@
                 }
             }
         });
+
+        /**
+         * Preview link handler - opens template preview in an iframe modal
+         */
+        $('.template-picker__preview-link').entwine({
+            onclick: function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                var previewUrl = this.attr('href');
+                var templateTitle = this.closest('.template-picker__card').find('.template-picker__title').text();
+
+                // Create modal overlay
+                var modal = $('<div class="template-preview-modal" role="dialog" aria-modal="true" aria-label="Template Preview"></div>');
+                var modalContent = $('<div class="template-preview-modal__content"></div>');
+                var modalHeader = $('<div class="template-preview-modal__header"></div>');
+                var modalTitle = $('<h3 class="template-preview-modal__title">' + templateTitle + ' Preview</h3>');
+                var closeBtn = $('<button type="button" class="template-preview-modal__close" aria-label="Close preview">&times;</button>');
+                var openNewTabBtn = $('<a href="' + previewUrl + '" target="_blank" class="template-preview-modal__newtab" title="Open in new tab"><span class="font-icon-external-link"></span></a>');
+                var iframe = $('<iframe class="template-preview-modal__iframe" src="' + previewUrl + '" title="Template preview"></iframe>');
+                var loader = $('<div class="template-preview-modal__loader"><span class="font-icon-spinner"></span> Loading preview...</div>');
+
+                // Build modal structure
+                modalHeader.append(modalTitle).append(openNewTabBtn).append(closeBtn);
+                modalContent.append(modalHeader).append(loader).append(iframe);
+                modal.append(modalContent);
+
+                // Hide loader when iframe loads
+                iframe.on('load', function () {
+                    loader.hide();
+                    iframe.css('opacity', '1');
+                });
+
+                // Close handlers
+                closeBtn.on('click', function () {
+                    modal.remove();
+                });
+
+                modal.on('click', function (evt) {
+                    if (evt.target === modal[0]) {
+                        modal.remove();
+                    }
+                });
+
+                // Keyboard close (Escape key)
+                $(document).on('keydown.templatePreviewModal', function (evt) {
+                    if (evt.key === 'Escape') {
+                        modal.remove();
+                        $(document).off('keydown.templatePreviewModal');
+                    }
+                });
+
+                // Append to body and focus
+                $('body').append(modal);
+                closeBtn.focus();
+            }
+        });
     });
 })(jQuery);
+

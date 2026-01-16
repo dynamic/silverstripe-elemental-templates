@@ -34,16 +34,12 @@
                         <% if $Description %>
                             <div class="template-picker__description">$Description.LimitCharacters(120)</div>
                         <% end_if %>
-                        <div class="template-picker__footer">
-                            <span class="template-picker__meta">$ElementCount block<% if $ElementCount != 1 %>s<% end_if %></span>
-                            <a href="$PreviewLink" 
-                               target="_blank" 
-                               class="template-picker__preview-link"
-                               title="Preview template in new window"
-                               onclick="event.stopPropagation();">
-                                <span class="font-icon-eye"></span> Preview
-                            </a>
-                        </div>
+                        <span class="template-picker__meta">$ElementCount block<% if $ElementCount != 1 %>s<% end_if %></span>
+                        <a href="$PreviewLink" 
+                           class="template-picker__preview-link"
+                           title="Preview template">
+                            <span class="font-icon-eye"></span> Preview
+                        </a>
                     </div>
                 </label>
             <% end_loop %>
