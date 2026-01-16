@@ -109,7 +109,7 @@ class Template extends DataObject implements PermissionProvider
      */
     private static array $summary_fields = [
         'LayoutImageThumbnail' => 'Preview Image',
-        'Title' => 'Layout Name',
+        'Title' => 'Name',
         'PageTypeName' => 'Page Type',
         'ElementCount' => 'Blocks',
     ];
