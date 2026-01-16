@@ -3,6 +3,7 @@
 namespace Dynamic\ElementalTemplates\Form;
 
 use Dynamic\ElementalTemplates\Models\Template;
+use SilverStripe\Admin\AdminRootController;
 use SilverStripe\Forms\FormField;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\View\ArrayData;
@@ -27,6 +28,11 @@ class TemplatePickerField extends FormField
      * @var string|null Filter templates by page type
      */
     protected $pageTypeFilter = null;
+
+    /**
+     * @var int|null The page ID for apply actions
+     */
+    protected $pageID = null;
 
     /**
      * @param string $name Field name
@@ -62,6 +68,28 @@ class TemplatePickerField extends FormField
     }
 
     /**
+     * Set the page ID for apply actions
+     *
+     * @param int|null $pageID
+     * @return $this
+     */
+    public function setPageID(?int $pageID): self
+    {
+        $this->pageID = $pageID;
+        return $this;
+    }
+
+    /**
+     * Get the page ID
+     *
+     * @return int|null
+     */
+    public function getPageID(): ?int
+    {
+        return $this->pageID;
+    }
+
+    /**
      * Get templates as an ArrayList for use in templates
      *
      * @return ArrayList
@@ -81,14 +109,15 @@ class TemplatePickerField extends FormField
             $thumbnailUrl = null;
 
             if ($template->LayoutImage() && $template->LayoutImage()->exists()) {
-                $thumbnail = $template->LayoutImage()->ScaleWidth(280);
+                // Use ScaleWidth for fixed width but auto height to show full template preview
+                $thumbnail = $template->LayoutImage()->ScaleWidth(200);
                 $thumbnailUrl = $thumbnail ? $thumbnail->getURL() : null;
             }
 
             $list->push(ArrayData::create([
                 'ID' => $template->ID,
                 'Title' => $template->Title,
-                'PageType' => $template->PageTypeName(),
+                'Description' => $template->dbObject('Description'),
                 'HasThumbnail' => (bool) $thumbnailUrl,
                 'ThumbnailURL' => $thumbnailUrl,
                 'PreviewLink' => $template->getPreviewLink(),
@@ -143,6 +172,8 @@ class TemplatePickerField extends FormField
         $properties = array_merge($properties, [
             'Templates' => $this->getTemplates(),
             'hasTemplates' => $this->hasTemplates(),
+            'PageID' => $this->getPageID(),
+            'AdminURL' => AdminRootController::admin_url(),
         ]);
 
         return $this->customise($properties)->renderWith(

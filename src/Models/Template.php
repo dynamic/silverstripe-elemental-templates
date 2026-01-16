@@ -58,6 +58,7 @@ class Template extends DataObject implements PermissionProvider
     private static array $db = [
         'Title' => 'Varchar',
         'PageType' => 'Varchar',
+        'Description' => 'HTMLText',
     ];
 
     /**
@@ -108,8 +109,9 @@ class Template extends DataObject implements PermissionProvider
      */
     private static array $summary_fields = [
         'LayoutImageThumbnail' => 'Preview Image',
-        'Title' => 'Layout Name',
+        'Title' => 'Name',
         'PageTypeName' => 'Page Type',
+        'ElementCount' => 'Blocks',
     ];
 
     /**
@@ -251,7 +253,21 @@ class Template extends DataObject implements PermissionProvider
     }
 
     /**
-     * Returns a better sized thumbnail for the layout image in summary fields.
+     * Returns the number of elements in this template.
+     *
+     * @return int
+     */
+    public function getElementCount(): int
+    {
+        if ($this->Elements() && $this->Elements()->Elements()) {
+            return $this->Elements()->Elements()->count();
+        }
+        return 0;
+    }
+
+    /**
+     * Returns a 200x200 square thumbnail for the layout image in summary fields.
+     * Matches the dimensions used in the template picker field.
      * Includes click-to-enlarge functionality with accessibility support.
      *
      * @return DBHTMLText
@@ -259,8 +275,8 @@ class Template extends DataObject implements PermissionProvider
     public function getLayoutImageThumbnail()
     {
         if ($this->LayoutImage() && $this->LayoutImage()->exists()) {
-            // Get a scaled version that maintains aspect ratio
-            $thumbnail = $this->LayoutImage()->ScaleWidth(200);
+            // Use FillMax for 200x200 square cropped image (matches template picker)
+            $thumbnail = $this->LayoutImage()->FillMax(200, 200);
             // Use original image for enlarged view to avoid extra scaling
             $fullUrl = $this->LayoutImage()->getURL();
 
@@ -272,7 +288,7 @@ class Template extends DataObject implements PermissionProvider
                 $fullUrlJs = json_encode($fullUrl);
 
                 $html = sprintf(
-                    '<div style="position: relative; display: inline-block;"><img src="%s" alt="%s" role="button" tabindex="0" aria-label="View larger version of %s" style="max-width: 200px; height: auto; display: block; cursor: pointer;" onclick="event.stopPropagation();if(window.__templateOverlay&&window.__templateOverlay.parentNode){window.__templateOverlay.parentNode.removeChild(window.__templateOverlay);window.__templateOverlay=null;}var previouslyFocused=document.activeElement;var overlay=document.createElement(\'div\');overlay.setAttribute(\'role\',\'dialog\');overlay.setAttribute(\'aria-modal\',\'true\');overlay.setAttribute(\'aria-label\',\'Enlarged template preview\');overlay.style.cssText=\'position:fixed;top:0;left:0;width:100%%;height:100%%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:pointer;\';overlay.tabIndex=-1;var img=document.createElement(\'img\');img.src=%s;img.alt=%s;img.style.cssText=\'max-width:90%%;max-height:90%%;box-shadow:0 0 20px rgba(0,0,0,0.5);\';overlay.appendChild(img);var closeOverlay=function(){if(overlay&&overlay.parentNode){overlay.parentNode.removeChild(overlay);if(window.__templateOverlay===overlay){window.__templateOverlay=null;}if(previouslyFocused&&typeof previouslyFocused.focus===\'function\'){previouslyFocused.focus();}}};overlay.onclick=function(event){if(event.target===overlay){closeOverlay();}};overlay.addEventListener(\'keydown\',function(e){if(e.key===\'Escape\'||e.key===\'Esc\'){e.preventDefault();closeOverlay();}else if(e.key===\'Tab\'){e.preventDefault();overlay.focus();}});document.body.appendChild(overlay);window.__templateOverlay=overlay;overlay.focus();" onkeydown="if(event.key===\'Enter\'||event.key===\' \'||event.key===\'Spacebar\'){event.preventDefault();this.click();}" title="Click to view larger" /></div>',
+                    '<div style="position: relative; display: inline-block;"><img src="%s" alt="%s" role="button" tabindex="0" aria-label="View larger version of %s" style="width: 200px; height: 200px; object-fit: cover; object-position: top center; display: block; cursor: pointer; border-radius: 4px;" onclick="event.stopPropagation();if(window.__templateOverlay&&window.__templateOverlay.parentNode){window.__templateOverlay.parentNode.removeChild(window.__templateOverlay);window.__templateOverlay=null;}var previouslyFocused=document.activeElement;var overlay=document.createElement(\'div\');overlay.setAttribute(\'role\',\'dialog\');overlay.setAttribute(\'aria-modal\',\'true\');overlay.setAttribute(\'aria-label\',\'Enlarged template preview\');overlay.style.cssText=\'position:fixed;top:0;left:0;width:100%%;height:100%%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:pointer;\';overlay.tabIndex=-1;var img=document.createElement(\'img\');img.src=%s;img.alt=%s;img.style.cssText=\'max-width:90%%;max-height:90%%;box-shadow:0 0 20px rgba(0,0,0,0.5);\';overlay.appendChild(img);var closeOverlay=function(){if(overlay&&overlay.parentNode){overlay.parentNode.removeChild(overlay);if(window.__templateOverlay===overlay){window.__templateOverlay=null;}if(previouslyFocused&&typeof previouslyFocused.focus===\'function\'){previouslyFocused.focus();}}};overlay.onclick=function(event){if(event.target===overlay){closeOverlay();}};overlay.addEventListener(\'keydown\',function(e){if(e.key===\'Escape\'||e.key===\'Esc\'){e.preventDefault();closeOverlay();}else if(e.key===\'Tab\'){e.preventDefault();overlay.focus();}});document.body.appendChild(overlay);window.__templateOverlay=overlay;overlay.focus();" onkeydown="if(event.key===\'Enter\'||event.key===\' \'||event.key===\'Spacebar\'){event.preventDefault();this.click();}" title="Click to view larger" /></div>',
                     $thumbnailUrl,
                     $title,
                     $title,

@@ -1,6 +1,12 @@
 ---
 name: skeleton-config
 ---
+SilverStripe\Admin\LeftAndMain:
+  extra_requirements_css:
+    - 'dynamic/silverstripe-elemental-templates:client/dist/styles/template-picker.css'
+  extra_requirements_javascript:
+    - 'dynamic/silverstripe-elemental-templates:client/dist/js/template-picker.js'
+
 DNADesign\Elemental\Models\BaseElement:
   extensions:
     - Dynamic\ElementalTemplates\Extension\BaseElementDataExtension
