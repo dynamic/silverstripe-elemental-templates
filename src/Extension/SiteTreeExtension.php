@@ -47,9 +47,9 @@ class SiteTreeExtension extends DataExtension
         // Create the visual template picker field
         $templatePicker = TemplatePickerField::create(
             'ApplyTemplateID',
-            null,
+            _t(__CLASS__ . '.SelectTemplate', 'Select template'),
             $this->owner->ClassName
-        );
+        )->setPageID($this->owner->ID);
 
         // Wrap in a collapsible toggle field for cleaner UI
         $templatePanel = ToggleCompositeField::create(

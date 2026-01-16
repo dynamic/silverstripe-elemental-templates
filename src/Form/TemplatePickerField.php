@@ -29,6 +29,11 @@ class TemplatePickerField extends FormField
     protected $pageTypeFilter = null;
 
     /**
+     * @var int|null The page ID for apply actions
+     */
+    protected $pageID = null;
+
+    /**
      * @param string $name Field name
      * @param string|null $title Field title
      * @param string|null $pageTypeFilter Filter templates to specific page type
@@ -59,6 +64,28 @@ class TemplatePickerField extends FormField
     public function getPageTypeFilter(): ?string
     {
         return $this->pageTypeFilter;
+    }
+
+    /**
+     * Set the page ID for apply actions
+     *
+     * @param int|null $pageID
+     * @return $this
+     */
+    public function setPageID(?int $pageID): self
+    {
+        $this->pageID = $pageID;
+        return $this;
+    }
+
+    /**
+     * Get the page ID
+     *
+     * @return int|null
+     */
+    public function getPageID(): ?int
+    {
+        return $this->pageID;
     }
 
     /**
@@ -144,6 +171,7 @@ class TemplatePickerField extends FormField
         $properties = array_merge($properties, [
             'Templates' => $this->getTemplates(),
             'hasTemplates' => $this->hasTemplates(),
+            'PageID' => $this->getPageID(),
         ]);
 
         return $this->customise($properties)->renderWith(
