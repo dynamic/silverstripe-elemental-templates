@@ -3,6 +3,7 @@
 namespace Dynamic\ElementalTemplates\Form;
 
 use Dynamic\ElementalTemplates\Models\Template;
+use SilverStripe\Admin\AdminRootController;
 use SilverStripe\Forms\FormField;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\View\ArrayData;
@@ -172,7 +173,7 @@ class TemplatePickerField extends FormField
             'Templates' => $this->getTemplates(),
             'hasTemplates' => $this->hasTemplates(),
             'PageID' => $this->getPageID(),
-            'AdminURL' => \SilverStripe\Admin\AdminRootController::admin_url(),
+            'AdminURL' => AdminRootController::admin_url(),
         ]);
 
         return $this->customise($properties)->renderWith(
