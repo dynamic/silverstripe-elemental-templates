@@ -103,7 +103,8 @@ class SiteTreeExtension extends DataExtension
                     ->setAttribute('data-url', $this->owner->Link('CreateTemplate'))
             );
 
-            // "Apply Blocks Template" action - used by the template picker's Apply button
+            // "Apply Blocks Template" action - triggered by template picker's Apply button
+            // Hidden from dropdown via CSS, but needed for JS form submission handling
             if ($this->getOwner()->ID) {
                 $moreOptions->insertAfter(
                     'CreateTemplate',

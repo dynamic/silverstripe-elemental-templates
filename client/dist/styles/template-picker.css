@@ -4,6 +4,14 @@
  */
 
 /* ============================================
+   Hide "Apply Blocks Template" from dropdown
+   (Still needed for JS triggering, just hidden from users)
+   ============================================ */
+#Form_EditForm_action_doCustomAction_ApplyTemplate {
+    display: none !important;
+}
+
+/* ============================================
    Field Container
    ============================================ */
 .template-picker-field {
