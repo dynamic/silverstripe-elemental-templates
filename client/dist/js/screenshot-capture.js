@@ -185,7 +185,7 @@
                     backgroundColor: '#ffffff',
                     logging: false,
                     windowWidth: 1400, // Force lg breakpoint width for desktop layout
-                    width: content.scrollWidth || 1400,
+                    width: 1400, // Fixed width to match preview and prevent horizontal overflow
                 });
 
                 statusText.textContent = 'Uploading...';
