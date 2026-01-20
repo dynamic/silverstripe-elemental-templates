@@ -93,7 +93,7 @@ class ScreenshotUploadController extends Controller
 
             // Save the image
             $image = $this->saveScreenshot($template, $imageData);
-            
+
             // Update template's LayoutImage
             $template->LayoutImageID = $image->ID;
             $template->write();

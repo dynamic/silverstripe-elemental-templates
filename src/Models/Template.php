@@ -465,7 +465,7 @@ class Template extends DataObject implements PermissionProvider
             $contentOnlyUrl = $this->getPreviewLink() . '?content_only=1';
             $templateID = $this->ID;
             $securityToken = \SilverStripe\Security\SecurityToken::getSecurityID();
-            
+
             $actions->push(
                 CustomAction::create('CaptureScreenshot', 'Capture Preview Image')
                     ->setUseButtonTag(true)

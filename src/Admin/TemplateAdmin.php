@@ -40,7 +40,7 @@ class TemplateAdmin extends ModelAdmin
     protected function init(): void
     {
         parent::init();
-        
+
         // Require screenshot capture JS for the Capture Preview Image button
         Requirements::javascript(
             'dynamic/silverstripe-elemental-templates:client/dist/js/screenshot-capture.js'
