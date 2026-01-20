@@ -184,8 +184,8 @@ class ScreenshotUploadController extends Controller
         $filename = 'template-preview-' . $template->ID . '-' . uniqid() . '.' . $imageData['extension'];
         $folderPath = 'Uploads/template-screenshots';
 
-        // Create temp file
-        $tempPath = TEMP_PATH . '/' . $filename;
+        // Create a unique temp file path using the system API to avoid race conditions
+        $tempPath = tempnam(TEMP_PATH, 'screenshot_');
 
         try {
             file_put_contents($tempPath, $imageData['data']);
