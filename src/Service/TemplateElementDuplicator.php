@@ -62,7 +62,6 @@ class TemplateElementDuplicator
 
                 // Add the duplicated element to the target area
                 $area->Elements()->add($copy);
-
             } catch (\Exception $ex) {
                 $logger->error(sprintf(
                     "Error duplicating element (ID: %d): %s",

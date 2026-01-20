@@ -6,3 +6,4 @@ After:
 SilverStripe\Control\Director:
   rules:
     'template-preview/$ID/$Action': Dynamic\ElementalTemplates\Controller\TemplatePreviewController
+    'template-screenshot-upload//$Action': Dynamic\ElementalTemplates\Controller\ScreenshotUploadController
