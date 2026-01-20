@@ -181,7 +181,7 @@ class ScreenshotUploadController extends Controller
     protected function saveScreenshot(Template $template, array $imageData): Image
     {
         // Use uniqid for better filename uniqueness than time()
-        $filename = 'template-preview-' . $template->ID . '-' . uniqid('', true) . '.' . $imageData['extension'];
+        $filename = 'template-preview-' . $template->ID . '-' . uniqid() . '.' . $imageData['extension'];
         $folderPath = 'Uploads/template-screenshots';
 
         // Create temp file
