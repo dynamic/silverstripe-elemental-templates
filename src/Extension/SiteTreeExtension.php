@@ -16,6 +16,7 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\ToggleCompositeField;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\ValidationException;
 
 /**
  * Class \Dynamic\ElementalTemplates\Extension\SiteTreeExtension
@@ -123,24 +124,36 @@ class SiteTreeExtension extends Extension
      *
      * @param array $data Form data, expecting an 'ApplyTemplateID' field.
      * @param Form $form
-     * @return \SilverStripe\Control\HTTPResponse
+     * @return string|\SilverStripe\Control\HTTPResponse
+     * @throws \SilverStripe\ORM\ValidationException
+     * @throws \Exception
      */
     public function applyTemplate($data, Form $form)
     {
         $this->logAction("applyTemplate triggered", "debug");
 
+        $isAjax = Controller::has_curr() && Controller::curr()->getRequest()->isAjax();
+
         $templateID = $data['ApplyTemplateID'] ?? null;
         if (!$templateID) {
+            $message = 'Please select a template before applying.';
             $this->logAction("No template ID provided in the form data.", "warning");
-            $form->sessionMessage('Please select a template before applying.', 'bad');
+            if ($isAjax) {
+                throw new ValidationException($message);
+            }
+            $form->sessionMessage($message, 'warning');
             return Controller::curr()->redirectBack();
         }
 
         // Ensure the template is retrieved before passing it to the service
         $template = Template::get()->byID($templateID);
         if (!$template) {
+            $message = 'The selected template could not be found.';
             $this->logAction("No template found with ID: " . $templateID, "error");
-            $form->sessionMessage('The selected template could not be found.', 'bad');
+            if ($isAjax) {
+                throw new ValidationException($message);
+            }
+            $form->sessionMessage($message, 'bad');
             return Controller::curr()->redirectBack();
         }
 
@@ -150,8 +163,15 @@ class SiteTreeExtension extends Extension
 
         if (!$result['success']) {
             $this->logAction($result['message'], "error");
+            if ($isAjax) {
+                throw new ValidationException($result['message']);
+            }
             $form->sessionMessage($result['message'], 'bad');
             return Controller::curr()->redirectBack();
+        }
+
+        if ($isAjax) {
+            return $result['message'];
         }
 
         $form->sessionMessage($result['message'], 'good');
