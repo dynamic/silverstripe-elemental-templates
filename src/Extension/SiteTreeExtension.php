@@ -123,7 +123,8 @@ class SiteTreeExtension extends DataExtension
      *
      * @param array $data Form data, expecting an 'ApplyTemplateID' field.
      * @param Form $form
-     * @return string
+     * @return string|\SilverStripe\Control\HTTPResponse
+     * @throws \SilverStripe\ORM\ValidationException
      * @throws \Exception
      */
     public function applyTemplate($data, Form $form)
