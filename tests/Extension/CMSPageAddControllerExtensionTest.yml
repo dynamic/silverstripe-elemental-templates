@@ -13,10 +13,9 @@ DNADesign\Elemental\Models\ElementalArea:
 Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage:
   testPage:
     Title: "Test Page"
-    ClassName: "Page"
     ElementalAreaID: =>DNADesign\Elemental\Models\ElementalArea.testElementalArea
 
 Dynamic\ElementalTemplates\Tests\TestOnly\TestTemplate:
   testTemplate:
     Title: "Test Template"
-    ElementalAreaID: =>DNADesign\Elemental\Models\ElementalArea.testElementalArea
+    ElementsID: =>DNADesign\Elemental\Models\ElementalArea.testElementalArea
