@@ -10,6 +10,7 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\Form;
 use SilverStripe\ORM\ValidationException;
+use SilverStripe\Control\Session;
 
 class SiteTreeExtensionTest extends SapphireTest
 {
@@ -23,6 +24,12 @@ class SiteTreeExtensionTest extends SapphireTest
         TestTemplate::class,
     ];
 
+    protected static $required_extensions = [
+        SamplePage::class => [
+            \DNADesign\Elemental\Extensions\ElementalPageExtension::class,
+        ],
+    ];
+
     public function testApplyTemplateThrowsValidationExceptionOnAjax()
     {
         $page = $this->objFromFixture(SamplePage::class, 'testPage');
@@ -33,6 +40,7 @@ class SiteTreeExtensionTest extends SapphireTest
         // Mock ajax request
         $request = new HTTPRequest('POST', '/');
         $request->addHeader('X-Requested-With', 'XMLHttpRequest');
+        $request->setSession(new Session([]));
         
         $controller = new Controller();
         $controller->setRequest($request);
@@ -62,6 +70,7 @@ class SiteTreeExtensionTest extends SapphireTest
         // Mock ajax request
         $request = new HTTPRequest('POST', '/');
         $request->addHeader('X-Requested-With', 'XMLHttpRequest');
+        $request->setSession(new Session([]));
         
         $controller = new Controller();
         $controller->setRequest($request);
