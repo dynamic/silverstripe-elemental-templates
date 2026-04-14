@@ -15,6 +15,7 @@ use SilverStripe\Forms\Form;
 use SilverStripe\Forms\ToggleCompositeField;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\ValidationException;
 
 /**
  * Class \Dynamic\ElementalTemplates\Extension\SiteTreeExtension
@@ -129,17 +130,29 @@ class SiteTreeExtension extends DataExtension
     {
         $this->logAction("applyTemplate triggered", "debug");
 
+        $isAjax = Controller::has_curr() && Controller::curr()->getRequest()->isAjax();
+
         $templateID = $data['ApplyTemplateID'] ?? null;
         if (!$templateID) {
+            $message = 'Please select a template before applying.';
             $this->logAction("No template ID provided in the form data.", "warning");
-            throw new \Exception('Please select a template before applying.');
+            if ($isAjax) {
+                throw new ValidationException($message);
+            }
+            $form->sessionMessage($message, 'warning');
+            return Controller::curr()->redirectBack();
         }
 
         // Ensure the template is retrieved before passing it to the service
         $template = Template::get()->byID($templateID);
         if (!$template) {
+            $message = 'The selected template could not be found.';
             $this->logAction("No template found with ID: " . $templateID, "error");
-            throw new \Exception('The selected template could not be found.');
+            if ($isAjax) {
+                throw new ValidationException($message);
+            }
+            $form->sessionMessage($message, 'bad');
+            return Controller::curr()->redirectBack();
         }
 
         /** @var TemplateApplicator $applicator */
@@ -148,10 +161,19 @@ class SiteTreeExtension extends DataExtension
 
         if (!$result['success']) {
             $this->logAction($result['message'], "error");
-            throw new \Exception($result['message']);
+            if ($isAjax) {
+                throw new ValidationException($result['message']);
+            }
+            $form->sessionMessage($result['message'], 'bad');
+            return Controller::curr()->redirectBack();
         }
 
-        return $result['message'];
+        if ($isAjax) {
+            return $result['message'];
+        }
+
+        $form->sessionMessage($result['message'], 'good');
+        return Controller::curr()->redirectBack();
     }
 
     /**
