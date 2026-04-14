@@ -44,7 +44,7 @@ class SiteTreeExtensionTest extends SapphireTest
 
         $controller = new Controller();
         $controller->setRequest($request);
-        Controller::pushCurrent($controller);
+        $controller->pushCurrent();
 
         $form = $this->createMock(Form::class);
         $data = ['ApplyTemplateID' => 9999]; // non-existent
@@ -55,7 +55,7 @@ class SiteTreeExtensionTest extends SapphireTest
         try {
             $extension->applyTemplate($data, $form);
         } finally {
-            Controller::popCurrent();
+            $controller->popCurrent();
         }
     }
 
@@ -74,7 +74,7 @@ class SiteTreeExtensionTest extends SapphireTest
 
         $controller = new Controller();
         $controller->setRequest($request);
-        Controller::pushCurrent($controller);
+        $controller->pushCurrent();
 
         $form = $this->createMock(Form::class);
         $data = ['ApplyTemplateID' => $template->ID]; // valid existing template
@@ -84,7 +84,7 @@ class SiteTreeExtensionTest extends SapphireTest
             $this->assertIsString($result);
             $this->assertNotSame('', trim($result));
         } finally {
-            Controller::popCurrent();
+            $controller->popCurrent();
         }
     }
 }
