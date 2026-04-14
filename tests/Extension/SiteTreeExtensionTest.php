@@ -41,7 +41,7 @@ class SiteTreeExtensionTest extends SapphireTest
         $request = new HTTPRequest('POST', '/');
         $request->addHeader('X-Requested-With', 'XMLHttpRequest');
         $request->setSession(new Session([]));
-        
+
         $controller = new Controller();
         $controller->setRequest($request);
         Controller::pushCurrent($controller);
@@ -71,7 +71,7 @@ class SiteTreeExtensionTest extends SapphireTest
         $request = new HTTPRequest('POST', '/');
         $request->addHeader('X-Requested-With', 'XMLHttpRequest');
         $request->setSession(new Session([]));
-        
+
         $controller = new Controller();
         $controller->setRequest($request);
         Controller::pushCurrent($controller);
@@ -82,6 +82,7 @@ class SiteTreeExtensionTest extends SapphireTest
         try {
             $result = $extension->applyTemplate($data, $form);
             $this->assertIsString($result);
+            $this->assertNotSame('', trim($result));
         } finally {
             Controller::popCurrent();
         }
