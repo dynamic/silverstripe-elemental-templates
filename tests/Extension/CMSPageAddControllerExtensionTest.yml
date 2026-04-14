@@ -18,4 +18,4 @@ Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage:
 Dynamic\ElementalTemplates\Tests\TestOnly\TestTemplate:
   testTemplate:
     Title: "Test Template"
-    ElementalAreaID: =>DNADesign\Elemental\Models\ElementalArea.testElementalArea
+    ElementsID: =>DNADesign\Elemental\Models\ElementalArea.testElementalArea
