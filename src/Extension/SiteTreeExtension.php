@@ -122,7 +122,8 @@ class SiteTreeExtension extends DataExtension
      *
      * @param array $data Form data, expecting an 'ApplyTemplateID' field.
      * @param Form $form
-     * @return \SilverStripe\Control\HTTPResponse
+     * @return string
+     * @throws \Exception
      */
     public function applyTemplate($data, Form $form)
     {
@@ -131,16 +132,14 @@ class SiteTreeExtension extends DataExtension
         $templateID = $data['ApplyTemplateID'] ?? null;
         if (!$templateID) {
             $this->logAction("No template ID provided in the form data.", "warning");
-            $form->sessionMessage('Please select a template before applying.', 'bad');
-            return Controller::curr()->redirectBack();
+            throw new \Exception('Please select a template before applying.');
         }
 
         // Ensure the template is retrieved before passing it to the service
         $template = Template::get()->byID($templateID);
         if (!$template) {
             $this->logAction("No template found with ID: " . $templateID, "error");
-            $form->sessionMessage('The selected template could not be found.', 'bad');
-            return Controller::curr()->redirectBack();
+            throw new \Exception('The selected template could not be found.');
         }
 
         /** @var TemplateApplicator $applicator */
@@ -149,12 +148,10 @@ class SiteTreeExtension extends DataExtension
 
         if (!$result['success']) {
             $this->logAction($result['message'], "error");
-            $form->sessionMessage($result['message'], 'bad');
-            return Controller::curr()->redirectBack();
+            throw new \Exception($result['message']);
         }
 
-        $form->sessionMessage($result['message'], 'good');
-        return Controller::curr()->redirectBack();
+        return $result['message'];
     }
 
     /**
