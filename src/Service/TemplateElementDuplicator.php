@@ -35,14 +35,13 @@ class TemplateElementDuplicator
 
         // Loop over the template's inner elements in their current order
         foreach ($template->Elements()->Elements()->sort('Sort') as $element) {
-            try {
-                $copy = $element->duplicate();
+        // Check if template has elements before accessing
+        if (!$template->Elements()->exists()) {
+            return;
+        }
 
-                // set skip populate flag to true to prevent populateElementData() from being called
-                if ($copy->hasMethod('setSkipPopulateData')) {
-                    $copy->setSkipPopulateData(true);
-                }
-
+        // Loop over the template's inner elements.
+        foreach ($template->Elements()->Elements() as $element) {
                 // set AvailableGlobally to default
                 $copy->setResetAvailableGlobally(true);
 
@@ -52,23 +51,3 @@ class TemplateElementDuplicator
 
                 // Set the parent to the target area
                 $copy->ParentID = $area->ID;
-
-                $copy->write();
-
-                // Write to draft stage if versioned.
-                if ($copy->hasExtension(Versioned::class)) {
-                    $copy->writeToStage(Versioned::DRAFT);
-                }
-
-                // Add the duplicated element to the target area
-                $area->Elements()->add($copy);
-            } catch (\Exception $ex) {
-                $logger->error(sprintf(
-                    "Error duplicating element (ID: %d): %s",
-                    $element->ID,
-                    $ex->getMessage()
-                ));
-            }
-        }
-    }
-}

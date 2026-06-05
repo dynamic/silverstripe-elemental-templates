@@ -1,0 +1,33 @@
+includes:
+    - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+    level: 4
+    paths:
+        - src
+    
+    bootstrapFiles:
+        - vendor/silverstripe/framework/tests/bootstrap/init.php
+    
+    scanDirectories:
+        - vendor/silverstripe/framework/src
+        - vendor/silverstripe/cms/code
+        - vendor/dnadesign/silverstripe-elemental/src
+        - vendor/lekoala/silverstripe-cms-actions/src
+    
+    ignoreErrors:
+        # Form field methods that exist in specific field types
+        - '#Call to an undefined method SilverStripe\\Forms\\FormField::(insertAfter|Value|setFolderName|setAllowedFileCategories|setTypes)#'
+        # DataObject dynamic methods from extensions
+        - '#Call to an undefined method SilverStripe\\ORM\\DataObject::getElementalRelations#'
+        # Return type mismatch due to DataObject::create returning DataObject
+        - '#Method .+::findOrCreateElementalArea\(\) should return .+ but returns SilverStripe\\ORM\\DataObject#'
+        # Extension context - accessing owner properties/methods via $this
+        - '#Access to an undefined property Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::\$(ID|AvailableGlobally)#'
+        - '#Call to an undefined method Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::(exists|hasField|isInDB|getPage|getAreaRelationName)#'
+        - '#Access to an undefined property Dynamic\\ElememtalTemplates\\Extension\\SiteTreeExtension::\$(ID|ClassName)#'
+        - '#Unsafe access to configuration property Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::\$hasRunPopulateElementData#'
+        # PHPStan strict checks that are too strict for SilverStripe patterns
+        - '#Negated boolean expression is always false#'
+        - '#Call to function is_array\(\) with array will always evaluate to true#'
+        - '#Dead catch - SilverStripe\\ORM\\ValidationException is never thrown#'

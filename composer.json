@@ -32,18 +32,13 @@
         "phpstan/extension-installer": "^1.4",
         "silverstripe/recipe-testing": "^4",
         "squizlabs/php_codesniffer": "^3.7"
+        "php": "^8.3 || ^8.4",
+        "dnadesign/silverstripe-elemental": "^6.0",
+        "lekoala/silverstripe-cms-actions": "^2.0",
+        "silverstripe/vendor-plugin": "^3"
     },
-    "minimum-stability": "dev",
-    "prefer-stable": true,
-    "autoload": {
-        "psr-4": {
-            "Dynamic\\ElementalTemplates\\": "src/",
-            "Dynamic\\ElementalTemplates\\Tests\\": "tests/"
-        }
-    },
-    "extra": {
-        "expose": [
-            "client/dist"
-        ]
-    }
-}
+    "require-dev": {
+        "phpstan/phpstan": "^1.10",
+        "silverstripe/cms": "^6.0",
+        "silverstripe/frameworktest": "^2.0",
+        "silverstripe/recipe-testing": "^4.0"

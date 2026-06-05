@@ -6,111 +6,24 @@ use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Extension;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
-use SilverStripe\Security\Security;
-use SilverStripe\Control\Controller;
-use SilverStripe\Core\Config\Config;
-use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Core\Extension;
 use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
 use Dynamic\ElementalTemplates\Service\FixtureDataService;
-
-/**
- * Class BaseElementDataExtension
- *
+use Dynamic\ElementalTemplates\Service\FixtureDataService;
  * @property \DNADesign\Elemental\Models\BaseElement|\Dynamic\ElementalTemplates\Extension\BaseElementDataExtension $owner
- */
-class BaseElementDataExtension extends Extension
-{
-    protected bool $skipPopulateData = false;
-
-    protected bool $resetAvailableGlobally = false;
+ * @property \DNADesign\Elemental\Models\BaseElement $owner
+ * @method \DNADesign\Elemental\Models\BaseElement getOwner()
+     * Ensures populateElementData runs only once per request.
+     */
+    private static $hasRunPopulateElementData = false;
 
     /**
-     * Ensures populateElementData runs only once per element instance.
+     * Guard to prevent infinite recursion in onBeforeWrite
      */
-    protected bool $hasRunPopulateElementData = false;
+    private bool $isWriting = false;
 
     /**
-     * @var string|null Path to the fixtures YAML file.
-     * @config
-     */
-    private static $fixtures = null;
-
-    /**
-     * Sets the flag to skip populateElementData().
-     */
-    public function setSkipPopulateData(bool $skip): void
-    {
-        $this->skipPopulateData = $skip;
-    }
-
-    /**
-     * Sets the flag to skip populateElementData().
-     */
-    public function setResetAvailableGlobally(bool $reset): void
-    {
-        $this->resetAvailableGlobally = $reset;
-    }
-
-    /**
-     * @var string
-     * @config
-     */
-    public function updateCMSFields(FieldList $fields): void
-    {
-        $manager = $this->getOwnerPage();
-
-        if ($manager instanceof Template) {
-            $fields->removeByName('AvailableGlobally');
-        }
-    }
-
-    /**
-     * @param string|null $link
-     * @return void
-     */
-    public function updateCMSEditLink(?string &$link = null): void
-    {
-        $owner = $this->getOwner();
-
-        $relationName = $owner->getAreaRelationName();
-        $page = $this->getOwnerPage();
-
-        if (!$page) {
-            return;
-        }
-
-        if ($page instanceof Template) {
-            // nested bock - we need to get edit link of parent block
-            $link = Controller::join_links(
-                $page->CMSEditLink(),
-                'ItemEditForm/field/' . $page->getOwnedAreaRelationName() . '/item/',
-                $owner->ID
-            );
-
-            // remove edit link from parent CMS link
-            $link = preg_replace('/\/item\/([\d]+)\/edit/', '/item/$1', $link);
-        } else {
-            // block is directly under a non-block object - we have reached the top of nesting chain
-            $link = Controller::join_links(
-                singleton(CMSPageEditController::class)->Link('EditForm'),
-                $page->ID,
-                'field/' . $relationName . '/item/',
-                $owner->ID
-            );
-        }
-
-        $link = Controller::join_links(
-            $link,
-            'edit'
-        );
-    }
-
-    /**
-     * Skips the populateElementData logic if the flag is set or if it has already run.
-     */
-    protected function onBeforeWrite(): void
-    {
         $logger = Injector::inst()->get(LoggerInterface::class);
         $fixtureService = Injector::inst()->get(FixtureDataService::class);
 
@@ -119,16 +32,8 @@ class BaseElementDataExtension extends Extension
 
         // Skip if the skipPopulateData flag is set to true or if already run for this instance
         if ($this->skipPopulateData || $this->hasRunPopulateElementData) {
-            return;
-        }
-
-        // $logger->debug('onBeforeWrite triggered for ' . $this->owner->ClassName);
-
-        $manager = $this->getOwnerPage();
-
-        if (!$manager instanceof Template || $this->owner->isInDB()) {
-            return;
-        }
+        // Prevent infinite recursion
+        if ($this->isWriting) {
 
         // Explicitly set AvailableGlobally to false for Template instances
         if ($this->getOwner()->hasField('AvailableGlobally')) {
@@ -140,37 +45,15 @@ class BaseElementDataExtension extends Extension
 
         // Mark populateElementData as having run for this instance
         $this->hasRunPopulateElementData = true;
-    }
-
-    /**
-     * @return void
-     */
-    protected function onAfterWrite(): void
-    {
         // Extension hook method in SilverStripe 6 - no parent call needed
-    }
-
-    /**
-     * @return mixed
-     */
-    protected function getOwnerPage(): mixed
-    {
-        return $this->getOwner()->getPage();
-    }
-
-    /**
      * Extension hook for canCreate permission check
      *
      * @param Member|null $member
      * @param array $context Additional context for permission checking
      * @param bool &$result The result of the permission check (passed by reference)
      * @return void
-     */
-    public function updateCanCreate(?Member $member, array $context, bool &$result): void
-    {
-        if (!$member instanceof Member) {
-            $member = $this->getCurrentUser();
-        }
+     * @param $member
+     * @return bool
 
         if ($ownerPage = $this->getOwnerPage()) {
             if (!$ownerPage->canCreate($member)) {
@@ -186,12 +69,14 @@ class BaseElementDataExtension extends Extension
      * @param array $context Additional context for permission checking
      * @param bool &$result The result of the permission check (passed by reference)
      * @return void
-     */
-    public function updateCanEdit(?Member $member, array $context, bool &$result): void
-    {
-        if (!$member instanceof Member) {
-            $member = $this->getCurrentUser();
-        }
+        
+        // Return the actual permission of the owner element
+        return $this->getOwner()->canCreate($member);
+    }
+
+    /**
+     * @param $member
+     * @return bool
 
         if ($ownerPage = $this->getOwnerPage()) {
             if (!$ownerPage->canEdit($member)) {
@@ -207,25 +92,20 @@ class BaseElementDataExtension extends Extension
      * @param array $context Additional context for permission checking
      * @param bool &$result The result of the permission check (passed by reference)
      * @return void
-     */
-    public function updateCanDelete(?Member $member, array $context, bool &$result): void
-    {
-        if (!$member instanceof Member) {
-            $member = $this->getCurrentUser();
-        }
+        
+        // Return the actual permission of the owner element
+        return $this->getOwner()->canEdit($member);
+    }
+
+    /**
+     * @param $member
+     * @return bool
 
         if ($ownerPage = $this->getOwnerPage()) {
             if (!$ownerPage->canDelete($member)) {
                 $result = false;
             }
         }
-    }
-
-    /**
-     * @return Member|null
-     */
-    protected function getCurrentUser(): ?Member
-    {
-        return Security::getCurrentUser();
-    }
-}
+        
+        // Return the actual permission of the owner element
+        return $this->getOwner()->canDelete($member);
