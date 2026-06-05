@@ -12,7 +12,7 @@ use Dynamic\ElememtalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Injector\Injector;
-use Dynamic\ElementalTemplates\Service\FixtureDataService;
+use Dynamic\ElememtalTemplates\Service\FixtureDataService;
 
 /**
  * Class \DNADesign\ElementalSkeletons\Extension\BaseElementDataExtension
@@ -36,6 +36,11 @@ class BaseElementDataExtension extends Extension
      * Ensures populateElementData runs only once per request.
      */
     private static $hasRunPopulateElementData = false;
+
+    /**
+     * Guard to prevent infinite recursion in onBeforeWrite
+     */
+    private bool $isWriting = false;
 
     /**
      * Sets the flag to skip populateElementData().
@@ -111,41 +116,52 @@ class BaseElementDataExtension extends Extension
      */
     public function onBeforeWrite(): void
     {
-
-        $logger = Injector::inst()->get(LoggerInterface::class);
-        $fixtureService = Injector::inst()->get(FixtureDataService::class);
-
-        $manager = $this->getOwnerPage();
-
-        // Reset available globally to true for elements NOT in a Template
-        if (
-            $this->getOwner()->hasField('AvailableGlobally') &&
-            !($manager instanceof Template)
-        ) {
-            $this->getOwner()->AvailableGlobally = true;
-        }
-
-        // Skip if the skipPopulateData flag is set to true
-        if ($this->skipPopulateData || self::$hasRunPopulateElementData) {
+        // Prevent infinite recursion
+        if ($this->isWriting) {
             return;
         }
+        
+        $this->isWriting = true;
 
-        // $logger->debug('onBeforeWrite triggered for ' . $this->owner->ClassName);
+        try {
+            $logger = Injector::inst()->get(LoggerInterface::class);
+            $fixtureService = Injector::inst()->get(FixtureDataService::class);
 
-        if (!$manager instanceof Template || ($this->getOwner()->exists() && $this->getOwner()->isInDB())) {
-            return;
+            $manager = $this->getOwnerPage();
+
+            // Reset available globally to true for elements NOT in a Template
+            if (
+                $this->getOwner()->hasField('AvailableGlobally') &&
+                !($manager instanceof Template)
+            ) {
+                $this->getOwner()->AvailableGlobally = true;
+            }
+
+            // Skip if the skipPopulateData flag is set to true
+            if ($this->skipPopulateData || self::$hasRunPopulateElementData) {
+                return;
+            }
+
+            // $logger->debug('onBeforeWrite triggered for ' . $this->owner->ClassName);
+
+            if (!$manager instanceof Template || ($this->getOwner()->exists() && $this->getOwner()->isInDB())) {
+                return;
+            }
+
+            // Explicitly set AvailableGlobally to false for Template instances
+            if ($this->getOwner()->hasField('AvailableGlobally')) {
+                $this->getOwner()->AvailableGlobally = false;
+            }
+
+            // Call the FixtureDataService to populate fields
+            $fixtureService->populateElementData($this->getOwner());
+
+            // Mark populateElementData as having run
+            //self::$hasRunPopulateElementData = true;
+        } finally {
+            // Reset the flag regardless of success/failure
+            $this->isWriting = false;
         }
-
-        // Explicitly set AvailableGlobally to false for Template instances
-        if ($this->getOwner()->hasField('AvailableGlobally')) {
-            $this->getOwner()->AvailableGlobally = false;
-        }
-
-        // Call the FixtureDataService to populate fields
-        $fixtureService->populateElementData($this->getOwner());
-
-        // Mark populateElementData as having run
-        //self::$hasRunPopulateElementData = true;
     }
 
     /**
@@ -165,59 +181,44 @@ class BaseElementDataExtension extends Extension
 
     /**
      * @param $member
-     * @return true|void
+     * @return bool
      */
     public function canCreate($member)
     {
         if (!$member instanceof Member) {
             $member = $this->getCurrentUser();
         }
-
-        if ($ownerPage = $this->getOwnerPage()) {
-            if ($ownerPage->canCreate($member)) {
-                return true;
-            }
-        }
-
-        return null;
+        
+        // Return the actual permission of the owner element
+        return $this->getOwner()->canCreate($member);
     }
 
     /**
      * @param $member
-     * @return true|void
+     * @return bool
      */
     public function canEdit($member)
     {
         if (!$member instanceof Member) {
             $member = $this->getCurrentUser();
         }
-
-        if ($ownerPage = $this->getOwnerPage()) {
-            if ($ownerPage->canEdit($member)) {
-                return true;
-            }
-        }
-
-        return null;
+        
+        // Return the actual permission of the owner element
+        return $this->getOwner()->canEdit($member);
     }
 
     /**
      * @param $member
-     * @return true|void
+     * @return bool
      */
     public function canDelete($member)
     {
         if (!$member instanceof Member) {
             $member = $this->getCurrentUser();
         }
-
-        if ($ownerPage = $this->getOwnerPage()) {
-            if ($ownerPage->canDelete($member)) {
-                return true;
-            }
-        }
-
-        return null;
+        
+        // Return the actual permission of the owner element
+        return $this->getOwner()->canDelete($member);
     }
 
     /**

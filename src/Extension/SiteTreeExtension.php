@@ -162,13 +162,16 @@ class SiteTreeExtension extends Extension
             $template->PageType = $page->ClassName;
             $template->write();
 
-            if ($template->Elements()->exists() && $template->Elements()->Elements()->exists()) {
+            // Check if the template has an Elements method before calling it
+            if ($template->hasMethod('Elements') && $template->Elements()->exists() && $template->Elements()->hasMethod('Elements') && $template->Elements()->Elements()->exists()) {
                 $elements = $template->Elements()->Elements();
 
                 // Duplicate elements from the page's ElementalArea
                 if ($page->hasMethod('ElementalArea') && $page->ElementalArea()->exists()) {
                     $elementalArea = $page->ElementalArea();
-                    if ($elementalArea->Elements()->exists()) {
+                    
+                    // Also check if element area has Elements method
+                    if ($elementalArea->hasMethod('Elements') && $elementalArea->Elements()->exists()) {
                         foreach ($elementalArea->Elements() as $element) {
                             $newElement = $element->duplicate();
                             $newElement->write();
