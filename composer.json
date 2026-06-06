@@ -30,15 +30,45 @@
     "require-dev": {
         "cambis/silverstan": "^2.1",
         "phpstan/extension-installer": "^1.4",
-        "silverstripe/recipe-testing": "^4",
-        "squizlabs/php_codesniffer": "^3.7"
-        "php": "^8.3 || ^8.4",
-        "dnadesign/silverstripe-elemental": "^6.0",
-        "lekoala/silverstripe-cms-actions": "^2.0",
-        "silverstripe/vendor-plugin": "^3"
-    },
-    "require-dev": {
         "phpstan/phpstan": "^1.10",
         "silverstripe/cms": "^6.0",
         "silverstripe/frameworktest": "^2.0",
-        "silverstripe/recipe-testing": "^4.0"
+        "silverstripe/recipe-testing": "^4",
+        "silverstripe/standards": "^1",
+        "squizlabs/php_codesniffer": "^3.7"
+    },
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/dynamicagency"
+        },
+        {
+            "type": "github",
+            "url": "https://github.com/jsirish"
+        }
+    ],
+    "extra": {
+        "expose": [
+            "client/dist"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "silverstripe/recipe-plugin": true,
+            "silverstripe/vendor-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Dynamic\\ElementalTemplates\\": "src/",
+            "Dynamic\\ElementalTemplates\\Tests\\": "tests/"
+        }
+    },
+    "support": {
+        "issues": "https://github.com/dynamic/silverstripe-elemental-templates/issues",
+        "source": "https://github.com/dynamic/silverstripe-elemental-templates"
+    }
+}
