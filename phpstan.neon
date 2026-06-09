@@ -5,11 +5,8 @@ parameters:
     paths:
         - src
 
-    stubFiles:
-        - phpstan-stubs/Page.php
-        - phpstan-stubs/PageController.php
-
     scanDirectories:
+        - app/src
         - vendor/silverstripe/framework/src
         - vendor/silverstripe/cms/code
         - vendor/dnadesign/silverstripe-elemental/src
