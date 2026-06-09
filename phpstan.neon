@@ -3,7 +3,16 @@ parameters:
     treatPhpDocTypesAsCertain: false
     paths:
         - src
+
+    scanDirectories:
+        - vendor/silverstripe/framework/src
+        - vendor/silverstripe/cms/code
+        - vendor/dnadesign/silverstripe-elemental/src
+        - vendor/lekoala/silverstripe-cms-actions/src
+
     ignoreErrors:
+        # SilverStripe config properties are read by the Config API, not direct PHP access
+        - '#Static property .+ is never read, only written\.#'
         # Form field methods that exist in specific field types
         - '#Call to an undefined method SilverStripe\\Forms\\FormField::(insertAfter|Value|setFolderName|setAllowedFileCategories|setTypes)#'
         # DataObject dynamic methods from extensions
@@ -19,3 +28,15 @@ parameters:
         - '#Negated boolean expression is always false#'
         - '#Call to function is_array\(\) with array will always evaluate to true#'
         - '#Dead catch - SilverStripe\\Core\\Validation\\ValidationException is never thrown#'
+        # ElementalArea is added dynamically via the ElementalPageExtension
+        - '#Call to an undefined method SilverStripe\\CMS\\Model\\SiteTree::ElementalArea\(\)#'
+        # getRequestData was renamed in SS6 - method call in CMSPageAddControllerExtension
+        - '#Call to an undefined method SilverStripe\\Forms\\Form::getRequestData\(\)#'
+        # PHPDoc @var above method has no effect - not a real bug
+        - '#PHPDoc tag @var above a method has no effect#'
+        # PHPDoc contains unknown class for extension owner type hints
+        - '#PHPDoc tag @property .+ contains unknown class SilverStripe\\CMS\\Controllers\\CMSPageAddController#'
+        # Null coalescing on known-to-exist array offset
+        - '#Offset .+ on left side of \?\? always exists and is not nullable#'
+        # TemplatePickerField::getTemplates return type vs parent (ArrayList vs array)
+        - '#Return type \(SilverStripe\\Model\\List\\ArrayList\) of method .+::getTemplates\(\) should be compatible with return type \(array\) of method .+::getTemplates\(\)#'

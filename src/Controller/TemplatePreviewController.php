@@ -2,8 +2,8 @@
 
 namespace Dynamic\ElementalTemplates\Controller;
 
-use SilverStripe\View\Requirements;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\ORM\FieldType\DBField;
 use Dynamic\ElementalTemplates\Models\Template;
 
 /**

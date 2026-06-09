@@ -5,7 +5,7 @@ namespace Dynamic\ElementalTemplates\Form;
 use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\Admin\AdminRootController;
 use SilverStripe\Forms\FormField;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\Model\List\ArrayList;
 use SilverStripe\View\ArrayData;
 
 /**
