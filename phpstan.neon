@@ -28,3 +28,5 @@ parameters:
         - '#Negated boolean expression is always false#'
         - '#Call to function is_array\(\) with array will always evaluate to true#'
         - '#Dead catch - SilverStripe\\Core\\Validation\\ValidationException is never thrown#'
+        # MultiForm is referenced in frameworktest bootstrap but not installed
+        - '#Internal error: Class "MultiForm" not found#'
