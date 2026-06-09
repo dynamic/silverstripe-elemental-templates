@@ -30,7 +30,6 @@
     "require-dev": {
         "cambis/silverstan": "^2.1",
         "phpstan/extension-installer": "^1.4",
-        "phpstan/phpstan": "^1.10",
         "silverstripe/cms": "^6.0",
         "silverstripe/frameworktest": "^2.0",
         "silverstripe/recipe-testing": "^4",
