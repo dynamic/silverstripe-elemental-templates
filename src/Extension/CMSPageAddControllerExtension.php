@@ -10,7 +10,7 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\ORM\ValidationException;
+use SilverStripe\Core\Validation\ValidationException;
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 use Dynamic\ElementalTemplates\Models\Template;
 use Dynamic\ElementalTemplates\Service\TemplateApplicator;

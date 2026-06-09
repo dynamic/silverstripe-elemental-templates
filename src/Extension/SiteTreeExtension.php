@@ -16,7 +16,7 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\ToggleCompositeField;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\ValidationException;
+use SilverStripe\Core\Validation\ValidationException;
 
 /**
  * Class \Dynamic\ElementalTemplates\Extension\SiteTreeExtension
@@ -125,7 +125,7 @@ class SiteTreeExtension extends Extension
      * @param array $data Form data, expecting an 'ApplyTemplateID' field.
      * @param Form $form
      * @return string|\SilverStripe\Control\HTTPResponse
-     * @throws \SilverStripe\ORM\ValidationException
+     * @throws \SilverStripe\Core\Validation\ValidationException
      * @throws \Exception
      */
     public function applyTemplate($data, Form $form)
@@ -184,7 +184,7 @@ class SiteTreeExtension extends Extension
      * @param array $data
      * @param Form $form
      * @return void
-     * @throws \SilverStripe\ORM\ValidationException
+     * @throws \SilverStripe\Core\Validation\ValidationException
      */
     public function CreateTemplate($data, $form): void
     {
