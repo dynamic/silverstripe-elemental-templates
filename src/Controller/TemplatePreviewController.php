@@ -2,7 +2,6 @@
 
 namespace Dynamic\ElementalTemplates\Controller;
 
-
 use SilverStripe\View\Requirements;
 use SilverStripe\Control\HTTPRequest;
 use Dynamic\ElementalTemplates\Models\Template;
