@@ -31,3 +31,7 @@ parameters:
         - '#Return type \(SilverStripe\\Model\\List\\ArrayList\) of method .+::getTemplates\(\) should be compatible with return type \(array\) of method .+::getTemplates\(\)#'
         # Methods added by BaseElementDataExtension to BaseElement via extension
         - '#Call to an undefined method DNADesign\\Elemental\\Models\\BaseElement::(setSkipPopulateData|setResetAvailableGlobally)\(\)#'
+        # Null coalescing on known-to-exist array offset (ScreenshotUploadController mime type map)
+        - '#Offset .+ on left side of \?\? always exists and is not nullable#'
+        # getRequestData() is a SilverStripe extension method, not on Form directly
+        - '#Call to an undefined method SilverStripe\\Forms\\Form::getRequestData\(\)#'
