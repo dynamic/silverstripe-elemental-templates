@@ -23,11 +23,11 @@ parameters:
         # Return type mismatch due to DataObject::create returning DataObject
         - '#Method .+::findOrCreateElementalArea\(\) should return .+ but returns SilverStripe\\ORM\\DataObject#'
         # Extension context - accessing owner properties/methods via $this
-        - '#Access to an undefined property Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::\$(ID|AvailableGlobally)#'
-        - '#Call to an undefined method Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::(exists|hasField|isInDB|getPage|getAreaRelationName)#'
-        - '#Access to an undefined property Dynamic\\ElememtalTemplates\\Extension\\SiteTreeExtension::\$(ID|ClassName)#'
-        - '#Unsafe access to configuration property Dynamic\\ElememtalTemplates\\Extension\\BaseElementDataExtension::\$hasRunPopulateElementData#'
+        - '#Access to an undefined property Dynamic\\ElementalTemplates\\Extension\\BaseElementDataExtension::\$(ID|AvailableGlobally)#'
+        - '#Call to an undefined method Dynamic\\ElementalTemplates\\Extension\\BaseElementDataExtension::(exists|hasField|isInDB|getPage|getAreaRelationName)#'
+        - '#Access to an undefined property Dynamic\\ElementalTemplates\\Extension\\SiteTreeExtension::\$(ID|ClassName)#'
+        - '#Unsafe access to configuration property Dynamic\\ElementalTemplates\\Extension\\BaseElementDataExtension::\$hasRunPopulateElementData#'
         # PHPStan strict checks that are too strict for SilverStripe patterns
         - '#Negated boolean expression is always false#'
         - '#Call to function is_array\(\) with array will always evaluate to true#'
-        - '#Dead catch - SilverStripe\\ORM\\ValidationException is never thrown#'
+        - '#Dead catch - SilverStripe\\Core\\Validation\\ValidationException is never thrown#'
