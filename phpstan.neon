@@ -1,8 +1,13 @@
 parameters:
     level: 4
     treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
     paths:
         - src
+
+    stubFiles:
+        - phpstan-stubs/Page.php
+        - phpstan-stubs/PageController.php
 
     scanDirectories:
         - vendor/silverstripe/framework/src
@@ -13,30 +18,19 @@ parameters:
     ignoreErrors:
         # SilverStripe config properties are read by the Config API, not direct PHP access
         - '#Static property .+ is never read, only written\.#'
-        # Form field methods that exist in specific field types
-        - '#Call to an undefined method SilverStripe\\Forms\\FormField::(insertAfter|Value|setFolderName|setAllowedFileCategories|setTypes)#'
+        # Form field methods available via SilverStripe magic accessors
+        - '#Call to an undefined method SilverStripe\\Forms\\FormField::(insertAfter|setFolderName|setAllowedFileCategories|setTypes)#'
         # DataObject dynamic methods from extensions
         - '#Call to an undefined method SilverStripe\\ORM\\DataObject::getElementalRelations#'
+        # ElementalArea is added dynamically by ElementalPageExtension, not on SiteTree directly
+        - '#Call to an undefined method SilverStripe\\(ORM\\DataObject|CMS\\Model\\SiteTree)::ElementalArea\(\)#'
         # Return type mismatch due to DataObject::create returning DataObject
         - '#Method .+::findOrCreateElementalArea\(\) should return .+ but returns SilverStripe\\ORM\\DataObject#'
-        # Extension context - accessing owner properties/methods via $this
-        - '#Access to an undefined property Dynamic\\ElementalTemplates\\Extension\\BaseElementDataExtension::\$(ID|AvailableGlobally)#'
-        - '#Call to an undefined method Dynamic\\ElementalTemplates\\Extension\\BaseElementDataExtension::(exists|hasField|isInDB|getPage|getAreaRelationName)#'
-        - '#Access to an undefined property Dynamic\\ElementalTemplates\\Extension\\SiteTreeExtension::\$(ID|ClassName)#'
-        - '#Unsafe access to configuration property Dynamic\\ElementalTemplates\\Extension\\BaseElementDataExtension::\$hasRunPopulateElementData#'
-        # PHPStan strict checks that are too strict for SilverStripe patterns
-        - '#Negated boolean expression is always false#'
-        - '#Call to function is_array\(\) with array will always evaluate to true#'
-        - '#Dead catch - SilverStripe\\Core\\Validation\\ValidationException is never thrown#'
-        # ElementalArea is added dynamically via the ElementalPageExtension
-        - '#Call to an undefined method SilverStripe\\CMS\\Model\\SiteTree::ElementalArea\(\)#'
-        # getRequestData was renamed in SS6 - method call in CMSPageAddControllerExtension
-        - '#Call to an undefined method SilverStripe\\Forms\\Form::getRequestData\(\)#'
-        # PHPDoc @var above method has no effect - not a real bug
+        # PHPDoc @var above method has no effect
         - '#PHPDoc tag @var above a method has no effect#'
         # PHPDoc contains unknown class for extension owner type hints
         - '#PHPDoc tag @property .+ contains unknown class SilverStripe\\CMS\\Controllers\\CMSPageAddController#'
-        # Null coalescing on known-to-exist array offset
-        - '#Offset .+ on left side of \?\? always exists and is not nullable#'
-        # TemplatePickerField::getTemplates return type vs parent (ArrayList vs array)
+        # TemplatePickerField::getTemplates return type vs parent (ArrayList is a subtype of array-like)
         - '#Return type \(SilverStripe\\Model\\List\\ArrayList\) of method .+::getTemplates\(\) should be compatible with return type \(array\) of method .+::getTemplates\(\)#'
+        # Methods added by BaseElementDataExtension to BaseElement via extension
+        - '#Call to an undefined method DNADesign\\Elemental\\Models\\BaseElement::(setSkipPopulateData|setResetAvailableGlobally)\(\)#'

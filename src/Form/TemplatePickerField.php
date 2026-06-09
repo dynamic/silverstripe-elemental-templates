@@ -6,7 +6,7 @@ use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\Admin\AdminRootController;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Model\List\ArrayList;
-use SilverStripe\View\ArrayData;
+use SilverStripe\Model\ArrayData;
 
 /**
  * A visual template picker field that displays templates as a grid of cards
@@ -121,7 +121,7 @@ class TemplatePickerField extends FormField
                 'HasThumbnail' => (bool) $thumbnailUrl,
                 'ThumbnailURL' => $thumbnailUrl,
                 'PreviewLink' => $template->getPreviewLink(),
-                'IsSelected' => (int) $this->Value() === (int) $template->ID,
+                'IsSelected' => (int) $this->getValue() === (int) $template->ID,
                 'ElementCount' => $template->Elements()->Elements()->count(),
             ]));
         }
