@@ -132,7 +132,7 @@ class SiteTreeExtension extends Extension
     {
         $this->logAction("applyTemplate triggered", "debug");
 
-        $isAjax = Controller::has_curr() && Controller::curr()->getRequest()->isAjax();
+        $isAjax = (bool)(Controller::curr()?->getRequest()?->isAjax());
 
         $templateID = $data['ApplyTemplateID'] ?? null;
         if (!$templateID) {
