@@ -1,14 +1,8 @@
 parameters:
     level: 4
+    treatPhpDocTypesAsCertain: false
     paths:
         - src
-    
-    scanDirectories:
-        - vendor/silverstripe/framework/src
-        - vendor/silverstripe/cms/code
-        - vendor/dnadesign/silverstripe-elemental/src
-        - vendor/lekoala/silverstripe-cms-actions/src
-    
     ignoreErrors:
         # Form field methods that exist in specific field types
         - '#Call to an undefined method SilverStripe\\Forms\\FormField::(insertAfter|Value|setFolderName|setAllowedFileCategories|setTypes)#'
