@@ -24,8 +24,8 @@ class UpdateBaseElementGlobalAvailabilityTask extends BuildTask
         foreach ($elements as $element) {
             $manager = $element->getPage();
 
-            if ($manager instanceof Template) {
-                $element->AvailableGlobally = false;
+            if ($manager instanceof Template && $element->hasField('AvailableGlobally')) {
+                $element->setField('AvailableGlobally', false);
                 $element->write();
                 $output->writeln("Updated AvailableGlobally for BaseElement ID: {$element->ID}");
             } else {
