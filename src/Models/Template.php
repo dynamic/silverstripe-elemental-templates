@@ -30,6 +30,7 @@ use SilverStripe\SiteConfig\SiteConfig;
  * @method \DNADesign\Elemental\Models\ElementalArea Elements()
  * @method \SilverStripe\Assets\Image LayoutImage()
  * @mixin \DNADesign\Elemental\Extensions\ElementalAreasExtension
+ * @mixin \SilverStripe\Versioned\Versioned
  */
 class Template extends DataObject implements PermissionProvider
 {
