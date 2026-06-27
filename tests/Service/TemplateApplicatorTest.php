@@ -9,6 +9,7 @@ use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Dev\SapphireTest;
 use DNADesign\Elemental\Models\ElementalArea;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
+use SilverStripe\Versioned\Versioned;
 
 class TemplateApplicatorTest extends SapphireTest
 {
@@ -98,29 +99,50 @@ class TemplateApplicatorTest extends SapphireTest
         $this->assertIsString($result['message']);
     }
 
-    public function testApplyTemplateToRecordNoElementalArea()
+    public function testApplyTemplateMaterializesMissingElementalArea()
     {
         // Create test data programmatically
         $validElementalArea = ElementalArea::create();
         $validElementalArea->Title = 'Valid Elemental Area';
         $validElementalArea->write();
 
+        // Add an element so we can confirm it is duplicated into the materialized area
+        $templateElement = \DNADesign\Elemental\Models\ElementContent::create();
+        $templateElement->Title = 'Template Content Element';
+        $templateElement->HTML = '<p>This is template content</p>';
+        $templateElement->ParentID = $validElementalArea->ID;
+        $templateElement->write();
+
         $validTemplate = Template::create();
         $validTemplate->Title = 'Valid Template';
         $validTemplate->ElementsID = $validElementalArea->ID;
         $validTemplate->write();
 
+        // Apply Template runs in the CMS DRAFT context; elemental only materializes
+        // areas while reading the draft stage (allowAlteringElementalArea()).
+        Versioned::set_stage(Versioned::DRAFT);
+
+        // Persist the page, then simulate a page whose elemental area was never
+        // materialized (ElementalAreaID = 0) — issue #63. Set it in memory only so the
+        // applicator is the one that has to create the area.
         $record = SamplePage::create();
         $record->Title = 'Test Page No Elements';
-        // Do NOT write() - Page 'owns' ElementalArea, so write() would auto-create it
-        // We want to test with no ElementalAreaID to validate proper error handling
+        $record->write();
+        $record->ElementalAreaID = 0;
 
         $applicator = new TemplateApplicator();
         $result = $applicator->applyTemplateToRecord($record, $validTemplate);
 
-        // Should fail because the record doesn't support or have elemental areas
-        $this->assertFalse($result['success']);
-        $this->assertNotEmpty($result['message']);
-        $this->assertIsString($result['message']);
+        // The applicator should materialize the area and apply the template in place.
+        $this->assertTrue(
+            $result['success'],
+            'Expected the applicator to materialize the missing area, got: ' . ($result['message'] ?? 'no message')
+        );
+        $this->assertGreaterThan(0, $record->ElementalAreaID, 'Elemental area should have been created.');
+        $this->assertGreaterThan(
+            0,
+            $record->ElementalArea()->Elements()->count(),
+            'Template elements should have been duplicated into the materialized area.'
+        );
     }
 }
