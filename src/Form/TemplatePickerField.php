@@ -4,6 +4,7 @@ namespace Dynamic\ElementalTemplates\Form;
 
 use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\Admin\AdminRootController;
+use SilverStripe\Core\ClassInfo;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Model\List\ArrayList;
 use SilverStripe\Model\ArrayData;
@@ -99,9 +100,22 @@ class TemplatePickerField extends FormField
         $list = ArrayList::create();
         $templates = Template::get();
 
-        // Filter by page type if set
+        // Filter by page type if set. A template matches when its PageType is the
+        // current class or any ancestor of it (a template tagged "Page" applies to a
+        // "BlockPage" too), or when it has no PageType at all (untyped = applies to
+        // any page type). Filtering in PHP keeps the NULL/blank handling explicit —
+        // a `filter('PageType', ...)` query would silently exclude untyped templates.
         if ($this->pageTypeFilter) {
-            $templates = $templates->filter('PageType', $this->pageTypeFilter);
+            $ancestry = array_map('strtolower', array_values(ClassInfo::ancestry($this->pageTypeFilter)));
+            $matched = ArrayList::create();
+            foreach ($templates as $template) {
+                $pageType = $template->PageType;
+                $isUniversal = ($pageType === null || $pageType === '');
+                if ($isUniversal || in_array(strtolower($pageType), $ancestry, true)) {
+                    $matched->push($template);
+                }
+            }
+            $templates = $matched;
         }
 
         foreach ($templates as $template) {
