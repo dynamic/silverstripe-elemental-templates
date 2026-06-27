@@ -113,6 +113,12 @@ class SiteTreeExtension extends Extension
                     $ap = CustomAction::create('ApplyTemplate', 'Apply Blocks Template')
                 );
                 $ap->setShouldRefresh(true);
+                // Pin the post-action reload to this record. Without an explicit URL,
+                // cms-actions' addXReload() falls back to the request referer, which
+                // resolves to the bare "admin/pages/edit/" (no record ID) and ejects the
+                // editor to the pages list. CMSEditLink() keeps the user on the page,
+                // refreshing in place to show the applied blocks.
+                $ap->setRedirectURL($this->owner->CMSEditLink());
             }
         }
     }
