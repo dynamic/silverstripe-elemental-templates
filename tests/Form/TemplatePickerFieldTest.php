@@ -54,6 +54,19 @@ class TemplatePickerFieldTest extends SapphireTest
         $this->assertNotContains('OtherTyped', $titles);
     }
 
+    public function testNoPageTypeFilterReturnsAllTemplates()
+    {
+        $this->makeTemplate('Typed', SamplePageTwo::class);
+        $this->makeTemplate('Untyped', null);
+
+        // No page-type filter set: every template should be returned regardless of PageType.
+        $field = TemplatePickerField::create('ApplyTemplateID', 'Select template');
+        $titles = $field->getTemplates()->column('Title');
+
+        $this->assertContains('Typed', $titles);
+        $this->assertContains('Untyped', $titles);
+    }
+
     private function makeTemplate(string $title, ?string $pageType): Template
     {
         $template = Template::create();
