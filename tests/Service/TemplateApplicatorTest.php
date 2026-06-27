@@ -145,4 +145,33 @@ class TemplateApplicatorTest extends SapphireTest
             'Template elements should have been duplicated into the materialized area.'
         );
     }
+
+    public function testApplyTemplateFailsWhenAreaCannotBeMaterialized()
+    {
+        $validElementalArea = ElementalArea::create();
+        $validElementalArea->Title = 'Valid Elemental Area';
+        $validElementalArea->write();
+
+        $validTemplate = Template::create();
+        $validTemplate->Title = 'Valid Template';
+        $validTemplate->ElementsID = $validElementalArea->ID;
+        $validTemplate->write();
+
+        // Outside the DRAFT stage the elemental area is not auto-created on write, so the
+        // applicator cannot materialize one and must return a graceful failure rather than
+        // proceeding without an area.
+        Versioned::set_stage(Versioned::LIVE);
+
+        $record = SamplePage::create();
+        $record->Title = 'Live Stage Page';
+        $record->write();
+        $record->ElementalAreaID = 0;
+
+        $applicator = new TemplateApplicator();
+        $result = $applicator->applyTemplateToRecord($record, $validTemplate);
+
+        $this->assertFalse($result['success'], 'Expected failure when the area cannot be materialized.');
+        $this->assertNotEmpty($result['message']);
+        $this->assertIsString($result['message']);
+    }
 }
