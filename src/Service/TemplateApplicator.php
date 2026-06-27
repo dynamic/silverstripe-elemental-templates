@@ -45,7 +45,25 @@ class TemplateApplicator
             return ['success' => false, 'message' => $message];
         }
 
+        // Materialize the record's elemental area if it has not been created yet.
+        // Newly added pages (or pages never saved with blocks) have ElementalAreaID = 0;
+        // ElementalAreasExtension::onBeforeWrite() creates the area on write (only while
+        // reading the DRAFT stage, which is the CMS edit context), so writing the record
+        // first lets us apply the template in place instead of bailing out. The write is
+        // guarded so a validation/hook failure keeps the method's no-throw contract
+        // instead of escaping uncaught and leaving a half-applied record.
         $elementalArea = $record->ElementalArea();
+        if (!$elementalArea || !$elementalArea->exists()) {
+            try {
+                $record->write();
+            } catch (\Exception $e) {
+                $message = "Could not initialize elemental area for record ID {$record->ID}: {$e->getMessage()}";
+                $logger->error($message);
+                return ['success' => false, 'message' => $message];
+            }
+            $elementalArea = $record->ElementalArea();
+        }
+
         if (!$elementalArea || !$elementalArea->exists()) {
             $message = "Record ID {$record->ID} does not have an elemental area.";
             $logger->error($message);

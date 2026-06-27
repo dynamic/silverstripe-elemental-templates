@@ -67,6 +67,19 @@ class TemplatePickerFieldTest extends SapphireTest
         $this->assertContains('Untyped', $titles);
     }
 
+    public function testEmptyStateHelpLinkIsWellFormed()
+    {
+        // A page type with no matching templates renders the empty state, whose help
+        // link points at the Element Templates admin. The URL must keep the slash
+        // between the admin root and the section (issue #64).
+        $field = TemplatePickerField::create('ApplyTemplateID', 'Select template', SamplePage::class);
+
+        $html = (string) $field->Field();
+
+        $this->assertStringContainsString('admin/elemental-templates', $html);
+        $this->assertStringNotContainsString('adminelemental-templates', $html);
+    }
+
     private function makeTemplate(string $title, ?string $pageType): Template
     {
         $template = Template::create();

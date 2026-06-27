@@ -187,7 +187,7 @@ class TemplatePickerField extends FormField
             'Templates' => $this->getTemplates(),
             'hasTemplates' => $this->hasTemplates(),
             'PageID' => $this->getPageID(),
-            'AdminURL' => AdminRootController::admin_url(),
+            'AdminURL' => AdminRootController::admin_url('elemental-templates'),
         ]);
 
         return $this->customise($properties)->renderWith(
