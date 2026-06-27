@@ -27,8 +27,8 @@ use SilverStripe\SiteConfig\SiteConfig;
  * @property string $PageType
  * @property int $ElementsID
  * @property int $LayoutImageID
- * @method \DNADesign\Elemental\Models\ElementalArea Elements()
- * @method \SilverStripe\Assets\Image LayoutImage()
+ * @method ElementalArea Elements()
+ * @method Image LayoutImage()
  * @mixin \DNADesign\Elemental\Extensions\ElementalAreasExtension
  * @mixin \SilverStripe\Versioned\Versioned
  */
@@ -156,7 +156,7 @@ class Template extends DataObject implements PermissionProvider
     public function getCMSFields(): FieldList
     {
         $this->beforeUpdateCMSFields(function (FieldList $fields) {
-            $pageTypes = self::getDecoratedBy(ElementalAreasExtension::class, \Page::class);
+            $pageTypes = Template::getDecoratedBy(ElementalAreasExtension::class, \Page::class);
 
             $fields->removeByName([
                 'Sort',
@@ -265,7 +265,7 @@ class Template extends DataObject implements PermissionProvider
      */
     public function getElementCount(): int
     {
-        if ($this->Elements() && $this->Elements()->Elements()) {
+        if ($this->Elements()->exists()) {
             return $this->Elements()->Elements()->count();
         }
         return 0;
@@ -467,7 +467,7 @@ class Template extends DataObject implements PermissionProvider
         );
 
         // Add screenshot capture button (only for saved templates with elements)
-        if ($this->exists() && $this->Elements() && $this->Elements()->Elements()->count() > 0) {
+        if ($this->exists() && $this->Elements()->exists() && $this->Elements()->Elements()->count() > 0) {
             $contentOnlyUrl = $this->getPreviewLink() . '?content_only=1';
             $templateID = $this->ID;
             $securityToken = \SilverStripe\Security\SecurityToken::getSecurityID();

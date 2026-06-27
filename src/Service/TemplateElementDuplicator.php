@@ -33,8 +33,14 @@ class TemplateElementDuplicator
         // Track the sort order for new elements starting after existing ones
         $sortOrder = $maxSort;
 
-        // Loop over the template's inner elements in their current order
-        foreach ($template->Elements()->Elements()->sort('Sort') as $element) {
+        // Loop over the template's inner elements in their current order.
+        // The caller (TemplateApplicator) already validates the area exists, but we guard
+        // here too so PHPStan can verify the access is safe.
+        $templateArea = $template->Elements();
+        if (!$templateArea->exists()) {
+            return;
+        }
+        foreach ($templateArea->Elements()->sort('Sort') as $element) {
             try {
                 $copy = $element->duplicate();
 
