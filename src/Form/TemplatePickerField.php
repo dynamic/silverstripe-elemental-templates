@@ -52,7 +52,7 @@ class TemplatePickerField extends FormField
      * @param string|null $pageType
      * @return $this
      */
-    public function setPageTypeFilter(?string $pageType): self
+    public function setPageTypeFilter(?string $pageType): TemplatePickerField
     {
         $this->pageTypeFilter = $pageType;
         return $this;
@@ -74,7 +74,7 @@ class TemplatePickerField extends FormField
      * @param int|null $pageID
      * @return $this
      */
-    public function setPageID(?int $pageID): self
+    public function setPageID(?int $pageID): TemplatePickerField
     {
         $this->pageID = $pageID;
         return $this;

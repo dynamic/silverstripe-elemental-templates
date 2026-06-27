@@ -145,7 +145,7 @@ class SiteTreeExtension extends Extension
             $message = 'Please select a template before applying.';
             $this->logAction("No template ID provided in the form data.", "warning");
             if ($isAjax) {
-                throw new ValidationException($message);
+                throw ValidationException::create($message);
             }
             $form->sessionMessage($message, 'warning');
             return Controller::curr()->redirectBack();
@@ -157,7 +157,7 @@ class SiteTreeExtension extends Extension
             $message = 'The selected template could not be found.';
             $this->logAction("No template found with ID: " . $templateID, "error");
             if ($isAjax) {
-                throw new ValidationException($message);
+                throw ValidationException::create($message);
             }
             $form->sessionMessage($message, 'bad');
             return Controller::curr()->redirectBack();
@@ -170,7 +170,7 @@ class SiteTreeExtension extends Extension
         if (!$result['success']) {
             $this->logAction($result['message'], "error");
             if ($isAjax) {
-                throw new ValidationException($result['message']);
+                throw ValidationException::create($result['message']);
             }
             $form->sessionMessage($result['message'], 'bad');
             return Controller::curr()->redirectBack();
