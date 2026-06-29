@@ -1,11 +1,29 @@
-# Silverstripe Elemental Layouts
+# Silverstripe Elemental Templates
 
 A module for Silverstripe CMS that allows CMS users to define reusable page layouts, known as "templates" or "skeletons". These templates provide a predefined set of Elemental blocks that can be used to quickly create pages with consistent layouts and content.
 
-[![CI](https://github.com/dynamic/silverstripe-elemental-templates/actions/workflows/ci.yml/badge.svg)](https://github.com/dynamic/silverstripe-elemental-templates/actions/workflows/ci.yml)  
-[![Latest Stable Version](https://poser.pugx.org/dynamic/silverstripe-elemental-templates/v/stable)](https://packagist.org/packages/dynamic/silverstripe-elemental-templates)  
-[![Total Downloads](https://poser.pugx.org/dynamic/silverstripe-elemental-templates/downloads)](https://packagist.org/packages/dynamic/silverstripe-elemental-templates)  
-[![License](https://poser.pugx.org/dynamic/silverstripe-elemental-templates/license)](https://packagist.org/packages/dynamic/silverstripe-elemental-templates)  
+[![CI](https://github.com/dynamic/silverstripe-elemental-templates/actions/workflows/ci.yml/badge.svg)](https://github.com/dynamic/silverstripe-elemental-templates/actions/workflows/ci.yml) [![Sponsors](https://img.shields.io/badge/GitHub-Sponsors-ff69b4?logo=github)](https://github.com/sponsors/dynamic)
+
+[![Latest Stable Version](https://poser.pugx.org/dynamic/silverstripe-elemental-templates/v/stable)](https://packagist.org/packages/dynamic/silverstripe-elemental-templates)
+[![Total Downloads](https://poser.pugx.org/dynamic/silverstripe-elemental-templates/downloads)](https://packagist.org/packages/dynamic/silverstripe-elemental-templates)
+[![Latest Unstable Version](https://poser.pugx.org/dynamic/silverstripe-elemental-templates/v/unstable)](https://packagist.org/packages/dynamic/silverstripe-elemental-templates)
+[![License](https://poser.pugx.org/dynamic/silverstripe-elemental-templates/license)](https://packagist.org/packages/dynamic/silverstripe-elemental-templates)
+
+## Requirements
+
+- PHP ^8.3
+- dnadesign/silverstripe-elemental ^6.0
+- lekoala/silverstripe-cms-actions ^2.0
+- silverstripe/linkfield ^5.0
+- silverstripe/vendor-plugin ^3
+
+## Installation
+
+```bash
+composer require dynamic/silverstripe-elemental-templates
+```
+
+Run `dev/build` to apply database changes.
 
 ## Features
 
@@ -13,21 +31,6 @@ A module for Silverstripe CMS that allows CMS users to define reusable page layo
 - **Page Creation from Templates**: Quickly create new pages based on existing templates.
 - **Template Creation from Pages**: Generate templates from existing pages, including their Elemental blocks.
 - **Configurable Defaults**: Populate Elemental blocks with default values defined in YAML configuration.
-
-## Requirements
-
-- Silverstripe CMS ^5
-- DNADesign Elemental module ^5.2
-
-## Installation
-
-Install the module via Composer:
-
-```bash
-composer require dynamic/silverstripe-elemental-templates
-```
-
-Run `dev/build` to apply database changes.
 
 ## Usage
 
@@ -82,30 +85,30 @@ We recognize that the current implementation only supports configuring populatio
 
 The module logs key actions, such as template creation and Elemental block duplication, to the Silverstripe log file (`silverstripe.log`). This can help diagnose issues during development.
 
-## Contributing
+## Getting more elements
 
-Contributions are welcome! Please submit a pull request or open an issue on GitHub.
-
-## License
-
-This module is licensed under the BSD-3-Clause license. See the LICENSE file for details.
+See [Elemental modules by Dynamic](https://github.com/orgs/dynamic/repositories?q=elemental&type=all&language=&sort=)
 
 ## Maintainers
- *  [Dynamic](http://www.dynamicagency.com) (<dev@dynamicagency.com>)
+
+ *  [Dynamic](https://www.dynamicagency.com) (<dev@dynamicagency.com>)
 
 ## Bugtracker
-Bugs are tracked in the issues section of this repository. Before submitting an issue please read over
-existing issues to ensure yours is unique.
+
+Bugs are tracked in the issues section of this repository. Before submitting an issue please read over existing issues to ensure yours is unique.
 
 If the issue does look like a new bug:
 
  - Create a new issue
- - Describe the steps required to reproduce your issue, and the expected outcome. Unit tests, screenshots
- and screencasts can help here.
- - Describe your environment as detailed as possible: SilverStripe version, Browser, PHP version,
- Operating System, any installed SilverStripe modules.
+ - Describe the steps required to reproduce your issue, and the expected outcome. Unit tests, screenshots and screencasts can help here.
+ - Describe your environment as detailed as possible: SilverStripe version, Browser, PHP version, Operating System, any installed SilverStripe modules.
 
 Please report security issues to the module maintainers directly. Please don't file security issues in the bugtracker.
 
 ## Development and contribution
+
 If you would like to make contributions to the module please ensure you raise a pull request and discuss with the module maintainers.
+
+## License
+
+See [License](LICENSE.md)
