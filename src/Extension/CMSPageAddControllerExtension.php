@@ -23,13 +23,23 @@ use Dynamic\ElementalTemplates\Service\TemplateApplicator;
 class CMSPageAddControllerExtension extends Extension
 {
     /**
-     * Update page options to include a template selection.
+     * Inject the grouped template picker into the "Add new page" form.
+     *
+     * SS6 builds this form in CMSMainAddForm (this hook fires from its
+     * createFields()); the page-type field is named "RecordType". Older
+     * versions used CMSPageAddController::updatePageOptions with a "PageType"
+     * field — both field names are handled so the dropdown lands in the right
+     * place regardless of CMS version.
      *
      * @param FieldList $fields
      * @return void
      */
-    public function updatePageOptions(FieldList $fields): void
+    public function updateFields(FieldList $fields): void
     {
+        if ($fields->dataFieldByName('TemplateID')) {
+            return;
+        }
+
         $title = '<span class="step-label"><span class="flyout">Step 3. </span><span class="title">(Optional) Select template to create page with</span></span>';
         $templateField = GroupedDropdownField::create(
             'TemplateID',
@@ -37,7 +47,13 @@ class CMSPageAddControllerExtension extends Extension
             Template::getGroupedTemplateMap()
         );
         $templateField->setEmptyString('Select template');
-        $fields->insertAfter('PageType', $templateField);
+
+        $anchor = $fields->dataFieldByName('RecordType') ? 'RecordType' : 'PageType';
+        if ($fields->dataFieldByName($anchor)) {
+            $fields->insertAfter($anchor, $templateField);
+        } else {
+            $fields->push($templateField);
+        }
     }
 
     /**
@@ -56,8 +72,11 @@ class CMSPageAddControllerExtension extends Extension
 
         $record->write();
 
-        $requestData = $form->getRequestData();
-        $templateID = (is_array($requestData) && array_key_exists('TemplateID', $requestData)) ? $requestData['TemplateID'] : null;
+        // Read the selected template from the POST submission. Form::getRequestData()
+        // holds the data the form was *built* with (the GET to /admin/pages/add),
+        // not the submitted values, so the TemplateID must come off the request.
+        $request = $form->getController() ? $form->getController()->getRequest() : null;
+        $templateID = $request ? $request->postVar('TemplateID') : null;
         if (!$templateID || !$template = Template::get()->byID($templateID)) {
             Injector::inst()->get(LoggerInterface::class)->warning(
                 "Invalid or missing template ID: {$templateID}."
