@@ -47,25 +47,51 @@ class CMSPageAddControllerExtensionTest extends SapphireTest
         Injector::inst()->registerService($mockLogger, LoggerInterface::class);
     }
 
-    public function testUpdatePageOptionsAddsGroupedTemplateDropdown(): void
+    public function testUpdateFieldsInsertsGroupedTemplateDropdownAfterRecordType(): void
     {
         $template = $this->objFromFixture(TestTemplate::class, 'testTemplate');
         $template->Category = 'Heroes';
         $template->write();
 
+        // SS6 add form: the page-type field is named "RecordType".
         $fields = new \SilverStripe\Forms\FieldList(
-            new \SilverStripe\Forms\HiddenField('PageType')
+            new \SilverStripe\Forms\HiddenField('RecordType')
         );
 
         $extension = new CMSPageAddControllerExtension();
-        $extension->updatePageOptions($fields);
+        $extension->updateFields($fields);
 
         $field = $fields->dataFieldByName('TemplateID');
         $this->assertInstanceOf(\SilverStripe\Forms\GroupedDropdownField::class, $field);
 
+        // Must sit immediately after RecordType (as "Step 3").
+        $names = array_map(fn ($f) => $f->getName(), $fields->dataFields());
+        $this->assertSame(
+            array_search('TemplateID', array_values($names), true),
+            array_search('RecordType', array_values($names), true) + 1
+        );
+
         $source = $field->getSource();
         $this->assertArrayHasKey('Heroes', $source);
         $this->assertContains($template->Title, $source['Heroes']);
+    }
+
+    public function testUpdateFieldsIsIdempotent(): void
+    {
+        $fields = new \SilverStripe\Forms\FieldList(
+            new \SilverStripe\Forms\HiddenField('RecordType')
+        );
+
+        $extension = new CMSPageAddControllerExtension();
+        $extension->updateFields($fields);
+        $extension->updateFields($fields);
+
+        // A second pass must not add a duplicate TemplateID field.
+        $matching = array_filter(
+            $fields->dataFields(),
+            fn ($f) => $f->getName() === 'TemplateID'
+        );
+        $this->assertCount(1, $matching);
     }
 
     public function testFindOrCreateElementalArea(): void
@@ -93,29 +119,46 @@ class CMSPageAddControllerExtensionTest extends SapphireTest
 
     public function testUpdateDoAdd(): void
     {
-        // Create a mock page and template
         $page = $this->objFromFixture(SamplePage::class, 'testPage');
         $template = $this->objFromFixture(TestTemplate::class, 'testTemplate');
 
-        // Mock the form
+        // The selected TemplateID comes off the POST request, reached via
+        // $form->getController()->getRequest()->postVar('TemplateID').
+        $request = new \SilverStripe\Control\HTTPRequest('POST', '/', [], ['TemplateID' => $template->ID]);
+        $controller = new \SilverStripe\Control\Controller();
+        $controller->setRequest($request);
+
         $mockForm = $this->createMock(Form::class);
-        $mockFields = $this->createMock(\SilverStripe\Forms\FieldList::class);
-        $mockField = $this->createMock(\SilverStripe\Forms\FormField::class);
+        $mockForm->method('getController')->willReturn($controller);
 
-        $mockField->method('getValue')->willReturn($template->ID);
-        $mockFields->method('dataFieldByName')->with('TemplateID')->willReturn($mockField);
-        $mockForm->method('Fields')->willReturn($mockFields);
-
-        // Apply the extension
         $extension = new CMSPageAddControllerExtension();
         $extension->setOwner($page);
-
-        // Call updateDoAdd
         $extension->updateDoAdd($page, $mockForm);
 
-        // Assert that the ElementalArea has elements from the template
         $elementalArea = $page->ElementalArea();
-        $this->assertNotNull($elementalArea, "ElementalArea is null");
-        $this->assertGreaterThan(0, $elementalArea->Elements()->count(), "ElementalArea has no elements");
+        $this->assertNotNull($elementalArea, 'ElementalArea is null');
+        $this->assertGreaterThan(0, $elementalArea->Elements()->count(), 'ElementalArea has no elements');
+    }
+
+    public function testUpdateDoAddWithoutTemplateIdIsNoOp(): void
+    {
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+
+        // No TemplateID in the request: the page must be left without blocks.
+        $request = new \SilverStripe\Control\HTTPRequest('POST', '/', [], []);
+        $controller = new \SilverStripe\Control\Controller();
+        $controller->setRequest($request);
+
+        $mockForm = $this->createMock(Form::class);
+        $mockForm->method('getController')->willReturn($controller);
+
+        $before = $page->ElementalArea()->Elements()->count();
+
+        $extension = new CMSPageAddControllerExtension();
+        $extension->setOwner($page);
+        $extension->updateDoAdd($page, $mockForm);
+
+        // No template selected: element count must be unchanged.
+        $this->assertSame($before, $page->ElementalArea()->Elements()->count());
     }
 }
