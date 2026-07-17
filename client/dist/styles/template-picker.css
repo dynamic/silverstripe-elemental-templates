@@ -39,6 +39,24 @@
 }
 
 /* ============================================
+   Category Group Headings
+   ============================================ */
+.template-picker__group-title {
+    margin: 0.5rem 0 0;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #e8eaec;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #4b5563;
+}
+
+.template-picker__group-title:first-child {
+    margin-top: 0;
+}
+
+/* ============================================
    Card Styles - Horizontal layout
    ============================================ */
 .template-picker__card {
@@ -356,6 +374,11 @@
     .template-picker__grid {
         background: #1a1a1a;
         border-color: #444;
+    }
+
+    .template-picker__group-title {
+        border-color: #444;
+        color: #aaa;
     }
 
     .template-picker__actions {

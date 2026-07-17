@@ -101,6 +101,139 @@ class TemplateTest extends SapphireTest
     }
 
     /**
+     * An untyped template must fall back to the base Page's elemental types so
+     * it stays editable in the CMS instead of allowing nothing.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function testUntypedTemplateFallsBackToBasePageElementalTypes(): void
+    {
+        $template = Template::create();
+        $template->Title = 'Untyped';
+        $template->write();
+
+        $method = new ReflectionMethod($template, 'getAllowedTypes');
+        $method->setAccessible(true);
+        $allowed = $method->invoke($template);
+
+        $this->assertEquals(\Page::singleton()->getElementalTypes(), $allowed);
+    }
+
+    /**
+     * A non-empty but unresolvable PageType is stale data and must surface as
+     * "no allowed types", not be masked by the untyped fallback.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function testStalePageTypeReturnsNoAllowedTypes(): void
+    {
+        $template = Template::create();
+        $template->Title = 'Stale';
+        $template->PageType = 'App\\NoSuchPageClass';
+        $template->write();
+
+        $method = new ReflectionMethod($template, 'getAllowedTypes');
+        $method->setAccessible(true);
+
+        $this->assertSame([], $method->invoke($template));
+    }
+
+    /**
+     * @return void
+     */
+    public function testGetTemplateCategoriesReturnsConfiguredMap(): void
+    {
+        Template::config()->set('template_categories', ['Heroes', 'Conversion']);
+
+        $this->assertSame(
+            ['Heroes' => 'Heroes', 'Conversion' => 'Conversion'],
+            Template::getTemplateCategories()
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testGroupedTemplateMapOrdersAndFallsBack(): void
+    {
+        Template::config()->set('template_categories', ['Heroes', 'Conversion']);
+
+        $make = function (string $title, ?string $category): Template {
+            $template = Template::create();
+            $template->Title = $title;
+            $template->Category = $category;
+            $template->write();
+            return $template;
+        };
+
+        $band = $make('Band', 'Conversion');
+        $hero = $make('Hero', 'Heroes');
+        $custom = $make('Custom', 'Bespoke');
+        $loose = $make('Loose', null);
+
+        $map = Template::getGroupedTemplateMap();
+
+        // Configured order first, unknown categories after, uncategorised last.
+        $this->assertSame(['Heroes', 'Conversion', 'Bespoke', 'Other'], array_keys($map));
+        $this->assertSame([$hero->ID => 'Hero'], $map['Heroes']);
+        $this->assertSame([$band->ID => 'Band'], $map['Conversion']);
+        $this->assertSame([$custom->ID => 'Custom'], $map['Bespoke']);
+        // Fixture-file templates are uncategorised too, so just assert membership.
+        $this->assertArrayHasKey($loose->ID, $map['Other']);
+        $this->assertSame('Loose', $map['Other'][$loose->ID]);
+    }
+
+    /**
+     * With no template categorised, the dropdown source is a flat id => title
+     * map (scalar values) rather than a single pointless "Other" optgroup.
+     *
+     * @return void
+     */
+    public function testGroupedTemplateMapIsFlatWhenNoCategories(): void
+    {
+        // Only the uncategorised fixture-file templates exist here.
+        $map = Template::getGroupedTemplateMap();
+
+        $this->assertNotEmpty($map);
+        foreach ($map as $value) {
+            $this->assertIsString($value, 'Flat map values should be titles, not group arrays');
+        }
+    }
+
+    /**
+     * A real "Other" category and the uncategorised fallback must merge into a
+     * single group, never overwrite each other (the key-collision bug).
+     *
+     * @return void
+     */
+    public function testRealOtherCategoryMergesWithUncategorised(): void
+    {
+        Template::config()->set('template_categories', ['Heroes', 'Other']);
+
+        $make = function (string $title, ?string $category): Template {
+            $template = Template::create();
+            $template->Title = $title;
+            $template->Category = $category;
+            $template->write();
+            return $template;
+        };
+
+        $hero = $make('Hero', 'Heroes');
+        $realOther = $make('RealOther', 'Other');
+        $loose = $make('Loose', null);
+
+        $map = Template::getGroupedTemplateMap();
+
+        $this->assertArrayHasKey('Other', $map);
+        // Both the explicitly-categorised and the uncategorised template survive.
+        $this->assertArrayHasKey($realOther->ID, $map['Other']);
+        $this->assertArrayHasKey($loose->ID, $map['Other']);
+        $this->assertArrayHasKey($hero->ID, $map['Heroes']);
+    }
+
+    /**
      * @return void
      */
     public function testCanCreate(): void

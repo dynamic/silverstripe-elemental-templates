@@ -2,14 +2,18 @@
     <% if $hasTemplates %>
         <%-- Full-width scrollable template list --%>
         <div class="template-picker__grid">
-            <% loop $Templates %>
-                <label class="template-picker__card<% if $IsSelected %> template-picker__card--selected<% end_if %>" 
-                       for="{$Up.ID}_template_{$ID}"
+            <% loop $GroupedTemplates %>
+                <% if $Title %>
+                    <h4 class="template-picker__group-title">$Title</h4>
+                <% end_if %>
+                <% loop $Templates %>
+                <label class="template-picker__card<% if $IsSelected %> template-picker__card--selected<% end_if %>"
+                       for="{$Top.ID}_template_{$ID}"
                        data-template-id="$ID"
                        tabindex="0">
-                    <input type="radio" 
-                           id="{$Up.ID}_template_{$ID}"
-                           name="$Up.Name" 
+                    <input type="radio"
+                           id="{$Top.ID}_template_{$ID}"
+                           name="$Top.Name"
                            value="$ID"
                            class="template-picker__radio"
                            <% if $IsSelected %>checked<% end_if %> />
@@ -35,13 +39,14 @@
                             <div class="template-picker__description">$Description.LimitCharacters(120)</div>
                         <% end_if %>
                         <span class="template-picker__meta">$ElementCount block<% if $ElementCount != 1 %>s<% end_if %></span>
-                        <a href="$PreviewLink" 
+                        <a href="$PreviewLink"
                            class="template-picker__preview-link"
                            title="Preview template">
                             <span class="font-icon-eye"></span> Preview
                         </a>
                     </div>
                 </label>
+                <% end_loop %>
             <% end_loop %>
         </div>
         

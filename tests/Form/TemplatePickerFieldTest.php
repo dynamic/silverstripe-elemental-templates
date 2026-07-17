@@ -67,6 +67,64 @@ class TemplatePickerFieldTest extends SapphireTest
         $this->assertContains('Untyped', $titles);
     }
 
+    public function testGroupedTemplatesFollowConfiguredCategoryOrder()
+    {
+        // Created out of configured order on purpose; groups must come back in
+        // the template_categories order with uncategorised templates last.
+        $this->makeTemplate('Band', null, 'Conversion');
+        $this->makeTemplate('Hero', null, 'Heroes');
+        $this->makeTemplate('Loose', null, null);
+
+        $field = TemplatePickerField::create('ApplyTemplateID', 'Select template');
+        $groups = $field->getGroupedTemplates();
+
+        $this->assertEquals(['Heroes', 'Conversion', 'Other'], $groups->column('Title'));
+        $this->assertEquals(['Loose'], $groups->last()->Templates->column('Title'));
+    }
+
+    public function testUnknownCategoryGroupsAfterConfiguredOnes()
+    {
+        $this->makeTemplate('Custom', null, 'Bespoke Category');
+        $this->makeTemplate('Hero', null, 'Heroes');
+
+        $field = TemplatePickerField::create('ApplyTemplateID', 'Select template');
+        $groups = $field->getGroupedTemplates();
+
+        $this->assertEquals(['Heroes', 'Bespoke Category'], $groups->column('Title'));
+    }
+
+    public function testRealOtherCategoryDoesNotDuplicateHeading()
+    {
+        Template::config()->set('template_categories', ['Heroes', 'Other']);
+
+        $this->makeTemplate('Hero', null, 'Heroes');
+        $this->makeTemplate('RealOther', null, 'Other');
+        $this->makeTemplate('Loose', null, null);
+
+        $field = TemplatePickerField::create('ApplyTemplateID', 'Select template');
+        $titles = $field->getGroupedTemplates()->column('Title');
+
+        // Exactly one "Other" group — the uncategorised template merges into the
+        // real category rather than spawning a second identically-titled group.
+        $this->assertSame(['Heroes', 'Other'], $titles);
+        $other = $field->getGroupedTemplates()->find('Title', 'Other');
+        $this->assertEquals(['RealOther', 'Loose'], $other->Templates->column('Title'));
+    }
+
+    public function testAllUncategorisedRendersSingleUnlabelledGroup()
+    {
+        $this->makeTemplate('One', null, null);
+        $this->makeTemplate('Two', null, null);
+
+        $field = TemplatePickerField::create('ApplyTemplateID', 'Select template');
+        $groups = $field->getGroupedTemplates();
+
+        // A library with no categories renders flat: one group, no heading.
+        $this->assertEquals(1, $groups->count());
+        $this->assertSame('', $groups->first()->Title);
+        $this->assertEquals(2, $groups->first()->Templates->count());
+    }
+
     public function testEmptyStateHelpLinkIsWellFormed()
     {
         // A page type with no matching templates renders the empty state, whose help
@@ -80,11 +138,12 @@ class TemplatePickerFieldTest extends SapphireTest
         $this->assertStringNotContainsString('adminelemental-templates', $html);
     }
 
-    private function makeTemplate(string $title, ?string $pageType): Template
+    private function makeTemplate(string $title, ?string $pageType, ?string $category = null): Template
     {
         $template = Template::create();
         $template->Title = $title;
         $template->PageType = $pageType;
+        $template->Category = $category;
         $template->write();
 
         return $template;
