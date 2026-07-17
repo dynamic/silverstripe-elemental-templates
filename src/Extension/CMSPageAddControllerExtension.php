@@ -7,7 +7,7 @@ use SilverStripe\Forms\Form;
 use SilverStripe\Core\Extension;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FieldList;
-use SilverStripe\Forms\DropdownField;
+use SilverStripe\Forms\GroupedDropdownField;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Validation\ValidationException;
@@ -30,10 +30,13 @@ class CMSPageAddControllerExtension extends Extension
      */
     public function updatePageOptions(FieldList $fields): void
     {
-        $templates = ['' => 'Select template'] + Template::get()->map('ID', 'Title')->toArray();
-
         $title = '<span class="step-label"><span class="flyout">Step 3. </span><span class="title">(Optional) Select template to create page with</span></span>';
-        $templateField = DropdownField::create('TemplateID', DBField::create_field('HTMLFragment', $title), $templates);
+        $templateField = GroupedDropdownField::create(
+            'TemplateID',
+            DBField::create_field('HTMLFragment', $title),
+            Template::getGroupedTemplateMap()
+        );
+        $templateField->setEmptyString('Select template');
         $fields->insertAfter('PageType', $templateField);
     }
 

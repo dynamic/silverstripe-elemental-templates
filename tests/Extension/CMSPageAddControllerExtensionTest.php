@@ -47,6 +47,27 @@ class CMSPageAddControllerExtensionTest extends SapphireTest
         Injector::inst()->registerService($mockLogger, LoggerInterface::class);
     }
 
+    public function testUpdatePageOptionsAddsGroupedTemplateDropdown(): void
+    {
+        $template = $this->objFromFixture(TestTemplate::class, 'testTemplate');
+        $template->Category = 'Heroes';
+        $template->write();
+
+        $fields = new \SilverStripe\Forms\FieldList(
+            new \SilverStripe\Forms\HiddenField('PageType')
+        );
+
+        $extension = new CMSPageAddControllerExtension();
+        $extension->updatePageOptions($fields);
+
+        $field = $fields->dataFieldByName('TemplateID');
+        $this->assertInstanceOf(\SilverStripe\Forms\GroupedDropdownField::class, $field);
+
+        $source = $field->getSource();
+        $this->assertArrayHasKey('Heroes', $source);
+        $this->assertContains($template->Title, $source['Heroes']);
+    }
+
     public function testFindOrCreateElementalArea(): void
     {
         // Create a mock page with ElementalAreasExtension

@@ -59,7 +59,27 @@ class Template extends DataObject implements PermissionProvider
     private static array $db = [
         'Title' => 'Varchar',
         'PageType' => 'Varchar',
+        'Category' => 'Varchar',
         'Description' => 'HTMLText',
+    ];
+
+    /**
+     * Category options offered in the CMS and used to group template pickers.
+     * Projects can override or extend this list via YAML config.
+     *
+     * @var array|string[]
+     * @config
+     */
+    private static array $template_categories = [
+        'Heroes',
+        'Cards & Grids',
+        'Content',
+        'Social Proof',
+        'Conversion',
+        'People',
+        'Contact & Location',
+        'Listings',
+        'Page Layouts',
     ];
 
     /**
@@ -111,8 +131,18 @@ class Template extends DataObject implements PermissionProvider
     private static array $summary_fields = [
         'LayoutImageThumbnail' => 'Preview Image',
         'Title' => 'Name',
+        'Category' => 'Category',
         'PageTypeName' => 'Page Type',
         'ElementCount' => 'Blocks',
+    ];
+
+    /**
+     * @var array|string[]
+     * @config
+     */
+    private static array $searchable_fields = [
+        'Title',
+        'Category',
     ];
 
     /**
@@ -170,6 +200,13 @@ class Template extends DataObject implements PermissionProvider
 
             $pt->setEmptyString('Please choose...');
             $pt->setRightTitle('This will determine which elements are possible to add to the template');
+
+            $fields->replaceField(
+                'Category',
+                DropdownField::create('Category', 'Category', static::getTemplateCategories())
+                    ->setEmptyString('None')
+                    ->setRightTitle('Groups this template in the template pickers')
+            );
 
             if ($this->isinDB()) {
                 $fields->replaceField('PageType', $pt->performReadonlyTransformation());
@@ -234,17 +271,72 @@ class Template extends DataObject implements PermissionProvider
     }
 
     /**
+     * Configured category options as a value => label map.
+     *
+     * @return array<string, string>
+     */
+    public static function getTemplateCategories(): array
+    {
+        $map = [];
+
+        foreach ((array) static::config()->get('template_categories') as $category) {
+            $map[$category] = $category;
+        }
+
+        return $map;
+    }
+
+    /**
+     * All templates grouped by Category, for grouped dropdown sources. Groups
+     * follow the configured category order; categories not in the config follow
+     * them, and uncategorised templates come last under $fallbackLabel.
+     *
+     * @return array<string, array<int, string>>
+     */
+    public static function getGroupedTemplateMap(string $fallbackLabel = 'Other'): array
+    {
+        $groups = [];
+        foreach (array_keys(static::getTemplateCategories()) as $category) {
+            $groups[$category] = [];
+        }
+
+        $uncategorised = [];
+        foreach (static::get() as $template) {
+            $category = trim((string) $template->Category);
+            if ($category === '') {
+                $uncategorised[$template->ID] = $template->Title;
+                continue;
+            }
+            $groups[$category][$template->ID] = $template->Title;
+        }
+
+        $groups = array_filter($groups);
+        if ($uncategorised) {
+            $groups[$fallbackLabel] = $uncategorised;
+        }
+
+        return $groups;
+    }
+
+    /**
      * @return mixed
      */
     protected function getAllowedTypes()
     {
         $pageType = $this->PageType;
 
+        // Untyped templates apply to any page type, so offer the base Page's
+        // elemental types rather than nothing.
         if (!$pageType || !class_exists($pageType)) {
-            return []; // Return an empty array if PageType is invalid
+            $pageType = \Page::class;
         }
 
-        return $pageType::singleton()->getElementalTypes();
+        $singleton = $pageType::singleton();
+        if (!$singleton->hasMethod('getElementalTypes')) {
+            return [];
+        }
+
+        return $singleton->getElementalTypes();
     }
 
     /**

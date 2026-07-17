@@ -101,6 +101,71 @@ class TemplateTest extends SapphireTest
     }
 
     /**
+     * An untyped template must fall back to the base Page's elemental types so
+     * it stays editable in the CMS instead of allowing nothing.
+     *
+     * @return void
+     * @throws ReflectionException
+     */
+    public function testUntypedTemplateFallsBackToBasePageElementalTypes(): void
+    {
+        $template = Template::create();
+        $template->Title = 'Untyped';
+        $template->write();
+
+        $method = new ReflectionMethod($template, 'getAllowedTypes');
+        $method->setAccessible(true);
+        $allowed = $method->invoke($template);
+
+        $this->assertEquals(\Page::singleton()->getElementalTypes(), $allowed);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGetTemplateCategoriesReturnsConfiguredMap(): void
+    {
+        Template::config()->set('template_categories', ['Heroes', 'Conversion']);
+
+        $this->assertSame(
+            ['Heroes' => 'Heroes', 'Conversion' => 'Conversion'],
+            Template::getTemplateCategories()
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testGroupedTemplateMapOrdersAndFallsBack(): void
+    {
+        Template::config()->set('template_categories', ['Heroes', 'Conversion']);
+
+        $make = function (string $title, ?string $category): Template {
+            $template = Template::create();
+            $template->Title = $title;
+            $template->Category = $category;
+            $template->write();
+            return $template;
+        };
+
+        $band = $make('Band', 'Conversion');
+        $hero = $make('Hero', 'Heroes');
+        $custom = $make('Custom', 'Bespoke');
+        $loose = $make('Loose', null);
+
+        $map = Template::getGroupedTemplateMap();
+
+        // Configured order first, unknown categories after, uncategorised last.
+        $this->assertSame(['Heroes', 'Conversion', 'Bespoke', 'Other'], array_keys($map));
+        $this->assertSame([$hero->ID => 'Hero'], $map['Heroes']);
+        $this->assertSame([$band->ID => 'Band'], $map['Conversion']);
+        $this->assertSame([$custom->ID => 'Custom'], $map['Bespoke']);
+        // Fixture-file templates are uncategorised too, so just assert membership.
+        $this->assertArrayHasKey($loose->ID, $map['Other']);
+        $this->assertSame('Loose', $map['Other'][$loose->ID]);
+    }
+
+    /**
      * @return void
      */
     public function testCanCreate(): void

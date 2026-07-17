@@ -131,6 +131,7 @@ class TemplatePickerField extends FormField
             $list->push(ArrayData::create([
                 'ID' => $template->ID,
                 'Title' => $template->Title,
+                'Category' => trim((string) $template->Category),
                 'Description' => $template->dbObject('Description'),
                 'HasThumbnail' => (bool) $thumbnailUrl,
                 'ThumbnailURL' => $thumbnailUrl,
@@ -141,6 +142,59 @@ class TemplatePickerField extends FormField
         }
 
         return $list;
+    }
+
+    /**
+     * Templates grouped by Category for rendering. Groups follow the configured
+     * category order, categories missing from the config follow them, and
+     * uncategorised templates come last. When no template has a category the
+     * single group has a blank Title so the field renders as a flat list with
+     * no group headings.
+     *
+     * @return ArrayList
+     */
+    public function getGroupedTemplates(): ArrayList
+    {
+        $templates = $this->getTemplates();
+
+        $grouped = [];
+        foreach (array_keys(Template::getTemplateCategories()) as $category) {
+            $grouped[$category] = ArrayList::create();
+        }
+        $uncategorised = ArrayList::create();
+
+        foreach ($templates as $template) {
+            $category = (string) $template->Category;
+            if ($category === '') {
+                $uncategorised->push($template);
+                continue;
+            }
+            if (!isset($grouped[$category])) {
+                $grouped[$category] = ArrayList::create();
+            }
+            $grouped[$category]->push($template);
+        }
+
+        $groups = ArrayList::create();
+        foreach ($grouped as $category => $list) {
+            if ($list->count()) {
+                $groups->push(ArrayData::create([
+                    'Title' => $category,
+                    'Templates' => $list,
+                ]));
+            }
+        }
+
+        if ($uncategorised->count()) {
+            // Label the group only when it sits alongside categorised groups; an
+            // all-uncategorised library renders as a flat, heading-less list.
+            $groups->push(ArrayData::create([
+                'Title' => $groups->count() ? 'Other' : '',
+                'Templates' => $uncategorised,
+            ]));
+        }
+
+        return $groups;
     }
 
     /**
@@ -185,6 +239,7 @@ class TemplatePickerField extends FormField
     {
         $properties = array_merge($properties, [
             'Templates' => $this->getTemplates(),
+            'GroupedTemplates' => $this->getGroupedTemplates(),
             'hasTemplates' => $this->hasTemplates(),
             'PageID' => $this->getPageID(),
             'AdminURL' => AdminRootController::admin_url('elemental-templates'),
