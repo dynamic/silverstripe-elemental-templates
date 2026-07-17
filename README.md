@@ -28,9 +28,35 @@ Run `dev/build` to apply database changes.
 ## Features
 
 - **Predefined Templates**: Create reusable templates with predefined Elemental blocks.
-- **Page Creation from Templates**: Quickly create new pages based on existing templates.
+- **Categories**: Group templates (Heroes, Cards & Grids, Content, ...) so both pickers stay
+  organised as the library grows. The option list is configurable.
+- **Two ways to apply a template**:
+  - a grouped **"Step 3" dropdown** in the Add-new-page flow, and
+  - a visual, category-grouped **"Apply Template to Page"** picker on a page's Content tab
+    (with preview thumbnails).
 - **Template Creation from Pages**: Generate templates from existing pages, including their Elemental blocks.
+- **Universal templates**: A template with no Page Type applies to any elemental page type.
 - **Configurable Defaults**: Populate Elemental blocks with default values defined in YAML configuration.
+
+## Template Categories
+
+Templates carry a `Category`, shown as a column in the Element Templates admin and used to group
+both pickers. The available options are configured on the `Template` model and can be extended per
+project:
+
+```yaml
+Dynamic\ElementalTemplates\Models\Template:
+  template_categories:
+    - 'Heroes'
+    - 'Cards & Grids'
+    - 'Content'
+    # ...your categories
+```
+
+This list is numerically indexed, so project YAML **appends** to the defaults. To replace the
+defaults, reset the config first (`template_categories: null`) and then declare the full list.
+Uncategorised templates are grouped last; if no template has a category, the pickers render as a
+flat list with no headings.
 
 ## Usage
 
@@ -40,19 +66,24 @@ Run `dev/build` to apply database changes.
 2. Click "Add Template".
 3. Fill in the template details:
    - **Title**: Name of the template.
-   - **Page Type**: Select the page type this template is compatible with.
+   - **Category**: Optional grouping used by the pickers.
+   - **Page Type**: The page type this template is compatible with. Leave empty for a universal
+     template that applies to any elemental page type.
    - **Elements**: Add Elemental blocks to the template.
-4. Save the template.
+4. Save the template. Use **Capture Preview Image** to generate a thumbnail for the pickers.
 
 ### Creating a Page from a Template
 
-1. Go to the "Pages" section in the CMS.
-2. Click "Add Page".
-3. Select the desired page type.
-4. In the "Template" dropdown, choose a template to apply to the new page.
-5. Complete the remaining page details and save.
+Two entry points:
 
-The selected template's Elemental blocks will be duplicated and added to the new page.
+**From the Add-page flow** — Pages → Add Page → choose a page type, then pick a template from the
+grouped **"Step 3"** dropdown. The template's blocks are applied to the new page on create.
+
+**From an existing page** — open the page, expand **"Apply Template to Page"** on the Content tab,
+choose a template from the category-grouped visual picker (with preview thumbnails), and click
+**Apply Template to Page**. The template's blocks are appended in place.
+
+In both cases the template's Elemental blocks are duplicated onto the page.
 
 ### Creating a Template from an Existing Page
 
