@@ -25,6 +25,7 @@ use SilverStripe\SiteConfig\SiteConfig;
  *
  * @property string $Title
  * @property string $PageType
+ * @property string $Category
  * @property int $ElementsID
  * @property int $LayoutImageID
  * @method ElementalArea Elements()
@@ -65,7 +66,12 @@ class Template extends DataObject implements PermissionProvider
 
     /**
      * Category options offered in the CMS and used to group template pickers.
-     * Projects can override or extend this list via YAML config.
+     *
+     * This is a numerically-indexed list, so SilverStripe config merging
+     * appends project YAML entries to these defaults rather than replacing
+     * them. To remove or reorder the defaults, first reset the config (an
+     * empty `template_categories: null` document) and then declare the full
+     * list.
      *
      * @var array|string[]
      * @config
@@ -287,13 +293,25 @@ class Template extends DataObject implements PermissionProvider
     }
 
     /**
-     * All templates grouped by Category, for grouped dropdown sources. Groups
-     * follow the configured category order; categories not in the config follow
-     * them, and uncategorised templates come last under $fallbackLabel.
+     * Group an iterable of template records (or view models exposing Category /
+     * ID / Title) into an ordered map of category label => list-of-items. The
+     * single grouping algorithm shared by both the page-add dropdown and the
+     * visual picker so they can never disagree on the same data:
      *
-     * @return array<string, array<int, string>>
+     *  - configured categories first, in `template_categories` order (empty
+     *    ones dropped),
+     *  - categories present in data but not configured, after those,
+     *  - uncategorised items merged into `$fallbackLabel` — merging into a real
+     *    configured "Other" group rather than overwriting it.
+     *
+     * When every item is uncategorised the result is a single group keyed by
+     * the empty string, so callers can render a flat, heading-less list.
+     *
+     * @param iterable $items
+     * @param string $fallbackLabel
+     * @return array<string, array<int, object>> ordered; a sole '' key = flat
      */
-    public static function getGroupedTemplateMap(string $fallbackLabel = 'Other'): array
+    public static function groupByCategory(iterable $items, string $fallbackLabel = 'Other'): array
     {
         $groups = [];
         foreach (array_keys(static::getTemplateCategories()) as $category) {
@@ -301,21 +319,60 @@ class Template extends DataObject implements PermissionProvider
         }
 
         $uncategorised = [];
-        foreach (static::get() as $template) {
-            $category = trim((string) $template->Category);
+        foreach ($items as $item) {
+            $category = trim((string) $item->Category);
             if ($category === '') {
-                $uncategorised[$template->ID] = $template->Title;
+                $uncategorised[] = $item;
                 continue;
             }
-            $groups[$category][$template->ID] = $template->Title;
+            $groups[$category][] = $item;
         }
 
         $groups = array_filter($groups);
+
         if ($uncategorised) {
-            $groups[$fallbackLabel] = $uncategorised;
+            if (!$groups) {
+                // Nothing is categorised: render flat, with no heading.
+                return ['' => $uncategorised];
+            }
+            // Append (never overwrite) so a real "Other" category keeps its own.
+            $groups[$fallbackLabel] = array_merge($groups[$fallbackLabel] ?? [], $uncategorised);
         }
 
         return $groups;
+    }
+
+    /**
+     * All templates grouped by Category as a GroupedDropdownField source. Uses
+     * {@see self::groupByCategory()} so ordering/fallback matches the visual
+     * picker. When no template is categorised a flat id => title map is
+     * returned (scalar values render as ungrouped options).
+     *
+     * @return array<string, array<int, string>>|array<int, string>
+     */
+    public static function getGroupedTemplateMap(string $fallbackLabel = 'Other'): array
+    {
+        $grouped = static::groupByCategory(static::get(), $fallbackLabel);
+
+        // Sole '' key => no categories in play: flat, ungrouped options.
+        if (array_keys($grouped) === ['']) {
+            $flat = [];
+            foreach ($grouped[''] as $template) {
+                $flat[$template->ID] = $template->Title;
+            }
+            return $flat;
+        }
+
+        $source = [];
+        foreach ($grouped as $category => $templates) {
+            $options = [];
+            foreach ($templates as $template) {
+                $options[$template->ID] = $template->Title;
+            }
+            $source[$category] = $options;
+        }
+
+        return $source;
     }
 
     /**
@@ -325,10 +382,20 @@ class Template extends DataObject implements PermissionProvider
     {
         $pageType = $this->PageType;
 
+        // A non-empty but unresolvable PageType is stale/misconfigured data;
+        // return nothing so it surfaces rather than being silently masked.
+        if ($pageType && !class_exists($pageType)) {
+            return [];
+        }
+
         // Untyped templates apply to any page type, so offer the base Page's
         // elemental types rather than nothing.
-        if (!$pageType || !class_exists($pageType)) {
+        if (!$pageType) {
             $pageType = \Page::class;
+        }
+
+        if (!class_exists($pageType)) {
+            return [];
         }
 
         $singleton = $pageType::singleton();

@@ -91,12 +91,37 @@ class TemplatePickerField extends FormField
     }
 
     /**
-     * Get templates as an ArrayList for use in templates
+     * @var ArrayList|null Memoised result of getTemplates(); cleared on setValue().
+     */
+    protected ?ArrayList $templatesCache = null;
+
+    /**
+     * Reset the memoised template list when the field value changes, so the
+     * IsSelected flags stay in sync with the selection.
+     *
+     * @param mixed $value
+     * @param mixed $data
+     * @return $this
+     */
+    public function setValue($value, $data = null)
+    {
+        $this->templatesCache = null;
+        return parent::setValue($value, $data);
+    }
+
+    /**
+     * Get templates as an ArrayList for use in templates. Memoised because a
+     * single render calls this from getGroupedTemplates() and hasTemplates(),
+     * and each pass runs a query plus per-template image scaling.
      *
      * @return ArrayList
      */
     public function getTemplates(): ArrayList
     {
+        if ($this->templatesCache !== null) {
+            return $this->templatesCache;
+        }
+
         $list = ArrayList::create();
         $templates = Template::get();
 
@@ -141,56 +166,30 @@ class TemplatePickerField extends FormField
             ]));
         }
 
-        return $list;
+        return $this->templatesCache = $list;
     }
 
     /**
-     * Templates grouped by Category for rendering. Groups follow the configured
-     * category order, categories missing from the config follow them, and
-     * uncategorised templates come last. When no template has a category the
-     * single group has a blank Title so the field renders as a flat list with
-     * no group headings.
+     * Templates grouped by Category for rendering, via the shared
+     * {@see Template::groupByCategory()} algorithm so grouping matches the
+     * page-add dropdown exactly. When no template has a category the single
+     * group has a blank Title so the field renders as a flat, heading-less list.
      *
      * @return ArrayList
      */
     public function getGroupedTemplates(): ArrayList
     {
-        $templates = $this->getTemplates();
-
-        $grouped = [];
-        foreach (array_keys(Template::getTemplateCategories()) as $category) {
-            $grouped[$category] = ArrayList::create();
-        }
-        $uncategorised = ArrayList::create();
-
-        foreach ($templates as $template) {
-            $category = (string) $template->Category;
-            if ($category === '') {
-                $uncategorised->push($template);
-                continue;
-            }
-            if (!isset($grouped[$category])) {
-                $grouped[$category] = ArrayList::create();
-            }
-            $grouped[$category]->push($template);
-        }
+        $grouped = Template::groupByCategory($this->getTemplates());
 
         $groups = ArrayList::create();
-        foreach ($grouped as $category => $list) {
-            if ($list->count()) {
-                $groups->push(ArrayData::create([
-                    'Title' => $category,
-                    'Templates' => $list,
-                ]));
+        foreach ($grouped as $category => $templates) {
+            $list = ArrayList::create();
+            foreach ($templates as $template) {
+                $list->push($template);
             }
-        }
-
-        if ($uncategorised->count()) {
-            // Label the group only when it sits alongside categorised groups; an
-            // all-uncategorised library renders as a flat, heading-less list.
             $groups->push(ArrayData::create([
-                'Title' => $groups->count() ? 'Other' : '',
-                'Templates' => $uncategorised,
+                'Title' => $category,
+                'Templates' => $list,
             ]));
         }
 
@@ -238,7 +237,6 @@ class TemplatePickerField extends FormField
     public function Field($properties = [])
     {
         $properties = array_merge($properties, [
-            'Templates' => $this->getTemplates(),
             'GroupedTemplates' => $this->getGroupedTemplates(),
             'hasTemplates' => $this->hasTemplates(),
             'PageID' => $this->getPageID(),

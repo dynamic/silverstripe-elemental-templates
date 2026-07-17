@@ -93,6 +93,24 @@ class TemplatePickerFieldTest extends SapphireTest
         $this->assertEquals(['Heroes', 'Bespoke Category'], $groups->column('Title'));
     }
 
+    public function testRealOtherCategoryDoesNotDuplicateHeading()
+    {
+        Template::config()->set('template_categories', ['Heroes', 'Other']);
+
+        $this->makeTemplate('Hero', null, 'Heroes');
+        $this->makeTemplate('RealOther', null, 'Other');
+        $this->makeTemplate('Loose', null, null);
+
+        $field = TemplatePickerField::create('ApplyTemplateID', 'Select template');
+        $titles = $field->getGroupedTemplates()->column('Title');
+
+        // Exactly one "Other" group — the uncategorised template merges into the
+        // real category rather than spawning a second identically-titled group.
+        $this->assertSame(['Heroes', 'Other'], $titles);
+        $other = $field->getGroupedTemplates()->find('Title', 'Other');
+        $this->assertEquals(['RealOther', 'Loose'], $other->Templates->column('Title'));
+    }
+
     public function testAllUncategorisedRendersSingleUnlabelledGroup()
     {
         $this->makeTemplate('One', null, null);
