@@ -32,7 +32,12 @@ class TemplatePreviewController extends \PageController
             return $this->httpError(404, 'Template not found');
         }
 
+        // Untyped templates apply to any page type, so preview them against the
+        // base Page rather than 500ing — mirrors Template::getAllowedTypes().
         $pageType = $template->PageType;
+        if (!$pageType || !class_exists($pageType)) {
+            $pageType = \Page::class;
+        }
         if (!class_exists($pageType)) {
             return $this->httpError(500, 'Invalid Page Type');
         }
