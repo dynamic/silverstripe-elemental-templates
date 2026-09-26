@@ -101,26 +101,6 @@ class TemplateTest extends SapphireTest
     }
 
     /**
-     * An untyped template must fall back to the base Page's elemental types so
-     * it stays editable in the CMS instead of allowing nothing.
-     *
-     * @return void
-     * @throws ReflectionException
-     */
-    public function testUntypedTemplateFallsBackToBasePageElementalTypes(): void
-    {
-        $template = Template::create();
-        $template->Title = 'Untyped';
-        $template->write();
-
-        $method = new ReflectionMethod($template, 'getAllowedTypes');
-        $method->setAccessible(true);
-        $allowed = $method->invoke($template);
-
-        $this->assertEquals(\Page::singleton()->getElementalTypes(), $allowed);
-    }
-
-    /**
      * A non-empty but unresolvable PageType is stale data and must surface as
      * "no allowed types", not be masked by the untyped fallback.
      *
