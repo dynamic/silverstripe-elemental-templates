@@ -447,10 +447,12 @@ class Template extends DataObject implements PermissionProvider
 
             if ($thumbnail) {
                 $thumbnailUrl = $thumbnail->getURL();
-                // Properly escape for JavaScript context
+                // HTML context for the alt/aria-label attributes ...
                 $title = htmlspecialchars($this->Title, ENT_QUOTES, 'UTF-8');
-                $titleJs = json_encode($this->Title);
-                $fullUrlJs = json_encode($fullUrl);
+                // ... and JavaScript-in-an-HTML-attribute context for the values
+                // interpolated into the inline script (#37).
+                $titleJs = self::jsStringLiteralForAttribute($this->Title);
+                $fullUrlJs = self::jsStringLiteralForAttribute($fullUrl);
 
                 $html = sprintf(
                     '<div style="position: relative; display: inline-block;"><img src="%s" alt="%s" role="button" tabindex="0" aria-label="View larger version of %s" style="width: 200px; height: auto; max-height: 300px; object-fit: contain; display: block; cursor: pointer; border-radius: 4px;" onclick="event.stopPropagation();if(window.__templateOverlay&&window.__templateOverlay.parentNode){window.__templateOverlay.parentNode.removeChild(window.__templateOverlay);window.__templateOverlay=null;}var previouslyFocused=document.activeElement;var overlay=document.createElement(\'div\');overlay.setAttribute(\'role\',\'dialog\');overlay.setAttribute(\'aria-modal\',\'true\');overlay.setAttribute(\'aria-label\',\'Enlarged template preview\');overlay.style.cssText=\'position:fixed;top:0;left:0;width:100%%;height:100%%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:pointer;\';overlay.tabIndex=-1;var img=document.createElement(\'img\');img.src=%s;img.alt=%s;img.style.cssText=\'max-width:90%%;max-height:90%%;box-shadow:0 0 20px rgba(0,0,0,0.5);\';overlay.appendChild(img);var closeOverlay=function(){if(overlay&&overlay.parentNode){overlay.parentNode.removeChild(overlay);if(window.__templateOverlay===overlay){window.__templateOverlay=null;}if(previouslyFocused&&typeof previouslyFocused.focus===\'function\'){previouslyFocused.focus();}}};overlay.onclick=function(event){if(event.target===overlay){closeOverlay();}};overlay.addEventListener(\'keydown\',function(e){if(e.key===\'Escape\'||e.key===\'Esc\'){e.preventDefault();closeOverlay();}else if(e.key===\'Tab\'){e.preventDefault();overlay.focus();}});document.body.appendChild(overlay);window.__templateOverlay=overlay;overlay.focus();" onkeydown="if(event.key===\'Enter\'||event.key===\' \'||event.key===\'Spacebar\'){event.preventDefault();this.click();}" title="Click to view larger" /></div>',
@@ -466,6 +468,33 @@ class Template extends DataObject implements PermissionProvider
         }
 
         return DBHTMLText::create()->setValue('');
+    }
+
+    /**
+     * Encodes a value as a JavaScript string literal that is safe to interpolate
+     * into a double-quoted HTML attribute (the inline onclick handler).
+     *
+     * json_encode() on its own is not enough: its output is wrapped in `"`
+     * characters, and the first of those terminates the surrounding
+     * `onclick="..."` attribute. The browser then receives a truncated script
+     * ("Unexpected end of input") and the handler never runs. Escaping the JSON
+     * for the attribute context keeps both the attribute and the JS literal
+     * intact, and the browser decodes it back to valid JavaScript before parsing.
+     *
+     * @param string|null $value
+     * @return string HTML-escaped JavaScript string literal, e.g. &quot;foo&quot;
+     */
+    private static function jsStringLiteralForAttribute(?string $value): string
+    {
+        $json = json_encode((string)$value);
+
+        if ($json === false) {
+            // Invalid UTF-8: emit an empty string literal rather than the bare
+            // `false` keyword, which would be a syntax error in the handler.
+            $json = '""';
+        }
+
+        return htmlspecialchars($json, ENT_QUOTES, 'UTF-8');
     }
 
     /**
