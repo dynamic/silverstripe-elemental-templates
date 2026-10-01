@@ -472,7 +472,7 @@ class Template extends DataObject implements PermissionProvider
 
     /**
      * Encodes a value as a JavaScript string literal that is safe to interpolate
-     * into a double-quoted HTML attribute (the inline onclick/onkeydown handlers).
+     * into a double-quoted HTML attribute (the inline onclick handler).
      *
      * json_encode() on its own is not enough: its output is wrapped in `"`
      * characters, and the first of those terminates the surrounding
