@@ -167,9 +167,33 @@ class TemplateLayoutImageTest extends SapphireTest
         $html = $template->getLayoutImageThumbnail()->getValue();
 
         $this->assertMatchesRegularExpression('/onclick="event\.stopPropagation\(\);/', $html);
-        $this->assertStringContainsString('&quot;', $html);
+
+        // Assert the escaping where it belongs - inside the onclick attribute - so
+        // it cannot be satisfied by the escaped title in alt/aria-label.
+        $onclickSource = $this->getOnclickAttributeSource($html);
+        $this->assertStringContainsString('img.src=&quot;', $onclickSource);
+        $this->assertStringContainsString('img.alt=&quot;', $onclickSource);
         $this->assertStringNotContainsString('img.src="', $html);
         $this->assertStringNotContainsString('img.alt="', $html);
+    }
+
+    /**
+     * Returns the raw (not HTML-decoded) source of the onclick attribute, so
+     * assertions can be made about how the value is escaped in the markup itself.
+     *
+     * @param string $html
+     * @return string
+     */
+    private function getOnclickAttributeSource(string $html): string
+    {
+        $matches = [];
+        $this->assertSame(
+            1,
+            preg_match('/\sonclick="(?<onclick>[^"]*)"/', $html, $matches),
+            'Exactly one double-quoted onclick attribute is expected in ' . $html
+        );
+
+        return $matches['onclick'];
     }
 
     /**
