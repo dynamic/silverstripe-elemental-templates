@@ -23,8 +23,6 @@ class BaseElementDataExtension extends Extension
 {
     protected bool $skipPopulateData = false;
 
-    protected bool $resetAvailableGlobally = false;
-
     /**
      * Ensures populateElementData runs only once per element instance.
      */
@@ -45,11 +43,12 @@ class BaseElementDataExtension extends Extension
     }
 
     /**
-     * Sets the flag to skip populateElementData().
+     * @deprecated 3.0.7 The flag was never read. SilverStripe shares one extension instance per
+     *             process, so a flag stored here would apply to every later write. TemplateElementDuplicator
+     *             now sets AvailableGlobally on the copy directly. This method does nothing.
      */
     public function setResetAvailableGlobally(bool $reset): void
     {
-        $this->resetAvailableGlobally = $reset;
     }
 
     /**
@@ -107,15 +106,17 @@ class BaseElementDataExtension extends Extension
     }
 
     /**
-     * Skips the populateElementData logic if the flag is set or if it has already run.
+     * Keeps AvailableGlobally correct on every write, then populates placeholder data for new
+     * Template elements unless the skip flag is set or it has already run.
      */
     protected function onBeforeWrite(): void
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
         $fixtureService = Injector::inst()->get(FixtureDataService::class);
 
-        // Reset available globally if the flag is set
-        $this->getOwner()->AvailableGlobally = true;
+        $manager = $this->getOwnerPage();
+
+        $this->updateAvailableGlobally($manager);
 
         // Skip if the skipPopulateData flag is set to true or if already run for this instance
         if ($this->skipPopulateData || $this->hasRunPopulateElementData) {
@@ -124,15 +125,8 @@ class BaseElementDataExtension extends Extension
 
         // $logger->debug('onBeforeWrite triggered for ' . $this->owner->ClassName);
 
-        $manager = $this->getOwnerPage();
-
         if (!$manager instanceof Template || $this->owner->isInDB()) {
             return;
-        }
-
-        // Explicitly set AvailableGlobally to false for Template instances
-        if ($this->getOwner()->hasField('AvailableGlobally')) {
-            $this->getOwner()->AvailableGlobally = false;
         }
 
         // Call the FixtureDataService to populate fields
@@ -140,6 +134,21 @@ class BaseElementDataExtension extends Extension
 
         // Mark populateElementData as having run for this instance
         $this->hasRunPopulateElementData = true;
+    }
+
+    /**
+     * Elements owned by a Template are never available globally. Every other element keeps whatever
+     * the editor chose. Runs on every write, not only the first.
+     *
+     * @param mixed $manager the element's owner page, as returned by getOwnerPage()
+     */
+    protected function updateAvailableGlobally(mixed $manager): void
+    {
+        $owner = $this->getOwner();
+
+        if ($manager instanceof Template && $owner->hasField('AvailableGlobally')) {
+            $owner->setField('AvailableGlobally', false);
+        }
     }
 
     /**

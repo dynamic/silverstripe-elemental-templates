@@ -49,15 +49,18 @@ class TemplateElementDuplicator
                     $copy->setSkipPopulateData(true);
                 }
 
-                // set AvailableGlobally to default
-                $copy->setResetAvailableGlobally(true);
-
                 // Set the Sort order to append after existing elements
                 $sortOrder++;
                 $copy->Sort = $sortOrder;
 
                 // Set the parent to the target area
                 $copy->ParentID = $area->ID;
+
+                // The copy is outside the Template now, so it takes the configured default
+                // (duplicate() wrote it while it was still inside the Template, as not global).
+                if ($copy->hasField('AvailableGlobally')) {
+                    $copy->setField('AvailableGlobally', (bool) $copy->config()->get('default_global_elements'));
+                }
 
                 $copy->write();
 
