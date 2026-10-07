@@ -19,11 +19,10 @@ class PublishTemplatesTask extends BuildTask
 
     protected function execute(InputInterface $input, PolyOutput $output): int
     {
-        $templates = Template::get();
+        $templates = Versioned::get_by_stage(Template::class, Versioned::DRAFT);
 
         foreach ($templates as $template) {
-            if ($template->isArchived()) {
-                $template->writeToStage(Versioned::DRAFT);
+            if ($template->stagesDifferRecursive()) {
                 $template->publishRecursive();
                 $output->writeln("Published Template: {$template->Title} (ID: {$template->ID})");
             } else {
