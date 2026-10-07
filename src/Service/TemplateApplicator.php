@@ -12,14 +12,55 @@ use SilverStripe\ORM\DataObject;
 class TemplateApplicator
 {
     /**
+     * Resolve the name of the elemental area relation the record actually exposes in the CMS.
+     *
+     * Mirrors the lookup the (now legacy) CMSPageAddControllerExtension::findOrCreateElementalArea()
+     * performed: walk the record's elemental area relations and return the first one that has a
+     * matching field in getCMSFields() - that is the area a member of content authors edits. Falls
+     * back to the conventional 'ElementalArea' when the record exposes no elemental relation at all
+     * or none of them is visible in the CMS.
+     *
+     * @param DataObject $record The record whose active elemental area should be used.
+     * @return string The relation name, e.g. 'ElementalArea' or 'ElementalHomePage'.
+     */
+    public function resolveAreaRelationName(DataObject $record): string
+    {
+        if (!$record->hasMethod('getElementalRelations')) {
+            return 'ElementalArea';
+        }
+
+        $elementalAreaRelations = $record->getElementalRelations();
+        if (empty($elementalAreaRelations)) {
+            return 'ElementalArea';
+        }
+
+        if ($record->hasMethod('getCMSFields')) {
+            $cmsFields = $record->getCMSFields();
+            foreach ($elementalAreaRelations as $relationName) {
+                if ($cmsFields && $cmsFields->dataFieldByName($relationName)) {
+                    return $relationName;
+                }
+            }
+        }
+
+        return 'ElementalArea';
+    }
+
+    /**
      * Applies the given template to the provided record.
      *
-     * @param DataObject $record
-     * @param Template   $template
+     * @param DataObject  $record       The record to apply the template to.
+     * @param Template    $template     The template to apply.
+     * @param string|null $relationName The elemental area relation to write into. When null the
+     *                                  applicator targets the record's active area as determined
+     *                                  by resolveAreaRelationName().
      * @return array Result of the operation with success status and messages.
      */
-    public function applyTemplateToRecord(DataObject $record, Template $template): array
-    {
+    public function applyTemplateToRecord(
+        DataObject $record,
+        Template $template,
+        ?string $relationName = null
+    ): array {
         /** @var LoggerInterface $logger */
         $logger = Injector::inst()->get(LoggerInterface::class);
 
@@ -38,8 +79,13 @@ class TemplateApplicator
             return ['success' => false, 'message' => $message];
         }
 
+        // Resolve the target area relation when the caller did not name one explicitly.
+        if ($relationName === null) {
+            $relationName = $this->resolveAreaRelationName($record);
+        }
+
         // Ensure the record supports elemental areas.
-        if (!$record->hasMethod('ElementalArea')) {
+        if (!$record->hasMethod($relationName)) {
             $message = "Record ID {$record->ID} does not support elemental areas.";
             $logger->error($message);
             return ['success' => false, 'message' => $message];
@@ -52,7 +98,7 @@ class TemplateApplicator
         // first lets us apply the template in place instead of bailing out. The write is
         // guarded so a validation/hook failure keeps the method's no-throw contract
         // instead of escaping uncaught and leaving a half-applied record.
-        $elementalArea = $record->ElementalArea();
+        $elementalArea = $record->$relationName();
         if (!$elementalArea || !$elementalArea->exists()) {
             try {
                 $record->write();
@@ -61,7 +107,7 @@ class TemplateApplicator
                 $logger->error($message);
                 return ['success' => false, 'message' => $message];
             }
-            $elementalArea = $record->ElementalArea();
+            $elementalArea = $record->$relationName();
         }
 
         if (!$elementalArea || !$elementalArea->exists()) {
