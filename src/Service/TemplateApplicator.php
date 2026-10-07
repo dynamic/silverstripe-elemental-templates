@@ -85,6 +85,21 @@ class TemplateApplicator
 
         // Resolve the target area relation when the caller did not name one explicitly.
         if ($relationName === null) {
+            // A record that is not in the database yet has no area field for any of its relations
+            // (ElementalAreasExtension::updateCMSFields() only builds one once isInDb() is true), so
+            // there is nothing to choose between and the order of getElementalRelations() decides -
+            // and that order puts inherited/extension relations first, which is the area this
+            // feature exists to avoid. Write the record first, with the same guarded write the
+            // materialization step below uses, then resolve against fields that really exist.
+            if (!$record->isInDb()) {
+                try {
+                    $record->write();
+                } catch (\Exception $e) {
+                    $message = "Could not initialize elemental area for record ID {$record->ID}: {$e->getMessage()}";
+                    $logger->error($message);
+                    return ['success' => false, 'message' => $message];
+                }
+            }
             $relationName = $this->resolveAreaRelationName($record);
         }
 

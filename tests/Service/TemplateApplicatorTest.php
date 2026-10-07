@@ -246,6 +246,59 @@ class TemplateApplicatorTest extends SapphireTest
     }
 
     /**
+     * Applying to a record that has not been written yet must still target the visible area.
+     *
+     * No area field exists before the record is in the database, and getElementalRelations() lists
+     * the relation the extension contributes ('ElementalArea') before the one the page declares, so
+     * resolving straight away would pick the area a member of content authors cannot see.
+     */
+    public function testApplyTemplateWritesIntoActiveAreaRelationForUnsavedRecord()
+    {
+        Versioned::set_stage(Versioned::DRAFT);
+
+        $templateArea = ElementalArea::create();
+        $templateArea->Title = 'Template Area';
+        $templateArea->write();
+
+        $templateElement = \DNADesign\Elemental\Models\ElementContent::create();
+        $templateElement->Title = 'Template Content Element';
+        $templateElement->HTML = '<p>Unsaved record content</p>';
+        $templateElement->ParentID = $templateArea->ID;
+        $templateElement->write();
+
+        $template = Template::create();
+        $template->Title = 'Unsaved Record Template';
+        $template->ElementsID = $templateArea->ID;
+        $template->write();
+
+        // Deliberately not written: this is the shape of a page handed to the applicator by a
+        // caller that has only just created it.
+        $record = AltAreaSamplePage::create();
+        $record->Title = 'Unsaved Alt Area Page';
+        $this->assertFalse($record->isInDb(), 'Precondition: the record should not be in the database yet.');
+
+        $applicator = new TemplateApplicator();
+        $result = $applicator->applyTemplateToRecord($record, $template);
+
+        $this->assertTrue(
+            $result['success'],
+            'Expected the template to apply to an unsaved record, got: ' . ($result['message'] ?? 'no message')
+        );
+
+        $record->flushCache();
+        $this->assertGreaterThan(
+            0,
+            $record->ElementalHomePage()->Elements()->count(),
+            'Template elements should have been duplicated into the visible area relation.'
+        );
+        $this->assertSame(
+            0,
+            $record->ElementalArea()->Elements()->count(),
+            'The area the page hides in the CMS must not receive the template elements.'
+        );
+    }
+
+    /**
      * The standard page shape (only 'ElementalArea' visible) must keep writing there.
      */
     public function testApplyTemplateStillWritesIntoStandardElementalArea()
