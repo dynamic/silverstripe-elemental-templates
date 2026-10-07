@@ -75,6 +75,35 @@ class UpdateBaseElementGlobalAvailabilityTaskTest extends SapphireTest
     }
 
     /**
+     * A published block on an ordinary page, stored global on both stages.
+     */
+    private function publishedPageBlock(): ElementContent
+    {
+        $area = ElementalArea::create();
+        $area->write();
+        $page = SamplePage::create();
+        $page->Title = 'Sample page';
+        $page->ElementalAreaID = $area->ID;
+        $page->write();
+
+        $block = ElementContent::create();
+        $block->Title = 'Page block';
+        $block->ParentID = $area->ID;
+        $block->write();
+        $block->publishSingle();
+        $this->forceGlobal($block, [Versioned::DRAFT, Versioned::LIVE]);
+
+        return $block;
+    }
+
+    private function editOnDraft(ElementContent $block): void
+    {
+        $draft = $this->onStage($block, Versioned::DRAFT);
+        $draft->Title = 'Edited on draft';
+        $draft->writeToStage(Versioned::DRAFT);
+    }
+
+    /**
      * @param string[] $stages
      */
     private function forceGlobal(BaseElement $block, array $stages): void
@@ -164,19 +193,7 @@ class UpdateBaseElementGlobalAvailabilityTaskTest extends SapphireTest
 
     public function testLeavesAPageElementUntouched(): void
     {
-        $area = ElementalArea::create();
-        $area->write();
-        $page = SamplePage::create();
-        $page->Title = 'Sample page';
-        $page->ElementalAreaID = $area->ID;
-        $page->write();
-
-        $block = ElementContent::create();
-        $block->Title = 'Page block';
-        $block->ParentID = $area->ID;
-        $block->write();
-        $block->publishSingle();
-        $this->forceGlobal($block, [Versioned::DRAFT, Versioned::LIVE]);
+        $block = $this->publishedPageBlock();
 
         $output = $this->runTask();
 
@@ -190,5 +207,96 @@ class UpdateBaseElementGlobalAvailabilityTaskTest extends SapphireTest
         $this->publishedTemplateBlock();
 
         $this->assertStringContainsString('1 draft and 1 Live', $this->runTask());
+    }
+
+    public function testLiveRepairForUnpublishedEditsDoesNotTouchOtherElements(): void
+    {
+        $templateBlock = $this->publishedTemplateBlock();
+        $this->editOnDraft($templateBlock);
+        $this->forceGlobal($templateBlock, [Versioned::DRAFT, Versioned::LIVE]);
+        $pageBlock = $this->publishedPageBlock();
+
+        $this->runTask();
+
+        $this->assertSame(0, $this->flag($templateBlock, Versioned::LIVE));
+        $this->assertSame(1, $this->flag($pageBlock, Versioned::DRAFT), 'A global page element keeps its flag on draft');
+        $this->assertSame(1, $this->flag($pageBlock, Versioned::LIVE), 'A global page element keeps its flag on Live');
+    }
+
+    public function testRepairsAnElementGlobalOnLiveOnly(): void
+    {
+        $block = $this->publishedTemplateBlock();
+        DB::prepared_query('UPDATE "Element" SET "AvailableGlobally" = 0 WHERE "ID" = ?', [$block->ID]);
+        $this->assertSame(0, $this->flag($block, Versioned::DRAFT), 'Precondition: what the previous task left behind');
+        $this->assertSame(1, $this->flag($block, Versioned::LIVE), 'Precondition');
+
+        $output = $this->runTask();
+
+        $this->assertSame(0, $this->flag($block, Versioned::LIVE));
+        $this->assertStringContainsString('0 draft and 1 Live', $output);
+    }
+
+    public function testLiveOnlyFlagWithUnpublishedEditsKeepsTheEdit(): void
+    {
+        $block = $this->publishedTemplateBlock();
+        $this->editOnDraft($block);
+        DB::prepared_query('UPDATE "Element" SET "AvailableGlobally" = 0 WHERE "ID" = ?', [$block->ID]);
+        $this->forceGlobal($block, [Versioned::LIVE]);
+
+        $this->runTask();
+
+        $this->assertSame(0, $this->flag($block, Versioned::LIVE));
+        $this->assertSame('Original', $this->onStage($block, Versioned::LIVE)->Title);
+        $this->assertSame('Edited on draft', $this->onStage($block, Versioned::DRAFT)->Title);
+    }
+
+    public function testRepairsAnElementThatExistsOnLiveOnly(): void
+    {
+        $block = $this->publishedTemplateBlock();
+        DB::prepared_query('DELETE FROM "Element" WHERE "ID" = ?', [$block->ID]);
+        $this->assertNull($this->onStage($block, Versioned::DRAFT), 'Precondition: deleted on draft');
+
+        $output = $this->runTask();
+
+        $this->assertSame(0, $this->flag($block, Versioned::LIVE));
+        $this->assertStringContainsString('0 draft and 1 Live', $output);
+    }
+
+    public function testLeavesAnElementWithNoOwnerPageUntouched(): void
+    {
+        $area = ElementalArea::create();
+        $area->write();
+        $block = ElementContent::create();
+        $block->Title = 'Orphan';
+        $block->ParentID = $area->ID;
+        $block->write();
+        $block->publishSingle();
+        $this->forceGlobal($block, [Versioned::DRAFT, Versioned::LIVE]);
+
+        $output = $this->runTask();
+
+        $this->assertSame(1, $this->flag($block, Versioned::DRAFT));
+        $this->assertSame(1, $this->flag($block, Versioned::LIVE));
+        $this->assertStringContainsString('0 draft and 0 Live', $output);
+    }
+
+    public function testDraftOnlyFlagOnAPublishedElementLeavesItPublished(): void
+    {
+        $block = $this->publishedTemplateBlock();
+        DB::prepared_query('UPDATE "Element_Live" SET "AvailableGlobally" = 0 WHERE "ID" = ?', [$block->ID]);
+
+        $output = $this->runTask();
+
+        $this->assertSame(0, $this->flag($block, Versioned::DRAFT));
+        $this->assertFalse($this->onStage($block, Versioned::DRAFT)->stagesDiffer(), 'Not left showing as modified');
+        $this->assertStringContainsString('1 draft and 0 Live', $output);
+    }
+
+    public function testASecondRunRepairsNothing(): void
+    {
+        $this->publishedTemplateBlock();
+        $this->runTask();
+
+        $this->assertStringContainsString('0 draft and 0 Live', $this->runTask());
     }
 }

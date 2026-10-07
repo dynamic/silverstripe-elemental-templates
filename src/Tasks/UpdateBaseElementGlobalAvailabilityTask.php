@@ -43,18 +43,24 @@ class UpdateBaseElementGlobalAvailabilityTask extends BuildTask
             // editor changes, and those must not go live as a side effect of this repair.
             $inSync = $draft && $live && !$draft->stagesDiffer();
 
-            if ($draft && $draft->AvailableGlobally) {
+            $draftFlagged = $draft && $draft->AvailableGlobally;
+            $liveFlagged = $live && $live->AvailableGlobally;
+
+            if ($draftFlagged) {
                 $draft->AvailableGlobally = false;
                 $draft->writeToStage(Versioned::DRAFT);
                 $draftRepaired++;
             }
 
-            if ($live && $live->AvailableGlobally) {
-                if ($inSync) {
-                    $draft->copyVersionToStage(Versioned::DRAFT, Versioned::LIVE);
-                } else {
-                    $this->clearLiveFlag($id);
-                }
+            if ($inSync && $draftFlagged) {
+                // The draft write bumped the draft version; republish so the element stays published
+                // instead of showing as modified. Safe because there were no editor changes to publish.
+                $draft->copyVersionToStage(Versioned::DRAFT, Versioned::LIVE);
+            } elseif ($liveFlagged) {
+                $this->clearLiveFlag($id);
+            }
+
+            if ($liveFlagged) {
                 $liveRepaired++;
             }
         }
