@@ -9,8 +9,10 @@ use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Dev\SapphireTest;
 use DNADesign\Elemental\Models\ElementalArea;
 use Dynamic\ElementalTemplates\Tests\TestOnly\AltAreaSamplePage;
+use Dynamic\ElementalTemplates\Tests\TestOnly\OnlyAltArea;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
 use DNADesign\Elemental\Extensions\ElementalPageExtension;
+use DNADesign\Elemental\Extensions\ElementalAreasExtension;
 use SilverStripe\Versioned\Versioned;
 
 class TemplateApplicatorTest extends SapphireTest
@@ -26,6 +28,7 @@ class TemplateApplicatorTest extends SapphireTest
     protected static $extra_dataobjects = [
         SamplePage::class,
         AltAreaSamplePage::class,
+        OnlyAltArea::class,
     ];
 
     /**
@@ -37,6 +40,11 @@ class TemplateApplicatorTest extends SapphireTest
         ],
         AltAreaSamplePage::class => [
             ElementalPageExtension::class,
+        ],
+        // Deliberately not ElementalPageExtension: that would add the 'ElementalArea' relation this
+        // fixture exists to be without.
+        OnlyAltArea::class => [
+            ElementalAreasExtension::class,
         ],
     ];
 
@@ -309,8 +317,13 @@ class TemplateApplicatorTest extends SapphireTest
     }
 
     /**
-     * A record with no elemental area relation at all must resolve to the fallback name and
-     * the applicator must produce a graceful failure rather than an exception.
+     * A record that exposes no elemental relation at all must resolve to the fallback name and the
+     * applicator must produce a graceful failure rather than an exception.
+     *
+     * ElementalArea is the record type used here because it has no elemental relation *method*: it
+     * exercises the hasMethod('getElementalRelations') guard. The "relations exist but none is
+     * visible" branch is covered separately by
+     * testResolveAreaRelationNameFallsBackToFirstDeclaredRelation.
      */
     public function testResolveAreaRelationNameFallsBackForRecordWithoutElementalRelations()
     {
@@ -380,6 +393,75 @@ class TemplateApplicatorTest extends SapphireTest
             0,
             $record->ElementalHomePage()->Elements()->count(),
             'The resolver must be bypassed when a relation name is supplied.'
+        );
+        $this->assertGreaterThan(
+            0,
+            $record->ElementalArea()->Elements()->count(),
+            'The explicitly named relation is the one that should have received the elements.'
+        );
+    }
+
+    /**
+     * A record whose conventional 'ElementalArea' relation does not exist at all must still resolve
+     * to the area it really has - both before it is written (no CMS area field exists yet, because
+     * ElementalAreasExtension::updateCMSFields() only builds one once the record is in the database)
+     * and after.
+     */
+    public function testResolveAreaRelationNameFallsBackToFirstDeclaredRelation()
+    {
+        Versioned::set_stage(Versioned::DRAFT);
+
+        $templateArea = ElementalArea::create();
+        $templateArea->Title = 'Template Area';
+        $templateArea->write();
+
+        $templateElement = \DNADesign\Elemental\Models\ElementContent::create();
+        $templateElement->Title = 'Template Content Element';
+        $templateElement->HTML = '<p>Only-alt-area content</p>';
+        $templateElement->ParentID = $templateArea->ID;
+        $templateElement->write();
+
+        $template = Template::create();
+        $template->Title = 'Only Alt Area Template';
+        $template->ElementsID = $templateArea->ID;
+        $template->write();
+
+        $applicator = new TemplateApplicator();
+
+        // Not yet in the database: getCMSFields() has no area field for any relation, so the
+        // resolver has to use the relation the record declares rather than assume 'ElementalArea'.
+        $unsaved = OnlyAltArea::create();
+        $unsaved->Title = 'Unsaved Only Alt Area Page';
+        $this->assertSame(
+            'ElementalHomePage',
+            $applicator->resolveAreaRelationName($unsaved),
+            'An unsaved record must resolve to the relation it declares, not to a name it lacks.'
+        );
+
+        // Once it is in the database the same relation is the visible one, and the template's blocks
+        // land there instead of failing with "does not support elemental areas".
+        $record = OnlyAltArea::create();
+        $record->Title = 'Only Alt Area Page';
+        $record->write();
+
+        $this->assertSame(
+            'ElementalHomePage',
+            $applicator->resolveAreaRelationName($record)
+        );
+
+        $result = $applicator->applyTemplateToRecord($record, $template);
+
+        $this->assertTrue(
+            $result['success'],
+            'Expected the template to apply to the only area the record has, got: '
+            . ($result['message'] ?? 'no message')
+        );
+
+        $record->flushCache();
+        $this->assertGreaterThan(
+            0,
+            $record->ElementalHomePage()->Elements()->count(),
+            'Template elements should have been duplicated into the record\'s only area.'
         );
     }
 }

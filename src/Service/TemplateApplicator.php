@@ -16,9 +16,13 @@ class TemplateApplicator
      *
      * Mirrors the lookup the (now legacy) CMSPageAddControllerExtension::findOrCreateElementalArea()
      * performed: walk the record's elemental area relations and return the first one that has a
-     * matching field in getCMSFields() - that is the area a member of content authors edits. Falls
-     * back to the conventional 'ElementalArea' when the record exposes no elemental relation at all
-     * or none of them is visible in the CMS.
+     * matching field in getCMSFields() - that is the area a member of content authors edits.
+     *
+     * When no relation is visible, the first relation the record actually declares is used: a record
+     * that is not in the database yet never has an area field (ElementalAreasExtension::updateCMSFields()
+     * only builds one once isInDb() is true), so 'nothing is visible' says nothing about which relation
+     * the record has. The conventional 'ElementalArea' name is the last resort, for a record that
+     * exposes no elemental relation at all.
      *
      * @param DataObject $record The record whose active elemental area should be used.
      * @return string The relation name, e.g. 'ElementalArea' or 'ElementalHomePage'.
@@ -34,16 +38,16 @@ class TemplateApplicator
             return 'ElementalArea';
         }
 
-        if ($record->hasMethod('getCMSFields')) {
-            $cmsFields = $record->getCMSFields();
-            foreach ($elementalAreaRelations as $relationName) {
-                if ($cmsFields && $cmsFields->dataFieldByName($relationName)) {
-                    return $relationName;
-                }
+        $cmsFields = $record->getCMSFields();
+        foreach ($elementalAreaRelations as $relationName) {
+            if ($cmsFields->dataFieldByName($relationName)) {
+                return $relationName;
             }
         }
 
-        return 'ElementalArea';
+        // Nothing is visible in the CMS. Prefer a relation this record really has over the
+        // conventional name, which it may not have at all.
+        return $elementalAreaRelations[0];
     }
 
     /**
