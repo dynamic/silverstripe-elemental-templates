@@ -3,6 +3,7 @@
 namespace Dynamic\ElementalTemplates\Tests\Extension;
 
 use Dynamic\ElementalTemplates\Extension\SiteTreeExtension;
+use Dynamic\ElementalTemplates\Models\Template;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
 use Dynamic\ElementalTemplates\Tests\TestOnly\TestTemplate;
 use LeKoala\CmsActions\CustomAction;
@@ -66,6 +67,8 @@ class SiteTreeExtensionTest extends SapphireTest
 
     public function testApplyTemplateReturnsStringOnAjaxSuccess()
     {
+        $this->logInWithPermission('ADMIN');
+
         $page = $this->objFromFixture(SamplePage::class, 'testPage');
         $template = $this->objFromFixture(TestTemplate::class, 'testTemplate');
 
@@ -91,6 +94,126 @@ class SiteTreeExtensionTest extends SapphireTest
         } finally {
             $controller->popCurrent();
         }
+    }
+
+    /**
+     * Regression test for issue #104: a member who may create templates but may not edit the
+     * page must not be able to apply one to it (applying replaces the page's blocks).
+     */
+    public function testApplyTemplateRefusesWhenMemberCannotEditPage()
+    {
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+        $template = $this->objFromFixture(TestTemplate::class, 'testTemplate');
+
+        // Restrict editing of the page to a group the member does not belong to.
+        $page->CanEditType = 'OnlyTheseUsers';
+        $page->write();
+        $page->flushCache();
+        $areaID = $page->ElementalAreaID;
+        $this->assertGreaterThan(0, $areaID, 'The fixture page should have an elemental area.');
+        $before = $this->elementIDs($areaID);
+        $this->assertNotEmpty($before);
+
+        // Template-create permission only: no CMS/edit permission on this page.
+        $this->logInWithPermission('ELEMENTAL_TEMPLATE_CREATE');
+        $this->assertFalse($page->canEdit(), 'Precondition: the member must not be able to edit the page.');
+
+        $extension = new SiteTreeExtension();
+        $extension->setOwner($page);
+
+        $request = new HTTPRequest('POST', '/');
+        $request->addHeader('X-Requested-With', 'XMLHttpRequest');
+        $request->setSession(new Session([]));
+
+        $controller = new Controller();
+        $controller->setRequest($request);
+        $controller->pushCurrent();
+
+        $form = $this->createMock(Form::class);
+        $data = ['ApplyTemplateID' => $template->ID];
+
+        try {
+            $threw = null;
+            try {
+                $extension->applyTemplate($data, $form);
+            } catch (ValidationException $e) {
+                $threw = $e;
+            }
+            $this->assertNotNull($threw, 'Applying a template to a page the member cannot edit must be refused.');
+            $this->assertStringContainsString('do not have permission', $threw?->getMessage() ?? '');
+
+            // Nothing may be applied: the page's blocks are exactly as they were.
+            $this->assertSame($before, $this->elementIDs($areaID), 'No block may be added to the page.');
+        } finally {
+            $controller->popCurrent();
+        }
+    }
+
+    /**
+     * Regression test for issue #104: CreateTemplate() must not copy blocks out of a page the
+     * member cannot view.
+     */
+    public function testCreateTemplateRefusesWhenMemberCannotViewPage()
+    {
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+
+        // Restrict visibility of the page to a group the member does not belong to.
+        $page->CanViewType = 'OnlyTheseUsers';
+        $page->write();
+        $page->flushCache();
+
+        // Template-create permission only: the member may create templates but cannot see this page.
+        $this->logInWithPermission('ELEMENTAL_TEMPLATE_CREATE');
+        $this->assertFalse($page->canView(), 'Precondition: the member must not be able to view the page.');
+
+        $extension = new SiteTreeExtension();
+        $extension->setOwner($page);
+
+        $request = new HTTPRequest('POST', '/');
+        $request->setSession(new Session([]));
+
+        $controller = new Controller();
+        $controller->setRequest($request);
+        $controller->pushCurrent();
+
+        $before = Template::get()->count();
+
+        $form = $this->createMock(Form::class);
+        $form->expects($this->once())
+            ->method('sessionMessage')
+            ->with($this->stringContains('do not have permission'), $this->equalTo('bad'));
+
+        $data = ['ID' => $page->ID, 'ClassName' => SamplePage::class];
+
+        $threw = null;
+        try {
+            $extension->CreateTemplate($data, $form);
+        } catch (\Throwable $e) {
+            $threw = $e;
+        } finally {
+            $controller->popCurrent();
+        }
+
+        $this->assertNull(
+            $threw,
+            'CreateTemplate() must refuse instead of proceeding with the copy: ' . ($threw ? $threw->getMessage() : '')
+        );
+        $this->assertSame($before, Template::get()->count(), 'No template may be created from an unseen page.');
+    }
+
+    /**
+     * IDs of the elements currently in an elemental area, in sort order.
+     *
+     * @param int $areaID
+     * @return array<int>
+     */
+    protected function elementIDs(int $areaID): array
+    {
+        $area = \DNADesign\Elemental\Models\ElementalArea::get()->byID($areaID);
+        if (!$area) {
+            return [];
+        }
+        return $area->Elements()->column('ID');
     }
 
     public function testApplyTemplateActionRedirectsToCurrentRecord()

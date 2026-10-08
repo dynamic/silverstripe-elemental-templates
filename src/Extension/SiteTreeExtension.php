@@ -163,6 +163,22 @@ class SiteTreeExtension extends Extension
             return Controller::curr()->redirectBack();
         }
 
+        // Applying a template replaces the page's blocks, so the member must be allowed to
+        // edit this page. Template::canCreate() (checked when the action is rendered) only
+        // says they may work with templates at all, not with this particular page.
+        if (!$this->owner->canEdit()) {
+            $message = 'You do not have permission to edit this page.';
+            $this->logAction(
+                "applyTemplate denied for a member without edit permission on page ID: " . $this->owner->ID,
+                "warning"
+            );
+            if ($isAjax) {
+                throw ValidationException::create($message);
+            }
+            $form->sessionMessage($message, 'bad');
+            return Controller::curr()->redirectBack();
+        }
+
         /** @var TemplateApplicator $applicator */
         $applicator = Injector::inst()->get(TemplateApplicator::class);
         $result = $applicator->applyTemplateToRecord($this->owner, $template);
@@ -187,6 +203,9 @@ class SiteTreeExtension extends Extension
     /**
      * Create a template from the current page.
      *
+     * Requires that the member may create templates at all and may view the source page:
+     * the new template carries a copy of that page's blocks.
+     *
      * @param array $data
      * @param Form $form
      * @return void
@@ -207,6 +226,19 @@ class SiteTreeExtension extends Extension
 
         // Retrieve the page by ID
         if ($page = $className::get()->byID($pageID)) {
+            // Creating a template copies the source page's blocks, so the member needs both
+            // the template-create permission and access to the page being copied.
+            if (!Template::singleton()->canCreate() || !$page->canView()) {
+                $this->logAction(
+                    "CreateTemplate denied for a member without template-create permission "
+                    . "or view permission on page ID: {$pageID}",
+                    "warning"
+                );
+                $form->sessionMessage('You do not have permission to create a template from this page.', 'bad');
+                Controller::curr()->redirectBack();
+                return;
+            }
+
             $template = Template::create();
             $template->Title = 'Template from ' . $page->Title;
             $template->PageType = $page->ClassName;
