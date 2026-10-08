@@ -200,10 +200,10 @@
                 var modal = $('<div class="template-preview-modal" role="dialog" aria-modal="true" aria-label="Template Preview"></div>');
                 var modalContent = $('<div class="template-preview-modal__content"></div>');
                 var modalHeader = $('<div class="template-preview-modal__header"></div>');
-                var modalTitle = $('<h3 class="template-preview-modal__title">' + templateTitle + ' Preview</h3>');
+                var modalTitle = $('<h3 class="template-preview-modal__title"></h3>').text(templateTitle + ' Preview');
                 var closeBtn = $('<button type="button" class="template-preview-modal__close" aria-label="Close preview">&times;</button>');
-                var openNewTabBtn = $('<a href="' + previewUrl + '" target="_blank" class="template-preview-modal__newtab" title="Open in new tab"><span class="font-icon-external-link"></span></a>');
-                var iframe = $('<iframe class="template-preview-modal__iframe" src="' + previewUrl + '" title="Template preview"></iframe>');
+                var openNewTabBtn = $('<a target="_blank" class="template-preview-modal__newtab" title="Open in new tab"><span class="font-icon-external-link"></span></a>').attr('href', previewUrl);
+                var iframe = $('<iframe class="template-preview-modal__iframe" title="Template preview"></iframe>').attr('src', previewUrl);
                 var loader = $('<div class="template-preview-modal__loader"><span class="font-icon-spinner"></span> Loading preview...</div>');
 
                 // Build modal structure

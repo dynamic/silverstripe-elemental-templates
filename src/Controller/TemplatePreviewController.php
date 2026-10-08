@@ -4,6 +4,8 @@ namespace Dynamic\ElementalTemplates\Controller;
 
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\ORM\FieldType\DBField;
+use SilverStripe\Security\Permission;
+use SilverStripe\Security\Security;
 use Dynamic\ElementalTemplates\Models\Template;
 
 /**
@@ -25,10 +27,18 @@ class TemplatePreviewController extends \PageController
 
     public function index()
     {
+        // Previews are for people who can reach the CMS, where the template picker lives.
+        // Checked before the lookup so an anonymous visitor cannot probe which IDs exist.
+        if (!Permission::check('CMS_ACCESS')) {
+            return Security::permissionFailure($this);
+        }
+
+        $this->getResponse()->addHeader('X-Robots-Tag', 'noindex, nofollow');
+
         $templateID = $this->getRequest()->param('ID');
         $template = Template::get()->byID($templateID);
 
-        if (!$template) {
+        if (!$template || !$template->canView()) {
             return $this->httpError(404, 'Template not found');
         }
 
