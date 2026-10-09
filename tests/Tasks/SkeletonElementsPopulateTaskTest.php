@@ -27,12 +27,20 @@ class SkeletonElementsPopulateTaskTest extends SapphireTest
      * E_USER_DEPRECATED message Deprecation raised. Deprecation buffers notices and only emits them through
      * user_error() from a shutdown function, so the buffer is flushed inside the capturing handler.
      *
+     * A host project's config may already have enabled deprecations (possibly with
+     * Deprecation::enable(true), which this helper cannot reproduce and must not reset), so the helper only
+     * turns notices on and off when it is the one turning them on. Otherwise every test after this one would
+     * run with notices silently switched off.
+     *
      * @return array{int, string, string[]}
      */
     private function runTaskCapturingNotices(): array
     {
         $notices = [];
-        Deprecation::enable();
+        $wasEnabled = Deprecation::isEnabled();
+        if (!$wasEnabled) {
+            Deprecation::enable();
+        }
         set_error_handler(function (int $severity, string $message) use (&$notices): bool {
             if ($severity === E_USER_DEPRECATED) {
                 $notices[] = $message;
@@ -48,7 +56,9 @@ class SkeletonElementsPopulateTaskTest extends SapphireTest
             Deprecation::outputNotices();
         } finally {
             restore_error_handler();
-            Deprecation::disable();
+            if (!$wasEnabled) {
+                Deprecation::disable();
+            }
         }
 
         return [$status, $buffer->fetch(), $notices];
@@ -196,5 +206,32 @@ class SkeletonElementsPopulateTaskTest extends SapphireTest
         $this->assertSame('Original content', $this->html($block));
         $this->assertCount(1, $this->visitedLines($output), 'The element is visited but not written');
         $this->assertNotEmpty($this->taskNotices($notices), 'The notice is raised regardless of what the config holds');
+    }
+
+    /**
+     * Declared last: it deliberately leaves notices switched on inside itself, and restores the state this
+     * repo actually starts from (disabled) before returning.
+     *
+     * Simulates a host project whose config called Deprecation::enable(). The helper must not report the
+     * project's own notices as switched off once the task has run.
+     */
+    public function testItLeavesDeprecationsEnabledWhenTheyWereEnabledBefore(): void
+    {
+        Deprecation::enable();
+        $this->assertTrue(Deprecation::isEnabled(), 'Precondition: notices are on before the task runs');
+
+        try {
+            [$status, $output, $notices] = $this->runTaskCapturingNotices();
+
+            $this->assertSame(Command::SUCCESS, $status);
+            $this->assertNotEmpty($this->taskNotices($notices), 'The notice is still captured');
+            $this->assertTrue(
+                Deprecation::isEnabled(),
+                'The helper must not switch off deprecation notices a host project had enabled itself'
+            );
+        } finally {
+            // This repo never enables notices outside the tests, so disabled is the state to hand back.
+            Deprecation::disable();
+        }
     }
 }
