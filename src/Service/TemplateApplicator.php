@@ -51,7 +51,23 @@ class TemplateApplicator
     }
 
     /**
-     * Applies the given template to the provided record.
+     * Applies the given template to the provided record's active elemental area.
+     *
+     * The signature is deliberately two arguments: this class is resolved through the Injector, so a
+     * project subclass may override this method, and adding a parameter would be a fatal for it.
+     * Use applyTemplateToRelation() to name the target relation.
+     *
+     * @param DataObject $record
+     * @param Template   $template
+     * @return array Result of the operation with success status and messages.
+     */
+    public function applyTemplateToRecord(DataObject $record, Template $template): array
+    {
+        return $this->applyTemplateToRelation($record, $template);
+    }
+
+    /**
+     * Applies the given template to one elemental area relation of the provided record.
      *
      * @param DataObject  $record       The record to apply the template to.
      * @param Template    $template     The template to apply.
@@ -60,7 +76,7 @@ class TemplateApplicator
      *                                  by resolveAreaRelationName().
      * @return array Result of the operation with success status and messages.
      */
-    public function applyTemplateToRecord(
+    public function applyTemplateToRelation(
         DataObject $record,
         Template $template,
         ?string $relationName = null

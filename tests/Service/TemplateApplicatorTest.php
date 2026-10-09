@@ -7,6 +7,7 @@ use Dynamic\ElementalTemplates\Service\TemplateApplicator;
 use DNADesign\Elemental\Tests\Src\TestElement\ElementOne;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Dev\SapphireTest;
+use SilverStripe\ORM\DataObject;
 use DNADesign\Elemental\Models\ElementalArea;
 use Dynamic\ElementalTemplates\Tests\TestOnly\AltAreaSamplePage;
 use Dynamic\ElementalTemplates\Tests\TestOnly\OnlyAltArea;
@@ -434,7 +435,7 @@ class TemplateApplicatorTest extends SapphireTest
         $record->write();
 
         $applicator = new TemplateApplicator();
-        $result = $applicator->applyTemplateToRecord($record, $template, 'ElementalArea');
+        $result = $applicator->applyTemplateToRelation($record, $template, 'ElementalArea');
 
         $this->assertTrue(
             $result['success'],
@@ -515,6 +516,25 @@ class TemplateApplicatorTest extends SapphireTest
             0,
             $record->ElementalHomePage()->Elements()->count(),
             'Template elements should have been duplicated into the record\'s only area.'
+        );
+    }
+
+    /**
+     * The Injector-resolved applicator can be subclassed with the two-argument signature
+     * applyTemplateToRecord() has always had; a wider parent signature would be a fatal at class load.
+     */
+    public function testSubclassOverridingTheTwoArgumentMethodStillLoadsAndIsCalled()
+    {
+        $subclass = new class () extends TemplateApplicator {
+            public function applyTemplateToRecord(DataObject $record, Template $template): array
+            {
+                return ['success' => true, 'message' => 'overridden'];
+            }
+        };
+
+        $this->assertSame(
+            'overridden',
+            $subclass->applyTemplateToRecord(SamplePage::create(), Template::create())['message']
         );
     }
 }
