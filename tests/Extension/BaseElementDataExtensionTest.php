@@ -272,8 +272,14 @@ class BaseElementDataExtensionTest extends SapphireTest
         $this->assertContains('<p>First HTML</p>', $copies->column('HTML'));
         $this->assertNotContains('Test Content Block Title', $titles);
 
-        $this->assertSame('First template block', $first->Title, 'The template block itself is untouched');
-        $this->assertSame('Second template block', $second->Title);
+        foreach ([[$first, 'First template block'], [$second, 'Second template block']] as [$source, $title]) {
+            $reloaded = ElementContent::get()->byID($source->ID);
+            $this->assertSame(
+                $title,
+                $reloaded->Title,
+                'The Template block the copy was made from keeps its own content in the database'
+            );
+        }
     }
 
     public function testNewElementStillPopulatedAfterCopies(): void
