@@ -29,8 +29,8 @@ class SkeletonElementsPopulateTask extends BuildTask
         // supported-module caller and hidden by default. Global scope keeps it visible to the installing project.
         Deprecation::notice(
             '3.2.0',
-            'Will be removed without equivalent functionality to replace it in a future major release.'
-            . ' Use BaseElementDataExtension.fixtures instead.',
+            'SkeletonElementsPopulateTask is deprecated. Will be removed without equivalent functionality to '
+            . 'replace it in a future major release. Use BaseElementDataExtension.fixtures instead.',
             Deprecation::SCOPE_GLOBAL
         );
 

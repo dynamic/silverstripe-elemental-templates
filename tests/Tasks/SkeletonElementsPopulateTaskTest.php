@@ -100,6 +100,21 @@ class SkeletonElementsPopulateTaskTest extends SapphireTest
         ));
     }
 
+    /**
+     * Notices raised by anything else during the run would satisfy a plain "not empty" check, so every notice
+     * assertion narrows to the ones that name this task.
+     *
+     * @param string[] $notices
+     * @return string[]
+     */
+    private function taskNotices(array $notices): array
+    {
+        return array_values(array_filter(
+            $notices,
+            fn (string $notice): bool => str_contains($notice, 'SkeletonElementsPopulateTask')
+        ));
+    }
+
     public function testItRaisesTheGlobalDeprecationNotice(): void
     {
         $this->setPopulateConfig([
@@ -110,16 +125,13 @@ class SkeletonElementsPopulateTaskTest extends SapphireTest
         [$status, $output, $notices] = $this->runTaskCapturingNotices();
 
         $this->assertSame(Command::SUCCESS, $status);
-        $this->assertNotEmpty($notices, 'The task raises a deprecation notice');
-        $matched = array_values(array_filter(
-            $notices,
-            fn (string $notice): bool => str_contains($notice, 'BaseElementDataExtension.fixtures')
-        ));
+        $taskNotices = $this->taskNotices($notices);
         $this->assertNotEmpty(
-            $matched,
-            'The notice names BaseElementDataExtension.fixtures as the replacement; got: ' . print_r($notices, true)
+            $taskNotices,
+            'The notice names the deprecated task; got: ' . print_r($notices, true)
         );
-        $this->assertStringContainsString('Will be removed without equivalent functionality', $matched[0]);
+        $this->assertStringContainsString('BaseElementDataExtension.fixtures', $taskNotices[0]);
+        $this->assertStringContainsString('without equivalent functionality', $taskNotices[0]);
     }
 
     /**
@@ -132,7 +144,7 @@ class SkeletonElementsPopulateTaskTest extends SapphireTest
 
         $this->assertSame(Command::SUCCESS, $status);
         $this->assertSame([], $this->visitedLines($output), 'With no templates there is nothing to visit');
-        $this->assertNotEmpty($notices, 'An empty database still gets the deprecation notice');
+        $this->assertNotEmpty($this->taskNotices($notices), 'An empty database still gets the deprecation notice');
     }
 
     public function testThePopulateLoopStillWritesConfiguredFields(): void
@@ -163,6 +175,6 @@ class SkeletonElementsPopulateTaskTest extends SapphireTest
         $this->assertSame(Command::SUCCESS, $status);
         $this->assertSame('Original content', $this->html($block));
         $this->assertCount(1, $this->visitedLines($output), 'The element is visited but not written');
-        $this->assertNotEmpty($notices, 'The notice is raised regardless of what the config holds');
+        $this->assertNotEmpty($this->taskNotices($notices), 'The notice is raised regardless of what the config holds');
     }
 }
