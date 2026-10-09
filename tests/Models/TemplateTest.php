@@ -11,6 +11,8 @@ use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePageTwo;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\DropdownField;
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldDataColumns;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
@@ -118,6 +120,48 @@ class TemplateTest extends SapphireTest
         $method->setAccessible(true);
 
         $this->assertSame([], $method->invoke($template));
+    }
+
+    /**
+     * A PageType left behind by a removed or renamed page class is expected stale data:
+     * the summary column must show the raw value instead of letting the Injector throw
+     * for every row of the TemplateAdmin GridField.
+     *
+     * @return void
+     */
+    public function testPageTypeNameDoesNotThrowForStalePageType(): void
+    {
+        $template = Template::create();
+        $template->Title = 'Stale';
+        $template->PageType = 'App\\NoSuchPageClass';
+        $template->write();
+
+        $this->assertSame('App\\NoSuchPageClass', $template->PageTypeName());
+
+        $gridField = new GridField('Templates', 'Templates', Template::get());
+        $columns = new GridFieldDataColumns();
+        $gridField->getConfig()->addComponents($columns);
+
+        $this->assertSame(
+            'App\\NoSuchPageClass',
+            $columns->getColumnContent($gridField, $template, 'PageTypeName')
+        );
+    }
+
+    /**
+     * The resolvable and empty PageType paths keep their existing behaviour.
+     *
+     * @return void
+     */
+    public function testPageTypeNameForValidAndEmptyPageType(): void
+    {
+        $valid = $this->objFromFixture(Template::class, 'templateone');
+        $this->assertSame(singleton(SamplePage::class)->singular_name(), $valid->PageTypeName());
+
+        $empty = Template::create();
+        $empty->Title = 'No page type';
+        $empty->write();
+        $this->assertSame('', $empty->PageTypeName());
     }
 
     /**

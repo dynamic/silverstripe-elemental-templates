@@ -407,12 +407,21 @@ class Template extends DataObject implements PermissionProvider
     }
 
     /**
+     * Returns the page type's singular name, or the raw PageType value when that class no
+     * longer exists (stale data), or an empty string when no PageType is set.
+     *
      * @return string
      */
     public function PageTypeName(): string
     {
         if (!$this->PageType) {
             return '';
+        }
+        // A page class that has been removed or renamed leaves its name behind in this
+        // plain Varchar. Show the stale value rather than letting the Injector throw and
+        // break the whole GridField for every template.
+        if (!class_exists($this->PageType)) {
+            return (string)$this->PageType;
         }
         return singleton($this->PageType)->singular_name();
     }
