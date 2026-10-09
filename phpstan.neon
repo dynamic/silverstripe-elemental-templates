@@ -35,3 +35,13 @@ parameters:
         - '#Offset .+ on left side of \?\? always exists and is not nullable#'
         # getRequestData() is a SilverStripe extension method, not on Form directly
         - '#Call to an undefined method SilverStripe\\Forms\\Form::getRequestData\(\)#'
+        # @config properties are written through the Config API, never by PHP assignment, so
+        # phpstan's suggestion to narrow the declared type does not apply to them
+        -
+            message: '#Static property .+::\$fixtures \(string\|null\) is never assigned string so it can be removed from the property type\.#'
+            path: src/Extension/BaseElementDataExtension.php
+        # AvailableGlobally is a DB field added by dnadesign/silverstripe-elemental-virtual
+        # (a require-dev dependency); phpstan cannot see through DataObject magic property access
+        -
+            message: '#Access to an undefined property DNADesign\\Elemental\\Models\\BaseElement::\$AvailableGlobally\.#'
+            path: src/Tasks/UpdateBaseElementGlobalAvailabilityTask.php
