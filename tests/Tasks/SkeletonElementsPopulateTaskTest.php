@@ -209,18 +209,30 @@ class SkeletonElementsPopulateTaskTest extends SapphireTest
     }
 
     /**
-     * Declared last: it deliberately leaves notices switched on inside itself, and restores the state this
-     * repo actually starts from (disabled) before returning.
+     * Simulates a host project whose config called Deprecation::enable(). The helper must not hand that
+     * project back with notices switched off.
      *
-     * Simulates a host project whose config called Deprecation::enable(). The helper must not report the
-     * project's own notices as switched off once the task has run.
+     * Skipped when notices are already on: calling Deprecation::enable() would reset the private
+     * "show no-replacement notices" flag (only Deprecation::enable(true) turns that on and nothing reads it
+     * back), which is the same host state this test exists to protect. Test order is not guaranteed
+     * (--random-order, --filter), so this test must leave notices in the state it found them in rather than
+     * rely on being declared last.
      */
     public function testItLeavesDeprecationsEnabledWhenTheyWereEnabledBefore(): void
     {
+        if (Deprecation::isEnabled()) {
+            $this->markTestSkipped(
+                'Deprecations are already enabled in this environment, so there is no off-then-on transition '
+                . 'for the helper to undo.'
+            );
+        }
+
+        // Stand in for the host project's config: notices on for the process from here on.
         Deprecation::enable();
-        $this->assertTrue(Deprecation::isEnabled(), 'Precondition: notices are on before the task runs');
 
         try {
+            $this->assertTrue(Deprecation::isEnabled(), 'Precondition: notices are on before the task runs');
+
             [$status, $output, $notices] = $this->runTaskCapturingNotices();
 
             $this->assertSame(Command::SUCCESS, $status);
@@ -230,7 +242,7 @@ class SkeletonElementsPopulateTaskTest extends SapphireTest
                 'The helper must not switch off deprecation notices a host project had enabled itself'
             );
         } finally {
-            // This repo never enables notices outside the tests, so disabled is the state to hand back.
+            // Notices were off when this test started, so off is the state it hands back.
             Deprecation::disable();
         }
     }

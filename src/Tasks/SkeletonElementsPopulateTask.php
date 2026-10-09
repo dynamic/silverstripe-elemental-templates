@@ -29,7 +29,10 @@ class SkeletonElementsPopulateTask extends BuildTask
         // BuildTask/PolyCommand run the execute() hook), so a method-scoped notice would be attributed to a
         // supported-module caller and hidden by default. Global scope keeps it visible to the installing project.
         // The notice uses the standardised no-replacement wording verbatim (the message default of
-        // Deprecation::noticeWithNoReplacment()). Naming BaseElementDataExtension.fixtures as a replacement
+        // Deprecation::noticeWithNoReplacment()) but is raised through notice() directly: that wrapper runs
+        // inside withSuppressedNotice(), and outputNotices() drops a notice recorded that way unless the host
+        // project called Deprecation::enable(true) -- so the wrapper would hide the notice from exactly the
+        // projects that never touched the deprecation settings. Naming BaseElementDataExtension.fixtures as a replacement
         // here would contradict it: that config only populates newly created elements, so there is no
         // equivalent replacement for this task. See the class docblock for the explanation.
         Deprecation::notice(
