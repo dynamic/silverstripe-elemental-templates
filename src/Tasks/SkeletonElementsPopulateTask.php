@@ -4,11 +4,16 @@ namespace Dynamic\ElementalTemplates\Tasks;
 
 use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\Dev\BuildTask;
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\PolyExecution\PolyOutput;
 use SilverStripe\Versioned\Versioned;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 
+/**
+ * @deprecated 3.2.0 Will be removed without equivalent functionality to replace it in a future major release.
+ *             Use BaseElementDataExtension.fixtures instead.
+ */
 class SkeletonElementsPopulateTask extends BuildTask
 {
     private static string $segment = 'SkeletonElementsPopulateTask';
@@ -19,6 +24,16 @@ class SkeletonElementsPopulateTask extends BuildTask
 
     protected function execute(InputInterface $input, PolyOutput $output): int
     {
+        // SCOPE_GLOBAL is deliberate: this task is dispatched through supported-module code (framework's
+        // BuildTask/PolyCommand run the execute() hook), so a method-scoped notice would be attributed to a
+        // supported-module caller and hidden by default. Global scope keeps it visible to the installing project.
+        Deprecation::notice(
+            '3.2.0',
+            'Will be removed without equivalent functionality to replace it in a future major release.'
+            . ' Use BaseElementDataExtension.fixtures instead.',
+            Deprecation::SCOPE_GLOBAL
+        );
+
         $populate = Template::config()->get('populate') ?? [];
 
         foreach (Template::get() as $skeleton) {
