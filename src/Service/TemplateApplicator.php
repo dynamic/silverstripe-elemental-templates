@@ -12,7 +12,50 @@ use SilverStripe\ORM\DataObject;
 class TemplateApplicator
 {
     /**
-     * Applies the given template to the provided record.
+     * Resolve the name of the elemental area relation the record actually exposes in the CMS.
+     *
+     * Mirrors the lookup the (now legacy) CMSPageAddControllerExtension::findOrCreateElementalArea()
+     * performed: walk the record's elemental area relations and return the first one that has a
+     * matching field in getCMSFields() - that is the area a member of content authors edits.
+     *
+     * When no relation is visible, the first relation the record actually declares is used: a record
+     * that is not in the database yet never has an area field (ElementalAreasExtension::updateCMSFields()
+     * only builds one once isInDb() is true), so 'nothing is visible' says nothing about which relation
+     * the record has. The conventional 'ElementalArea' name is the last resort, for a record that
+     * exposes no elemental relation at all.
+     *
+     * @param DataObject $record The record whose active elemental area should be used.
+     * @return string The relation name, e.g. 'ElementalArea' or 'ElementalHomePage'.
+     */
+    public function resolveAreaRelationName(DataObject $record): string
+    {
+        if (!$record->hasMethod('getElementalRelations')) {
+            return 'ElementalArea';
+        }
+
+        $elementalAreaRelations = $record->getElementalRelations();
+        if (empty($elementalAreaRelations)) {
+            return 'ElementalArea';
+        }
+
+        $cmsFields = $record->getCMSFields();
+        foreach ($elementalAreaRelations as $relationName) {
+            if ($cmsFields->dataFieldByName($relationName)) {
+                return $relationName;
+            }
+        }
+
+        // Nothing is visible in the CMS. Prefer a relation this record really has over the
+        // conventional name, which it may not have at all.
+        return $elementalAreaRelations[0];
+    }
+
+    /**
+     * Applies the given template to the provided record's active elemental area.
+     *
+     * The signature is deliberately two arguments: this class is resolved through the Injector, so a
+     * project subclass may override this method, and adding a parameter would be a fatal for it.
+     * Use applyTemplateToRelation() to name the target relation.
      *
      * @param DataObject $record
      * @param Template   $template
@@ -20,6 +63,24 @@ class TemplateApplicator
      */
     public function applyTemplateToRecord(DataObject $record, Template $template): array
     {
+        return $this->applyTemplateToRelation($record, $template);
+    }
+
+    /**
+     * Applies the given template to one elemental area relation of the provided record.
+     *
+     * @param DataObject  $record       The record to apply the template to.
+     * @param Template    $template     The template to apply.
+     * @param string|null $relationName The elemental area relation to write into. When null the
+     *                                  applicator targets the record's active area as determined
+     *                                  by resolveAreaRelationName().
+     * @return array Result of the operation with success status and messages.
+     */
+    public function applyTemplateToRelation(
+        DataObject $record,
+        Template $template,
+        ?string $relationName = null
+    ): array {
         /** @var LoggerInterface $logger */
         $logger = Injector::inst()->get(LoggerInterface::class);
 
@@ -38,8 +99,28 @@ class TemplateApplicator
             return ['success' => false, 'message' => $message];
         }
 
+        // Resolve the target area relation when the caller did not name one explicitly.
+        if ($relationName === null) {
+            // A record that is not in the database yet has no area field for any of its relations
+            // (ElementalAreasExtension::updateCMSFields() only builds one once isInDb() is true), so
+            // there is nothing to choose between and the order of getElementalRelations() decides -
+            // and that order puts inherited/extension relations first, which is the area this
+            // feature exists to avoid. Write the record first, with the same guarded write the
+            // materialization step below uses, then resolve against fields that really exist.
+            if (!$record->isInDb()) {
+                try {
+                    $record->write();
+                } catch (\Exception $e) {
+                    $message = "Could not initialize elemental area for record ID {$record->ID}: {$e->getMessage()}";
+                    $logger->error($message);
+                    return ['success' => false, 'message' => $message];
+                }
+            }
+            $relationName = $this->resolveAreaRelationName($record);
+        }
+
         // Ensure the record supports elemental areas.
-        if (!$record->hasMethod('ElementalArea')) {
+        if (!$record->hasMethod($relationName)) {
             $message = "Record ID {$record->ID} does not support elemental areas.";
             $logger->error($message);
             return ['success' => false, 'message' => $message];
@@ -52,7 +133,7 @@ class TemplateApplicator
         // first lets us apply the template in place instead of bailing out. The write is
         // guarded so a validation/hook failure keeps the method's no-throw contract
         // instead of escaping uncaught and leaving a half-applied record.
-        $elementalArea = $record->ElementalArea();
+        $elementalArea = $record->$relationName();
         if (!$elementalArea || !$elementalArea->exists()) {
             try {
                 $record->write();
@@ -61,7 +142,7 @@ class TemplateApplicator
                 $logger->error($message);
                 return ['success' => false, 'message' => $message];
             }
-            $elementalArea = $record->ElementalArea();
+            $elementalArea = $record->$relationName();
         }
 
         if (!$elementalArea || !$elementalArea->exists()) {
