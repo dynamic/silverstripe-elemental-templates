@@ -54,7 +54,8 @@
     "config": {
         "allow-plugins": {
             "silverstripe/recipe-plugin": true,
-            "silverstripe/vendor-plugin": true
+            "silverstripe/vendor-plugin": true,
+            "composer/installers": true
         }
     },
     "minimum-stability": "dev",
