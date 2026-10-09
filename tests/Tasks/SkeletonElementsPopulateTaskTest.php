@@ -130,8 +130,28 @@ class SkeletonElementsPopulateTaskTest extends SapphireTest
             $taskNotices,
             'The notice names the deprecated task; got: ' . print_r($notices, true)
         );
-        $this->assertStringContainsString('BaseElementDataExtension.fixtures', $taskNotices[0]);
-        $this->assertStringContainsString('without equivalent functionality', $taskNotices[0]);
+        // Exact message: the standardised no-replacement wording with no replacement advice appended, so the
+        // notice cannot simultaneously say there is no replacement and name one.
+        $this->assertSame(
+            'SkeletonElementsPopulateTask is deprecated. Will be removed without equivalent functionality '
+            . 'to replace it in a future major release.',
+            $taskNotices[0]
+        );
+    }
+
+    /**
+     * The @deprecated tag is what static analysis and IDEs surface to developers, so it must carry the same
+     * no-replacement wording the runtime notice raises rather than the contradictory "... instead." pointer.
+     */
+    public function testTheDeprecatedDocblockUsesTheNoReplacementWording(): void
+    {
+        $doc = (new \ReflectionClass(SkeletonElementsPopulateTask::class))->getDocComment();
+
+        $this->assertIsString($doc, 'The deprecated class carries a docblock');
+        $this->assertStringContainsString(
+            '@deprecated 3.2.0 Will be removed without equivalent functionality to replace it in a future major release.',
+            $doc
+        );
     }
 
     /**

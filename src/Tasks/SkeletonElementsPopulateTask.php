@@ -12,7 +12,8 @@ use Symfony\Component\Console\Input\InputInterface;
 
 /**
  * @deprecated 3.2.0 Will be removed without equivalent functionality to replace it in a future major release.
- *             Use BaseElementDataExtension.fixtures instead.
+ *             The BaseElementDataExtension.fixtures config only populates elements newly created inside a
+ *             Template and never rewrites existing ones, so it is not an equivalent replacement for this task.
  */
 class SkeletonElementsPopulateTask extends BuildTask
 {
@@ -27,10 +28,14 @@ class SkeletonElementsPopulateTask extends BuildTask
         // SCOPE_GLOBAL is deliberate: this task is dispatched through supported-module code (framework's
         // BuildTask/PolyCommand run the execute() hook), so a method-scoped notice would be attributed to a
         // supported-module caller and hidden by default. Global scope keeps it visible to the installing project.
+        // The notice uses the standardised no-replacement wording verbatim (the message default of
+        // Deprecation::noticeWithNoReplacment()). Naming BaseElementDataExtension.fixtures as a replacement
+        // here would contradict it: that config only populates newly created elements, so there is no
+        // equivalent replacement for this task. See the class docblock for the explanation.
         Deprecation::notice(
             '3.2.0',
             'SkeletonElementsPopulateTask is deprecated. Will be removed without equivalent functionality to '
-            . 'replace it in a future major release. Use BaseElementDataExtension.fixtures instead.',
+            . 'replace it in a future major release.',
             Deprecation::SCOPE_GLOBAL
         );
 
