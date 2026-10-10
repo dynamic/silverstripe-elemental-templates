@@ -4,11 +4,13 @@ namespace Dynamic\ElementalTemplates\Tests\Extension;
 
 use Dynamic\ElementalTemplates\Extension\SiteTreeExtension;
 use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Tests\TestOnly\NoAreaTemplate;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
 use Dynamic\ElementalTemplates\Tests\TestOnly\TestTemplate;
 use LeKoala\CmsActions\CustomAction;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
@@ -30,6 +32,7 @@ class SiteTreeExtensionTest extends SapphireTest
     protected static $extra_dataobjects = [
         SamplePage::class,
         TestTemplate::class,
+        NoAreaTemplate::class,
     ];
 
     protected static $required_extensions = [
@@ -239,20 +242,26 @@ class SiteTreeExtensionTest extends SapphireTest
     }
 
     /**
-     * Without a Draft stage the new template gets no elemental area. That used to be an uncaught Error
-     * (a 500) that left an empty template behind; it is now refused and the template removed.
+     * A new template that could not be given an elemental area (for example, written outside Draft)
+     * used to hit an uncaught Error (a 500) and leave an empty template behind; it is now refused and
+     * the template removed. NoAreaTemplate forces the missing area so the test does not depend on
+     * which elemental version creates areas in which stage.
      */
     public function testCreateTemplateRefusesAndCleansUpWhenTemplateHasNoArea()
     {
+        Versioned::set_stage(Versioned::DRAFT);
+
         $page = $this->objFromFixture(SamplePage::class, 'testPage');
-        $page->publishRecursive();
         $this->logInWithPermission('ADMIN');
 
         $before = Template::get()->count();
-        $threw = Versioned::withVersionedMode(function () use ($page) {
-            Versioned::set_stage(Versioned::LIVE);
-            return $this->callCreateTemplate($page);
-        });
+        Injector::nest();
+        try {
+            Injector::inst()->load([Template::class => ['class' => NoAreaTemplate::class]]);
+            $threw = $this->callCreateTemplate($page);
+        } finally {
+            Injector::unnest();
+        }
 
         $this->assertInstanceOf(ValidationException::class, $threw);
         $this->assertStringContainsString('could not be given an elemental area', $threw->getMessage());
