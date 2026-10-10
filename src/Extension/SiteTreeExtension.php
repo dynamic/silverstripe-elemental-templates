@@ -253,6 +253,18 @@ class SiteTreeExtension extends Extension
 
             // Duplicate elements from the page's ElementalArea
             if ($page->hasMethod('ElementalArea') && $page->ElementalArea()->exists()) {
+                // The template's area is only created when it is written in Draft. Without one there is
+                // nowhere to copy the blocks to, and $elements->add() would be an uncaught Error (a 500,
+                // since cms-actions only catches Exception), so remove the empty template and refuse.
+                if ($elements === null) {
+                    $this->logAction(
+                        "CreateTemplate could not create an elemental area for template ID: {$template->ID}",
+                        "error"
+                    );
+                    // Template is Versioned: archive removes it from every stage, not just the current one.
+                    $template->doArchive();
+                    throw ValidationException::create('The template could not be given an elemental area.');
+                }
                 foreach ($page->ElementalArea()->Elements() as $element) {
                     $newElement = $element->duplicate();
                     $newElement->write();

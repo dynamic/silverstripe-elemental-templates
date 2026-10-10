@@ -17,6 +17,7 @@ use SilverStripe\Forms\Tab;
 use SilverStripe\Forms\TabSet;
 use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Control\Session;
+use SilverStripe\Security\Member;
 use SilverStripe\Versioned\Versioned;
 
 class SiteTreeExtensionTest extends SapphireTest
@@ -212,20 +213,81 @@ class SiteTreeExtensionTest extends SapphireTest
         $this->logInWithPermission(['CMS_ACCESS_CMSMain', 'ELEMENTAL_TEMPLATE_CREATE']);
         $this->assertTrue($page->canView(), 'Precondition: the member must be able to view the page.');
 
+        $sourceIDs = $page->ElementalArea()->Elements()->column('ID');
+        $sourceTitles = $page->ElementalArea()->Elements()->column('Title');
+        $this->assertNotEmpty($sourceIDs, 'Precondition: the page must have blocks to copy.');
+
         $before = Template::get()->count();
         $threw = $this->callCreateTemplate($page);
 
         $this->assertNull($threw, 'Unexpected refusal: ' . ($threw ? $threw->getMessage() : ''));
         $this->assertSame($before + 1, Template::get()->count(), 'A template should have been created.');
+
+        /** @var Template $template */
+        $template = Template::get()->sort('ID', 'DESC')->first();
+        $copies = $template->Elements()->Elements();
+        $this->assertSame($sourceTitles, $copies->column('Title'), 'The template must hold a copy of every block.');
+        $this->assertEmpty(
+            array_intersect($sourceIDs, $copies->column('ID')),
+            'The template must hold copies, not the page\'s own blocks.'
+        );
+        $this->assertSame(
+            $sourceIDs,
+            $page->ElementalArea()->Elements()->column('ID'),
+            'The source page must keep its blocks.'
+        );
+    }
+
+    /**
+     * Without a Draft stage the new template gets no elemental area. That used to be an uncaught Error
+     * (a 500) that left an empty template behind; it is now refused and the template removed.
+     */
+    public function testCreateTemplateRefusesAndCleansUpWhenTemplateHasNoArea()
+    {
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+        $page->publishRecursive();
+        $this->logInWithPermission('ADMIN');
+
+        $before = Template::get()->count();
+        $threw = Versioned::withVersionedMode(function () use ($page) {
+            Versioned::set_stage(Versioned::LIVE);
+            return $this->callCreateTemplate($page);
+        });
+
+        $this->assertInstanceOf(ValidationException::class, $threw);
+        $this->assertStringContainsString('could not be given an elemental area', $threw->getMessage());
+        $this->assertSame($before, Template::get()->count(), 'The empty template must be removed.');
+    }
+
+    /**
+     * The remaining refusal branches also throw, so cms-actions shows them as errors.
+     */
+    public function testCreateTemplateRefusesInvalidClassAndMissingPage()
+    {
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+        $this->logInWithPermission('ADMIN');
+
+        $before = Template::get()->count();
+
+        $threw = $this->callCreateTemplate($page, ['ID' => $page->ID, 'ClassName' => Member::class]);
+        $this->assertInstanceOf(ValidationException::class, $threw);
+        $this->assertStringContainsString('Invalid page class', $threw->getMessage());
+
+        $threw = $this->callCreateTemplate($page, ['ID' => 999999, 'ClassName' => SamplePage::class]);
+        $this->assertInstanceOf(ValidationException::class, $threw);
+        $this->assertStringContainsString('Page not found', $threw->getMessage());
+
+        $this->assertSame($before, Template::get()->count(), 'No template may be created.');
     }
 
     /**
      * Runs CreateTemplate() for a page inside a minimal controller, returning what it threw (or null).
      *
      * @param SamplePage $page
+     * @param array|null $data Posted data; defaults to the page's own ID and class.
      * @return \Throwable|null
      */
-    protected function callCreateTemplate(SamplePage $page): ?\Throwable
+    protected function callCreateTemplate(SamplePage $page, ?array $data = null): ?\Throwable
     {
         $extension = new SiteTreeExtension();
         $extension->setOwner($page);
@@ -238,7 +300,7 @@ class SiteTreeExtensionTest extends SapphireTest
         $controller->pushCurrent();
 
         $form = $this->createMock(Form::class);
-        $data = ['ID' => $page->ID, 'ClassName' => SamplePage::class];
+        $data ??= ['ID' => $page->ID, 'ClassName' => SamplePage::class];
 
         try {
             $extension->CreateTemplate($data, $form);

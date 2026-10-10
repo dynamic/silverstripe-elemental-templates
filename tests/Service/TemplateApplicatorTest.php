@@ -488,6 +488,17 @@ class TemplateApplicatorTest extends SapphireTest
             AltAreaSamplePage::get()->byID($record->ID),
             "The 'doArchive' method must not have been called on the record."
         );
+
+        // A real elemental relation other than the default still passes the check.
+        $templateElement = \DNADesign\Elemental\Models\ElementContent::create();
+        $templateElement->Title = 'Relation Guard Element';
+        $templateElement->ParentID = $templateArea->ID;
+        $templateElement->write();
+
+        $result = $applicator->applyTemplateToRelation($record, $template, 'ElementalHomePage');
+        $this->assertTrue($result['success'], 'ElementalHomePage must be accepted: ' . $result['message']);
+        $record->flushCache();
+        $this->assertSame(1, $record->ElementalHomePage()->Elements()->count());
     }
 
     /**

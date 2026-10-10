@@ -131,7 +131,8 @@ class TemplateApplicator
             }
         }
 
-        // Ensure the record supports elemental areas.
+        // Ensure the record supports elemental areas. An explicit name has already been checked
+        // above; this guards the resolved name, which can be the 'ElementalArea' fallback.
         if (!$record->hasMethod($relationName)) {
             $message = "Record ID {$record->ID} does not support elemental areas.";
             $logger->error($message);
