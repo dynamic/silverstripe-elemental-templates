@@ -71,7 +71,8 @@ class TemplateApplicator
      *
      * @param DataObject  $record       The record to apply the template to.
      * @param Template    $template     The template to apply.
-     * @param string|null $relationName The elemental area relation to write into. When null the
+     * @param string|null $relationName The elemental area relation to write into; it must be one
+     *                                  of $record->getElementalRelations(). When null the
      *                                  applicator targets the record's active area as determined
      *                                  by resolveAreaRelationName().
      * @return array Result of the operation with success status and messages.
@@ -117,9 +118,21 @@ class TemplateApplicator
                 }
             }
             $relationName = $this->resolveAreaRelationName($record);
+        } else {
+            // An explicit name is called as a method below, so it must be one of the record's
+            // elemental area relations, not just any method the record happens to have.
+            $elementalRelations = $record->hasMethod('getElementalRelations')
+                ? (array) $record->getElementalRelations()
+                : [];
+            if (!in_array($relationName, $elementalRelations, true)) {
+                $message = "'{$relationName}' is not an elemental area relation of record ID {$record->ID}.";
+                $logger->error($message);
+                return ['success' => false, 'message' => $message];
+            }
         }
 
-        // Ensure the record supports elemental areas.
+        // Ensure the record supports elemental areas. An explicit name has already been checked
+        // above; this guards the resolved name, which can be the 'ElementalArea' fallback.
         if (!$record->hasMethod($relationName)) {
             $message = "Record ID {$record->ID} does not support elemental areas.";
             $logger->error($message);

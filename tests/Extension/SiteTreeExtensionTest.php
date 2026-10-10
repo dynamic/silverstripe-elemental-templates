@@ -4,11 +4,13 @@ namespace Dynamic\ElementalTemplates\Tests\Extension;
 
 use Dynamic\ElementalTemplates\Extension\SiteTreeExtension;
 use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Tests\TestOnly\NoAreaTemplate;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
 use Dynamic\ElementalTemplates\Tests\TestOnly\TestTemplate;
 use LeKoala\CmsActions\CustomAction;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
@@ -17,6 +19,8 @@ use SilverStripe\Forms\Tab;
 use SilverStripe\Forms\TabSet;
 use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Control\Session;
+use SilverStripe\Security\Member;
+use SilverStripe\Versioned\Versioned;
 
 class SiteTreeExtensionTest extends SapphireTest
 {
@@ -28,6 +32,7 @@ class SiteTreeExtensionTest extends SapphireTest
     protected static $extra_dataobjects = [
         SamplePage::class,
         TestTemplate::class,
+        NoAreaTemplate::class,
     ];
 
     protected static $required_extensions = [
@@ -166,6 +171,133 @@ class SiteTreeExtensionTest extends SapphireTest
         $this->logInWithPermission('ELEMENTAL_TEMPLATE_CREATE');
         $this->assertFalse($page->canView(), 'Precondition: the member must not be able to view the page.');
 
+        $before = Template::get()->count();
+        $threw = $this->callCreateTemplate($page);
+
+        $this->assertInstanceOf(
+            ValidationException::class,
+            $threw,
+            'CreateTemplate() must refuse with a ValidationException, which cms-actions shows as an error.'
+        );
+        $this->assertStringContainsString('do not have permission', $threw->getMessage());
+        $this->assertSame($before, Template::get()->count(), 'No template may be created from an unseen page.');
+    }
+
+    /**
+     * The other half of the #104 check: a member who can see the page but may not create
+     * templates is refused, and nothing is created.
+     */
+    public function testCreateTemplateRefusesWhenMemberCannotCreateTemplates()
+    {
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+
+        $this->logInWithPermission('CMS_ACCESS_CMSMain');
+        $this->assertTrue($page->canView(), 'Precondition: the member must be able to view the page.');
+        $this->assertFalse(Template::singleton()->canCreate(), 'Precondition: the member must not create templates.');
+
+        $before = Template::get()->count();
+        $threw = $this->callCreateTemplate($page);
+
+        $this->assertInstanceOf(ValidationException::class, $threw);
+        $this->assertStringContainsString('do not have permission', $threw->getMessage());
+        $this->assertSame($before, Template::get()->count(), 'No template may be created without the permission.');
+    }
+
+    /**
+     * A non-admin member with both permissions gets a template, so the check is not over-restrictive.
+     */
+    public function testCreateTemplateSucceedsForMemberWithBothPermissions()
+    {
+        // The CMS edits in Draft, which is also the only stage where the new template's area is created.
+        Versioned::set_stage(Versioned::DRAFT);
+
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+
+        $this->logInWithPermission(['CMS_ACCESS_CMSMain', 'ELEMENTAL_TEMPLATE_CREATE']);
+        $this->assertTrue($page->canView(), 'Precondition: the member must be able to view the page.');
+
+        $sourceIDs = $page->ElementalArea()->Elements()->column('ID');
+        $sourceTitles = $page->ElementalArea()->Elements()->column('Title');
+        $this->assertNotEmpty($sourceIDs, 'Precondition: the page must have blocks to copy.');
+
+        $before = Template::get()->count();
+        $threw = $this->callCreateTemplate($page);
+
+        $this->assertNull($threw, 'Unexpected refusal: ' . ($threw ? $threw->getMessage() : ''));
+        $this->assertSame($before + 1, Template::get()->count(), 'A template should have been created.');
+
+        /** @var Template $template */
+        $template = Template::get()->sort('ID', 'DESC')->first();
+        $copies = $template->Elements()->Elements();
+        $this->assertSame($sourceTitles, $copies->column('Title'), 'The template must hold a copy of every block.');
+        $this->assertEmpty(
+            array_intersect($sourceIDs, $copies->column('ID')),
+            'The template must hold copies, not the page\'s own blocks.'
+        );
+        $this->assertSame(
+            $sourceIDs,
+            $page->ElementalArea()->Elements()->column('ID'),
+            'The source page must keep its blocks.'
+        );
+    }
+
+    /**
+     * A new template that could not be given an elemental area (for example, written outside Draft)
+     * used to hit an uncaught Error (a 500) and leave an empty template behind; it is now refused and
+     * the template removed. NoAreaTemplate forces the missing area so the test does not depend on
+     * which elemental version creates areas in which stage.
+     */
+    public function testCreateTemplateRefusesAndCleansUpWhenTemplateHasNoArea()
+    {
+        Versioned::set_stage(Versioned::DRAFT);
+
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+        $this->logInWithPermission('ADMIN');
+
+        $before = Template::get()->count();
+        Injector::nest();
+        try {
+            Injector::inst()->load([Template::class => ['class' => NoAreaTemplate::class]]);
+            $threw = $this->callCreateTemplate($page);
+        } finally {
+            Injector::unnest();
+        }
+
+        $this->assertInstanceOf(ValidationException::class, $threw);
+        $this->assertStringContainsString('could not be given an elemental area', $threw->getMessage());
+        $this->assertSame($before, Template::get()->count(), 'The empty template must be removed.');
+    }
+
+    /**
+     * The remaining refusal branches also throw, so cms-actions shows them as errors.
+     */
+    public function testCreateTemplateRefusesInvalidClassAndMissingPage()
+    {
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+        $this->logInWithPermission('ADMIN');
+
+        $before = Template::get()->count();
+
+        $threw = $this->callCreateTemplate($page, ['ID' => $page->ID, 'ClassName' => Member::class]);
+        $this->assertInstanceOf(ValidationException::class, $threw);
+        $this->assertStringContainsString('Invalid page class', $threw->getMessage());
+
+        $threw = $this->callCreateTemplate($page, ['ID' => 999999, 'ClassName' => SamplePage::class]);
+        $this->assertInstanceOf(ValidationException::class, $threw);
+        $this->assertStringContainsString('Page not found', $threw->getMessage());
+
+        $this->assertSame($before, Template::get()->count(), 'No template may be created.');
+    }
+
+    /**
+     * Runs CreateTemplate() for a page inside a minimal controller, returning what it threw (or null).
+     *
+     * @param SamplePage $page
+     * @param array|null $data Posted data; defaults to the page's own ID and class.
+     * @return \Throwable|null
+     */
+    protected function callCreateTemplate(SamplePage $page, ?array $data = null): ?\Throwable
+    {
         $extension = new SiteTreeExtension();
         $extension->setOwner($page);
 
@@ -176,29 +308,18 @@ class SiteTreeExtensionTest extends SapphireTest
         $controller->setRequest($request);
         $controller->pushCurrent();
 
-        $before = Template::get()->count();
-
         $form = $this->createMock(Form::class);
-        $form->expects($this->once())
-            ->method('sessionMessage')
-            ->with($this->stringContains('do not have permission'), $this->equalTo('bad'));
+        $data ??= ['ID' => $page->ID, 'ClassName' => SamplePage::class];
 
-        $data = ['ID' => $page->ID, 'ClassName' => SamplePage::class];
-
-        $threw = null;
         try {
             $extension->CreateTemplate($data, $form);
         } catch (\Throwable $e) {
-            $threw = $e;
+            return $e;
         } finally {
             $controller->popCurrent();
         }
 
-        $this->assertNull(
-            $threw,
-            'CreateTemplate() must refuse instead of proceeding with the copy: ' . ($threw ? $threw->getMessage() : '')
-        );
-        $this->assertSame($before, Template::get()->count(), 'No template may be created from an unseen page.');
+        return null;
     }
 
     /**

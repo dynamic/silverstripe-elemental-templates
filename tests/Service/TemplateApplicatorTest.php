@@ -456,6 +456,52 @@ class TemplateApplicatorTest extends SapphireTest
     }
 
     /**
+     * An explicit relation name is called as a method, so anything that is not one of the record's
+     * elemental area relations is refused before it is called: a has_one that is not an area, an
+     * unknown name, and a side-effecting method.
+     */
+    public function testApplyTemplateRefusesNonElementalRelationName()
+    {
+        Versioned::set_stage(Versioned::DRAFT);
+
+        $templateArea = ElementalArea::create();
+        $templateArea->write();
+
+        $template = Template::create();
+        $template->Title = 'Relation Guard Template';
+        $template->ElementsID = $templateArea->ID;
+        $template->write();
+
+        $record = AltAreaSamplePage::create();
+        $record->Title = 'Relation Guard Page';
+        $record->write();
+
+        $applicator = new TemplateApplicator();
+        foreach (['Parent', 'NoSuchRelation', 'doArchive'] as $relationName) {
+            $result = $applicator->applyTemplateToRelation($record, $template, $relationName);
+
+            $this->assertFalse($result['success'], "'{$relationName}' must be refused.");
+            $this->assertStringContainsString('is not an elemental area relation', $result['message']);
+        }
+
+        $this->assertNotNull(
+            AltAreaSamplePage::get()->byID($record->ID),
+            "The 'doArchive' method must not have been called on the record."
+        );
+
+        // A real elemental relation other than the default still passes the check.
+        $templateElement = \DNADesign\Elemental\Models\ElementContent::create();
+        $templateElement->Title = 'Relation Guard Element';
+        $templateElement->ParentID = $templateArea->ID;
+        $templateElement->write();
+
+        $result = $applicator->applyTemplateToRelation($record, $template, 'ElementalHomePage');
+        $this->assertTrue($result['success'], 'ElementalHomePage must be accepted: ' . $result['message']);
+        $record->flushCache();
+        $this->assertSame(1, $record->ElementalHomePage()->Elements()->count());
+    }
+
+    /**
      * A record whose conventional 'ElementalArea' relation does not exist at all must still resolve
      * to the area it really has - both before it is written (no CMS area field exists yet, because
      * ElementalAreasExtension::updateCMSFields() only builds one once the record is in the database)

@@ -206,6 +206,9 @@ class SiteTreeExtension extends Extension
      * Requires that the member may create templates at all and may view the source page:
      * the new template carries a copy of that page's blocks.
      *
+     * Failures throw instead of returning: cms-actions reports an action that returns nothing as
+     * "Action ... was done" with a success status, and turns an exception into an error message.
+     *
      * @param array $data
      * @param Form $form
      * @return void
@@ -219,9 +222,7 @@ class SiteTreeExtension extends Extension
         // Ensure the class exists and is a valid subclass of SiteTree
         if (!class_exists($className) || !is_subclass_of($className, \SilverStripe\CMS\Model\SiteTree::class)) {
             $this->logAction("Invalid page class: {$className}", "error");
-            $form->sessionMessage('Invalid page class.', 'bad');
-            Controller::curr()->redirectBack();
-            return;
+            throw ValidationException::create('Invalid page class.');
         }
 
         // Retrieve the page by ID
@@ -234,9 +235,7 @@ class SiteTreeExtension extends Extension
                     . "or view permission on page ID: {$pageID}",
                     "warning"
                 );
-                $form->sessionMessage('You do not have permission to create a template from this page.', 'bad');
-                Controller::curr()->redirectBack();
-                return;
+                throw ValidationException::create('You do not have permission to create a template from this page.');
             }
 
             $template = Template::create();
@@ -254,6 +253,18 @@ class SiteTreeExtension extends Extension
 
             // Duplicate elements from the page's ElementalArea
             if ($page->hasMethod('ElementalArea') && $page->ElementalArea()->exists()) {
+                // The template's area is only created when it is written in Draft. Without one there is
+                // nowhere to copy the blocks to, and $elements->add() would be an uncaught Error (a 500,
+                // since cms-actions only catches Exception), so remove the empty template and refuse.
+                if ($elements === null) {
+                    $this->logAction(
+                        "CreateTemplate could not create an elemental area for template ID: {$template->ID}",
+                        "error"
+                    );
+                    // Template is Versioned: archive removes it from every stage, not just the current one.
+                    $template->doArchive();
+                    throw ValidationException::create('The template could not be given an elemental area.');
+                }
                 foreach ($page->ElementalArea()->Elements() as $element) {
                     $newElement = $element->duplicate();
                     $newElement->write();
@@ -267,8 +278,7 @@ class SiteTreeExtension extends Extension
             Controller::curr()->redirect($template->CMSEditLink());
         } else {
             $this->logAction("Page not found with ID: {$pageID}", "error");
-            $form->sessionMessage('Page not found.', 'bad');
-            Controller::curr()->redirectBack();
+            throw ValidationException::create('Page not found.');
         }
     }
 
