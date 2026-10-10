@@ -17,6 +17,7 @@ use SilverStripe\Forms\Tab;
 use SilverStripe\Forms\TabSet;
 use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Control\Session;
+use SilverStripe\Versioned\Versioned;
 
 class SiteTreeExtensionTest extends SapphireTest
 {
@@ -166,6 +167,66 @@ class SiteTreeExtensionTest extends SapphireTest
         $this->logInWithPermission('ELEMENTAL_TEMPLATE_CREATE');
         $this->assertFalse($page->canView(), 'Precondition: the member must not be able to view the page.');
 
+        $before = Template::get()->count();
+        $threw = $this->callCreateTemplate($page);
+
+        $this->assertInstanceOf(
+            ValidationException::class,
+            $threw,
+            'CreateTemplate() must refuse with a ValidationException, which cms-actions shows as an error.'
+        );
+        $this->assertStringContainsString('do not have permission', $threw->getMessage());
+        $this->assertSame($before, Template::get()->count(), 'No template may be created from an unseen page.');
+    }
+
+    /**
+     * The other half of the #104 check: a member who can see the page but may not create
+     * templates is refused, and nothing is created.
+     */
+    public function testCreateTemplateRefusesWhenMemberCannotCreateTemplates()
+    {
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+
+        $this->logInWithPermission('CMS_ACCESS_CMSMain');
+        $this->assertTrue($page->canView(), 'Precondition: the member must be able to view the page.');
+        $this->assertFalse(Template::singleton()->canCreate(), 'Precondition: the member must not create templates.');
+
+        $before = Template::get()->count();
+        $threw = $this->callCreateTemplate($page);
+
+        $this->assertInstanceOf(ValidationException::class, $threw);
+        $this->assertStringContainsString('do not have permission', $threw->getMessage());
+        $this->assertSame($before, Template::get()->count(), 'No template may be created without the permission.');
+    }
+
+    /**
+     * A non-admin member with both permissions gets a template, so the check is not over-restrictive.
+     */
+    public function testCreateTemplateSucceedsForMemberWithBothPermissions()
+    {
+        // The CMS edits in Draft, which is also the only stage where the new template's area is created.
+        Versioned::set_stage(Versioned::DRAFT);
+
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+
+        $this->logInWithPermission(['CMS_ACCESS_CMSMain', 'ELEMENTAL_TEMPLATE_CREATE']);
+        $this->assertTrue($page->canView(), 'Precondition: the member must be able to view the page.');
+
+        $before = Template::get()->count();
+        $threw = $this->callCreateTemplate($page);
+
+        $this->assertNull($threw, 'Unexpected refusal: ' . ($threw ? $threw->getMessage() : ''));
+        $this->assertSame($before + 1, Template::get()->count(), 'A template should have been created.');
+    }
+
+    /**
+     * Runs CreateTemplate() for a page inside a minimal controller, returning what it threw (or null).
+     *
+     * @param SamplePage $page
+     * @return \Throwable|null
+     */
+    protected function callCreateTemplate(SamplePage $page): ?\Throwable
+    {
         $extension = new SiteTreeExtension();
         $extension->setOwner($page);
 
@@ -176,29 +237,18 @@ class SiteTreeExtensionTest extends SapphireTest
         $controller->setRequest($request);
         $controller->pushCurrent();
 
-        $before = Template::get()->count();
-
         $form = $this->createMock(Form::class);
-        $form->expects($this->once())
-            ->method('sessionMessage')
-            ->with($this->stringContains('do not have permission'), $this->equalTo('bad'));
-
         $data = ['ID' => $page->ID, 'ClassName' => SamplePage::class];
 
-        $threw = null;
         try {
             $extension->CreateTemplate($data, $form);
         } catch (\Throwable $e) {
-            $threw = $e;
+            return $e;
         } finally {
             $controller->popCurrent();
         }
 
-        $this->assertNull(
-            $threw,
-            'CreateTemplate() must refuse instead of proceeding with the copy: ' . ($threw ? $threw->getMessage() : '')
-        );
-        $this->assertSame($before, Template::get()->count(), 'No template may be created from an unseen page.');
+        return null;
     }
 
     /**
