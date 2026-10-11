@@ -4,7 +4,7 @@
         <!-- Build the manifest and config caches in memory for the test process, so a config cache
              written by `sake dev/build` (from a class manifest without TestOnly classes) cannot be
              reused here. Required by the TestOnly fixtures in tests/TestOnly; see #146. -->
-        <env name="SS_MANIFESTCACHE" value="Dynamic\ElementalTemplates\Tests\Dev\InMemoryManifestCacheFactory"/>
+        <env name="SS_MANIFESTCACHE" value="Dynamic\ElementalTemplates\Tests\Dev\InMemoryManifestCacheFactory" force="true"/>
     </php>
     <coverage includeUncoveredFiles="true">
         <include>

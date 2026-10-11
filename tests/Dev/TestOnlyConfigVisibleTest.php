@@ -23,7 +23,9 @@ use SilverStripe\ORM\DataObjectSchema;
  *
  * This test asserts the declared config is visible to the running kernel, so a test run that reuses a
  * tests-excluded config cache fails here, loudly, instead of failing somewhere else for a confusing
- * reason. It needs no database: it reads config, not records.
+ * reason. It declares `$usesDatabase = false`, so no temp database or fixtures are built; note that it
+ * still needs a reachable database connection, because `DataObjectSchema::tableName()` passes the name
+ * through `Convert::raw2sql()`, which escapes via the active DB connector.
  */
 class TestOnlyConfigVisibleTest extends SapphireTest
 {
