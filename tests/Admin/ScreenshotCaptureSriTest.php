@@ -100,11 +100,15 @@ class ScreenshotCaptureSriTest extends SapphireTest
     }
 
     /**
-     * The pinned hash must belong to the file the tag actually loads.
+     * The digest must be well formed, and must be paired with the version it was computed for.
      *
-     * `integrity` is useless if it was computed for a different resource than `src`, so both
-     * are asserted together, and the hash is validated as a well-formed sha384 digest rather
-     * than a truncated or mistyped literal.
+     * Nothing here can hash the CDN bytes (a test must not reach the network), so what this
+     * pins is the pairing: the `src` is asserted to still be the 1.4.1 URL this constant was
+     * computed from, and the literal is validated as a strict-base64 sha384 digest of the right
+     * length rather than a truncated or mistyped string. `integrity` is useless if it was
+     * computed for a different resource than `src`, so raising the html2canvas version means
+     * recomputing EXPECTED_INTEGRITY from the new file - both constants change together or this
+     * test fails.
      */
     public function testIntegrityMatchesThePinnedSourceAndIsAWellFormedSha384Digest(): void
     {
@@ -140,28 +144,50 @@ class ScreenshotCaptureSriTest extends SapphireTest
     }
 
     /**
-     * Nothing may load html2canvas from a CDN without going through the pinned tag.
+     * No remote resource other than the pinned html2canvas URL may be referenced, and nothing
+     * may be pulled in through a dynamic import().
      *
-     * A second, unguarded injection point would reintroduce the vulnerability while this
-     * file's own tag still passes the tests above.
+     * A second, unguarded injection point would reintroduce the vulnerability while this file's
+     * own pinned tag still passed the tests above. The match is deliberately wider than
+     * ".js": absolute, protocol-relative (`//host/…`), and query-string-carrying URLs are all
+     * caught, as is any `import()`/`require()` of a quoted module, because those are the shapes
+     * that slip past a narrow `\.js$` pattern. Adding a legitimate second remote later means
+     * updating this test on purpose, alongside the pin it has to carry.
      */
-    public function testNoOtherCdnScriptIsInjectedUnguarded(): void
+    public function testNoOtherRemoteScriptIsInjectedUnguarded(): void
     {
         $source = $this->getScriptSource();
 
         $matches = [];
         preg_match_all(
-            '/(?:\.src\s*=\s*)?[\'"](https?:\/\/[^\'"]+\.js)[\'"]/U',
+            '/[\'"]((?:https?:)?\/\/[^\'"\s]+)[\'"]/',
             $source,
             $matches
         );
 
         foreach ($matches[1] as $url) {
+            $normalised = str_starts_with($url, '//') ? 'https:' . $url : $url;
             $this->assertSame(
                 self::EXPECTED_SRC,
-                $url,
-                'Every remote script referenced by screenshot-capture.js must be the pinned html2canvas URL'
+                $normalised,
+                'Every remote resource referenced by screenshot-capture.js must be the pinned '
+                . 'html2canvas URL; found an unpinned reference to ' . $url
             );
         }
+
+        $this->assertMatchesRegularExpression(
+            '/[\'"](?:https?:)?\/\/[^\'"\s]+[\'"]/',
+            $source,
+            'screenshot-capture.js is expected to reference the pinned html2canvas URL; if that '
+            . 'changed, EXPECTED_SRC/EXPECTED_INTEGRITY in this test need recomputing together'
+        );
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/\b(?:import|require)\s*\(\s*[\'"][^\'"]+[\'"]\s*\)/',
+            $source,
+            'screenshot-capture.js must not load code through a dynamic import()/require() of a '
+            . 'quoted module: an inline CDN tag with an integrity attribute is the only remote '
+            . 'code this module may load, and a dynamic import carries no pin'
+        );
     }
 }
