@@ -14,6 +14,7 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\Security\Member;
+use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
@@ -570,11 +571,7 @@ class Template extends DataObject implements PermissionProvider
      */
     public function canCreate($member = null, $context = []): bool
     {
-        if ($member === null) {
-            $member = $this->getUser();
-        }
-
-        if ($member->can('ELEMENTAL_TEMPLATE_CREATE')) {
+        if (Permission::checkMember($member, 'ELEMENTAL_TEMPLATE_CREATE')) {
             return true;
         }
 
@@ -587,11 +584,7 @@ class Template extends DataObject implements PermissionProvider
      */
     public function canEdit($member = null): bool
     {
-        if ($member === null) {
-            $member = $this->getUser();
-        }
-
-        if ($member->can('ELEMENTAL_TEMPLATE_EDIT')) {
+        if (Permission::checkMember($member, 'ELEMENTAL_TEMPLATE_EDIT')) {
             return true;
         }
 
@@ -604,11 +597,7 @@ class Template extends DataObject implements PermissionProvider
      */
     public function canDelete($member = null): bool
     {
-        if ($member === null) {
-            $member = $this->getUser();
-        }
-
-        if ($member->can('ELEMENTAL_TEMPLATE_DELETE')) {
+        if (Permission::checkMember($member, 'ELEMENTAL_TEMPLATE_DELETE')) {
             return true;
         }
 
@@ -621,11 +610,7 @@ class Template extends DataObject implements PermissionProvider
      */
     public function canArchive($member = null): bool
     {
-        if ($member === null) {
-            $member = $this->getUser();
-        }
-
-        if ($member->can('ELEMENTAL_TEMPLATE_DELETE')) {
+        if (Permission::checkMember($member, 'ELEMENTAL_TEMPLATE_DELETE')) {
             return true;
         }
 
@@ -642,6 +627,10 @@ class Template extends DataObject implements PermissionProvider
     }
 
     /**
+     * Kept as a protected helper for subclasses; the can* checks no longer need it now
+     * that they go through Permission::checkMember(), which is null-safe and resolves the
+     * current user itself when no member is passed.
+     *
      * @return Member|null
      */
     protected function getUser(): ?Member
