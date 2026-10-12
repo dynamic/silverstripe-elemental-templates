@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="vendor/silverstripe/cms/tests/bootstrap.php" colors="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
+    <php>
+        <!-- Build the manifest and config caches in memory for the test process, so a config cache
+             written by `sake dev/build` (from a class manifest without TestOnly classes) cannot be
+             reused here. Required by the TestOnly fixtures in tests/TestOnly; see #146. -->
+        <env name="SS_MANIFESTCACHE" value="Dynamic\ElementalTemplates\Tests\Dev\InMemoryManifestCacheFactory" force="true"/>
+    </php>
     <coverage includeUncoveredFiles="true">
         <include>
             <directory suffix=".php">src/</directory>
