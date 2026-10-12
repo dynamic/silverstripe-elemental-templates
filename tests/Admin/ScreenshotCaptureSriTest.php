@@ -2,7 +2,7 @@
 
 namespace Dynamic\ElementalTemplates\Tests\Admin;
 
-use SilverStripe\Dev\SapphireTest;
+use PHPUnit\Framework\TestCase;
 
 /**
  * The admin screenshot capture script injects html2canvas from a CDN at runtime, inside the
@@ -16,9 +16,13 @@ use SilverStripe\Dev\SapphireTest;
  * separate constant rather than read back out of the file, so a rewrite of either side is
  * caught; it is the sha384 of the cdnjs html2canvas 1.4.1 file that `src` points at.
  *
+ * Extends plain TestCase rather than SapphireTest on purpose: nothing here touches the
+ * SilverStripe kernel or the database, so a green run of this file does not depend on MySQL
+ * being reachable.
+ *
  * @see https://github.com/dynamic/silverstripe-elemental-templates/issues/100
  */
-class ScreenshotCaptureSriTest extends SapphireTest
+class ScreenshotCaptureSriTest extends TestCase
 {
     /**
      * sha384 of https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js
@@ -29,8 +33,6 @@ class ScreenshotCaptureSriTest extends SapphireTest
      * The CDN script this module loads, kept in sync with the version pinned in `src`.
      */
     private const EXPECTED_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-
-    protected $usesDatabase = false;
 
     /**
      * Returns the raw text of the shipped capture script.
@@ -150,9 +152,10 @@ class ScreenshotCaptureSriTest extends SapphireTest
      * A second, unguarded injection point would reintroduce the vulnerability while this file's
      * own pinned tag still passed the tests above. The match is deliberately wider than
      * ".js": absolute, protocol-relative (`//host/…`), and query-string-carrying URLs are all
-     * caught, as is any `import()`/`require()` of a quoted module, because those are the shapes
-     * that slip past a narrow `\.js$` pattern. Adding a legitimate second remote later means
-     * updating this test on purpose, alongside the pin it has to carry.
+     * caught, in single quotes, double quotes or a backtick template literal, as is any
+     * `import()`/`require()` of a quoted module - those are the shapes that slip past a narrow
+     * `\.js$` pattern. Adding a legitimate second remote later means updating this test on
+     * purpose, alongside the pin it has to carry.
      */
     public function testNoOtherRemoteScriptIsInjectedUnguarded(): void
     {
@@ -160,7 +163,7 @@ class ScreenshotCaptureSriTest extends SapphireTest
 
         $matches = [];
         preg_match_all(
-            '/[\'"]((?:https?:)?\/\/[^\'"\s]+)[\'"]/',
+            '/[`\'"]((?:https?:)?\/\/[^`\'"\s]+)[`\'"]/',
             $source,
             $matches
         );
@@ -176,7 +179,7 @@ class ScreenshotCaptureSriTest extends SapphireTest
         }
 
         $this->assertMatchesRegularExpression(
-            '/[\'"](?:https?:)?\/\/[^\'"\s]+[\'"]/',
+            '/[`\'"](?:https?:)?\/\/[^`\'"\s]+[`\'"]/',
             $source,
             'screenshot-capture.js is expected to reference the pinned html2canvas URL; if that '
             . 'changed, EXPECTED_SRC/EXPECTED_INTEGRITY in this test need recomputing together'
