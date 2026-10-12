@@ -17,6 +17,12 @@
 
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            // Subresource Integrity: the script runs in the CMS admin with the editor's
+            // session, so only the exact cdnjs 1.4.1 bytes may execute. crossOrigin must
+            // be set alongside integrity or the browser fetches without CORS and the
+            // integrity check cannot be performed (the load fails instead).
+            script.integrity = 'sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H';
+            script.crossOrigin = 'anonymous';
             script.onload = () => resolve(window.html2canvas);
             script.onerror = () => reject(new Error('Failed to load html2canvas'));
             document.head.appendChild(script);
