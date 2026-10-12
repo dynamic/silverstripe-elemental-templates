@@ -313,4 +313,96 @@ class TemplateTest extends SapphireTest
         $template = $this->objFromFixture(Template::class, 'templateone');
         $this->assertFalse($template->canDelete());
     }
+
+    /**
+     * Regression test for issue #101: with nobody logged in the four can* checks used to
+     * run Member::can() on null and fatal with "Call to a member function can() on null".
+     * They must each answer false instead.
+     *
+     * @return void
+     */
+    public function testCanChecksReturnFalseWithNoLoggedInMember(): void
+    {
+        $this->logOut();
+        $this->assertNull(Security::getCurrentUser());
+
+        $template = $this->objFromFixture(Template::class, 'templateone');
+
+        $this->assertFalse($template->canCreate());
+        $this->assertFalse($template->canEdit());
+        $this->assertFalse($template->canDelete());
+        $this->assertFalse($template->canArchive());
+    }
+
+    /**
+     * Regression test for issue #101: canEdit() used to ask Member::can(), which resolves
+     * the permission against the *current* user. With an ADMIN logged in that made
+     * canEdit($memberWithoutTemplatePermissions) true even though that member holds nothing.
+     *
+     * @return void
+     */
+    public function testCanEditEvaluatesThePassedMemberWhileAdminIsLoggedIn(): void
+    {
+        $this->logInWithPermission('ADMIN');
+
+        $plainMember = $this->objFromFixture(Member::class, 'userWithoutCreatePermission');
+        $template = $this->objFromFixture(Template::class, 'templateone');
+
+        $this->assertFalse($template->canEdit($plainMember));
+    }
+
+    /**
+     * The mirror case of testCanEditEvaluatesThePassedMemberWhileAdminIsLoggedIn: with an
+     * ordinary user logged in, canEdit($memberWithELEMENTAL_TEMPLATE_EDIT) used to be false
+     * because Member::can() ignored the member it was called on.
+     *
+     * @return void
+     */
+    public function testCanEditEvaluatesThePassedMemberWhileOrdinaryUserIsLoggedIn(): void
+    {
+        $editorMember = $this->objFromFixture(Member::class, 'userWithCreatePermission');
+        $plainMember = $this->objFromFixture(Member::class, 'userWithoutCreatePermission');
+        $this->logInAs($plainMember);
+
+        $template = $this->objFromFixture(Template::class, 'templateone');
+
+        $this->assertTrue($template->canEdit($editorMember));
+    }
+
+    /**
+     * The remaining can* checks resolve the passed member the same way canEdit() does.
+     *
+     * @return void
+     */
+    public function testCanCreateDeleteAndArchiveEvaluateThePassedMember(): void
+    {
+        $editorMember = $this->objFromFixture(Member::class, 'userWithCreatePermission');
+        $plainMember = $this->objFromFixture(Member::class, 'userWithoutCreatePermission');
+        $this->logInAs($plainMember);
+
+        $template = $this->objFromFixture(Template::class, 'templateone');
+
+        $this->assertTrue($template->canCreate($editorMember));
+        $this->assertTrue($template->canDelete($editorMember));
+        $this->assertTrue($template->canArchive($editorMember));
+
+        $this->assertFalse($template->canCreate($plainMember));
+        $this->assertFalse($template->canDelete($plainMember));
+        $this->assertFalse($template->canArchive($plainMember));
+    }
+
+    /**
+     * canView() stays unrestricted on purpose: template previews rely on it, and it must
+     * not start throwing for a logged-out visitor either.
+     *
+     * @return void
+     */
+    public function testCanViewStaysTrueWithNoLoggedInMember(): void
+    {
+        $this->logOut();
+
+        $template = $this->objFromFixture(Template::class, 'templateone');
+
+        $this->assertTrue($template->canView());
+    }
 }
