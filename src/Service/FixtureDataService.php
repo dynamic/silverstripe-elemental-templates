@@ -9,6 +9,8 @@ use SilverStripe\Assets\File;
 use SilverStripe\Assets\FileNameFilter;
 use SilverStripe\Assets\Image;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\DataList;
+use SilverStripe\Assets\Storage\DefaultAssetNameGenerator;
 use Symfony\Component\Yaml\Yaml;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Config;
@@ -234,6 +236,10 @@ class FixtureDataService
             $relatedIsFile = is_a($relatedClassName, File::class, true);
             $query = DataObject::get($relatedClassName);
             $filtersApplied = 0;
+            // Exact asset paths the fixture's Folder/Filename pair can be stored under. Non-empty
+            // only for the Filename branch below, which filters loosely in SQL (see there) and so
+            // needs its matches confirmed in PHP.
+            $assetCandidates = [];
             foreach ($duplicateCheckFields as $field) {
                 if (!isset($data[$field])) {
                     continue;
@@ -242,8 +248,14 @@ class FixtureDataService
                 if ($relatedIsFile && $field === 'Filename' && !$relatedClassName::singleton()->hasDatabaseField('Filename')) {
                     $assetPaths = $this->assetPathCandidates((string)($data['Folder'] ?? ''), (string)$data['Filename']);
                     if (!empty($assetPaths)) {
-                        $query = $query->filter('FileFilename', $assetPaths);
+                        // File::onBeforeWrite() renames a file whose Name/ParentID pair is already
+                        // taken to "<name>-v2.<ext>", so a second fixture sharing a Filename is
+                        // stored somewhere the fixture's own key never spells out. Filtering the
+                        // folder plus the un-suffixed stem finds those records; the -vN suffix (and
+                        // the LIKE wildcards a filtered name can contain) is settled in PHP below.
+                        $query = $query->filter('FileFilename:StartsWith', $this->assetPathPrefix($assetPaths));
                         $filtersApplied++;
+                        $assetCandidates = $assetPaths;
                     }
                     continue;
                 }
@@ -257,10 +269,20 @@ class FixtureDataService
             if ($filtersApplied === 0) {
                 // None of the requested DuplicateCheck fields is present in the fixture data, so the
                 // query carries no filter and would match an arbitrary record of this class.
-                $logger->warning("DuplicateCheck for $relatedClassName named no field present in the fixture data; skipping the lookup.");
+                $requested = implode(', ', array_map('strval', (array)$duplicateCheckFields));
+                $logger->warning(
+                    "DuplicateCheck for $relatedClassName named no field present in the fixture data"
+                    . " (requested: $requested); skipping the lookup."
+                );
             }
 
-            $existingRecord = $filtersApplied > 0 ? $query->first() : null;
+            if ($filtersApplied === 0) {
+                $existingRecord = null;
+            } elseif ($assetCandidates !== []) {
+                $existingRecord = $this->selectAssetRecord($query, $assetCandidates, $relatedClassName);
+            } else {
+                $existingRecord = $query->first();
+            }
 
             if ($existingRecord) {
                 // $logger->debug("Found existing record for $relatedClassName with matching fields: " . json_encode($duplicateCheckFields));
@@ -269,7 +291,10 @@ class FixtureDataService
                     // Return the existing file untouched: update($data) would push the fixture's
                     // folder-less Filename through File::setFilename(), which resets ParentID to
                     // 0 and moves a shared image out of its folder.
-                    // $logger->debug("Reusing existing file for $relatedClassName with ID: " . $existingRecord->ID);
+                    $logger->info(
+                        "Reusing existing file for $relatedClassName with ID: " . $existingRecord->ID
+                        . " (path: " . $existingRecord->getField('FileFilename') . ")"
+                    );
 
                     return $existingRecord;
                 }
@@ -495,6 +520,104 @@ class FixtureDataService
         $segments = array_values(array_filter(explode('/', $path), fn ($segment) => $segment !== ''));
 
         return implode('/', array_map(fn ($segment) => $filter->filter($segment), $segments));
+    }
+
+    /**
+     * The prefix every candidate path starts with: its folder plus the file name without the
+     * extension. DefaultAssetNameGenerator appends "-v<version>" to that stem (before the
+     * extension) when a name is taken, so a prefix built this way still matches the renamed file.
+     * All candidates for one fixture differ only in their extension, so the first one is enough.
+     *
+     * @param string[] $candidates
+     */
+    private function assetPathPrefix(array $candidates): string
+    {
+        $path = (string)reset($candidates);
+        $name = basename($path);
+        // The generator splits the extension at the FIRST period, unlike pathinfo().
+        $position = strpos($name, '.');
+        if ($position === false) {
+            return $path;
+        }
+
+        $folder = trim(dirname($path), '.');
+
+        return ($folder === '' ? '' : $folder . '/') . substr($name, 0, $position);
+    }
+
+    /**
+     * Pick the record a fixture's Filename branch really refers to.
+     *
+     * The SQL filter is a prefix match (and LIKE treats "_" and "%" as wildcards, which a filtered
+     * file name can contain), so every candidate it returns is confirmed here: its stored path,
+     * minus any name-generator version suffix, has to be one of the fixture's own candidate paths.
+     * The un-suffixed match wins over a versioned one, so a fixture gets the plain path back for
+     * as long as that path exists.
+     *
+     * @param DataList $list     The filtered lookup, already narrowed to this fixture's folder and stem
+     * @param string[] $candidates Exact paths the fixture's Folder/Filename pair can be stored under
+     */
+    private function selectAssetRecord(DataList $list, array $candidates, string $className): ?DataObject
+    {
+        $best = null;
+        $bestVersion = 0;
+
+        foreach ($list as $record) {
+            [$normalised, $version] = $this->splitAssetVersionSuffix((string)$record->getField('FileFilename'));
+
+            if (!in_array($normalised, $candidates, true)) {
+                continue;
+            }
+
+            if ($version > 0 && !$this->assetPathIsOccupied($className, $normalised)) {
+                // Nothing sits at the un-suffixed path, so this file was never renamed by the name
+                // generator: its "-vN" is part of its own name and belongs to a different fixture.
+                continue;
+            }
+
+            if ($best === null || $version < $bestVersion) {
+                $best = $record;
+                $bestVersion = $version;
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * Split a stored asset path into the path it would have had without the name generator's
+     * version suffix, plus that version (0 when there is none). Mirrors how
+     * DefaultAssetNameGenerator builds "<name><version prefix><version><extension>"; the prefix is
+     * configurable, so it is read from there rather than assumed.
+     *
+     * @return array{0: string, 1: int}
+     */
+    private function splitAssetVersionSuffix(string $path): array
+    {
+        $path = trim((string)preg_replace('#[/\\\\]+#', '/', $path), '/');
+        $name = basename($path);
+        $position = strpos($name, '.');
+        $extension = $position === false ? '' : substr($name, $position);
+        $stem = $position === false ? $name : substr($name, 0, $position);
+        $versionPrefix = (string)Config::inst()->get(DefaultAssetNameGenerator::class, 'version_prefix');
+
+        if ($versionPrefix === '' || !preg_match('/^(.+?)' . preg_quote($versionPrefix, '/') . '([0-9]+)$/', $stem, $matches)) {
+            return [$path, 0];
+        }
+
+        $folder = trim(dirname($path), '.');
+        $normalised = ($folder === '' ? '' : $folder . '/') . $matches[1] . $extension;
+
+        return [$normalised, (int)$matches[2]];
+    }
+
+    /**
+     * Whether a record of this class already occupies an asset path - the signal that a file
+     * carrying a version suffix really is the name generator's doing.
+     */
+    private function assetPathIsOccupied(string $className, string $path): bool
+    {
+        return DataObject::get($className)->filter('FileFilename', $path)->exists();
     }
 
     /**

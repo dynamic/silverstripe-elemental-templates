@@ -639,6 +639,199 @@ class FixtureDataServiceTest extends SapphireTest
         }
     }
 
+    /**
+     * Two fixtures that share a Folder/Filename pair but differ in another checked field: the name
+     * generator renames the second file to "<name>-v2.<ext>", so the second record is stored under
+     * a path the fixture's own key never spells out and the next run's lookup found neither of them
+     * - every run added another copy (#113 item 3).
+     */
+    public function testImageDuplicateCheckReusesVersionedFileAfterNameCollision(): void
+    {
+        $service = new FixtureDataService();
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+
+        $fixture = function (string $title) use ($populateFileFrom): array {
+            return [
+                'Title' => $title,
+                'PopulateFileFrom' => $populateFileFrom,
+                'Filename' => 'shared-name.png',
+                'Folder' => 'VersionedTest',
+                'DuplicateCheck' => ['Title', 'Filename'],
+            ];
+        };
+
+        $firstA = $service->createRelatedObject(Image::class, $fixture('First fixture'));
+        $this->assertNotNull($firstA, 'The first fixture should create an image.');
+        $this->assertSame(
+            'VersionedTest/shared-name.png',
+            $firstA->getFilename(),
+            'The first fixture is stored under the path it asked for.'
+        );
+
+        $firstB = $service->createRelatedObject(Image::class, $fixture('Second fixture'));
+        $this->assertNotNull($firstB, 'A fixture with a different Title is a different image.');
+        $this->assertNotSame(
+            $firstA->ID,
+            $firstB->ID,
+            'The second fixture must not be handed the first fixture\'s image.'
+        );
+        $this->assertSame(
+            'shared-name-v2.png',
+            $firstB->getField('Name'),
+            'File::onBeforeWrite() renames the colliding file, which is what the lookup has to allow for.'
+        );
+
+        // File::updateFilesystem() then copies the bytes to that name against a real AssetStore and
+        // points FileFilename at it. TestAssetStore's back end reports no public-path conflict, so
+        // it leaves the column on the old path; applying the rename here puts the record in the
+        // state the lookup under test actually reads.
+        $firstB->setField('FileFilename', 'VersionedTest/shared-name-v2.png');
+        $firstB->write();
+        $firstB->flushCache();
+        $firstB = Image::get()->byID((int)$firstB->ID);
+        $this->assertSame('VersionedTest/shared-name-v2.png', $firstB->getFilename());
+
+        // Second run of the same two fixtures: neither may add another record.
+        $secondA = $service->createRelatedObject(Image::class, $fixture('First fixture'));
+        $secondB = $service->createRelatedObject(Image::class, $fixture('Second fixture'));
+
+        $this->assertNotNull($secondA);
+        $this->assertNotNull($secondB);
+        $this->assertSame($firstA->ID, $secondA->ID, 'The fixture holding the plain path is found again.');
+        $this->assertSame(
+            $firstB->ID,
+            $secondB->ID,
+            'The fixture stored under the versioned name has to be found again, or every run adds a copy.'
+        );
+        $this->assertSame(2, Image::get()->count(), 'Re-running the fixtures must not add another copy.');
+
+        $reused = Image::get()->byID((int)$secondB->ID);
+        $this->assertNotNull($reused);
+        $this->assertSame(
+            'VersionedTest/shared-name-v2.png',
+            $reused->getFilename(),
+            'Reusing the versioned file must not rename or move it.'
+        );
+    }
+
+    /**
+     * The Filename branch has to be what decides a match: with only Filename checked, Title plays
+     * no part, so a lookup that filtered nothing would create a new image on every run.
+     */
+    public function testImageDuplicateCheckOnFilenameOnlyReusesImage(): void
+    {
+        $service = new FixtureDataService();
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+
+        $data = [
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'filename-only.png',
+            'Folder' => 'Placeholder',
+            'DuplicateCheck' => ['Filename'],
+        ];
+
+        $first = $service->createRelatedObject(Image::class, $data);
+        $this->assertNotNull($first, 'The first call should create an image.');
+        $this->assertSame('Placeholder/filename-only.png', $first->getFilename());
+
+        $second = $service->createRelatedObject(Image::class, $data);
+        $this->assertNotNull($second);
+        $this->assertSame(
+            $first->ID,
+            $second->ID,
+            'Filename alone has to be enough to reuse the image.'
+        );
+        $this->assertSame(1, Image::get()->count(), 'Only one image should exist for this fixture.');
+    }
+
+    /**
+     * The negative side of the same lookup: a shared Title must not be enough to match. A different
+     * Folder, or a different Filename, is a different file and has to become a new record.
+     */
+    public function testImageDuplicateCheckDoesNotMatchSameTitleInAnotherFolder(): void
+    {
+        $service = new FixtureDataService();
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $title = 'Shared title across folders';
+
+        $data = function (string $folder, string $filename) use ($populateFileFrom, $title): array {
+            return [
+                'Title' => $title,
+                'PopulateFileFrom' => $populateFileFrom,
+                'Filename' => $filename,
+                'Folder' => $folder,
+                'DuplicateCheck' => ['Title', 'Filename'],
+            ];
+        };
+
+        $inAlpha = $service->createRelatedObject(Image::class, $data('AlphaTest', 'shared.png'));
+        $inBeta = $service->createRelatedObject(Image::class, $data('BetaTest', 'shared.png'));
+        $otherName = $service->createRelatedObject(Image::class, $data('AlphaTest', 'other.png'));
+
+        $this->assertNotNull($inAlpha);
+        $this->assertNotNull($inBeta);
+        $this->assertNotNull($otherName);
+        $this->assertNotSame(
+            $inAlpha->ID,
+            $inBeta->ID,
+            'The same Title in another folder is a different file, so it must not be reused.'
+        );
+        $this->assertNotSame(
+            $inAlpha->ID,
+            $otherName->ID,
+            'The same Title with another Filename is a different file, so it must not be reused.'
+        );
+        $this->assertSame('AlphaTest/shared.png', $inAlpha->getFilename());
+        $this->assertSame('BetaTest/shared.png', $inBeta->getFilename());
+        $this->assertSame('AlphaTest/other.png', $otherName->getFilename());
+        $this->assertSame(3, Image::get()->count(), 'Three different files means three records.');
+    }
+
+    /**
+     * Guard on the version-suffix tolerance: a file whose own name ends in "-v2" is not the name
+     * generator's doing while nothing occupies the un-suffixed path, so a fixture for that path
+     * must not be handed it.
+     */
+    public function testImageDuplicateCheckDoesNotMatchUnrelatedVersionedName(): void
+    {
+        $service = new FixtureDataService();
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+
+        $versioned = $service->createRelatedObject(Image::class, [
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'genuine-name-v2.png',
+            'Folder' => 'VersionGuardTest',
+            'DuplicateCheck' => ['Filename'],
+        ]);
+        $this->assertNotNull($versioned, 'The versioned-looking name should be created.');
+        $this->assertSame(
+            'VersionGuardTest/genuine-name-v2.png',
+            $versioned->getFilename(),
+            'Nothing occupies the plain path, so the name generator leaves this name alone.'
+        );
+
+        $plainData = [
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'genuine-name.png',
+            'Folder' => 'VersionGuardTest',
+            'DuplicateCheck' => ['Filename'],
+        ];
+
+        $plain = $service->createRelatedObject(Image::class, $plainData);
+        $this->assertNotNull($plain, 'A fixture for the un-suffixed name must still get its own file.');
+        $this->assertNotSame(
+            $versioned->ID,
+            $plain->ID,
+            'A file that was never renamed is not this fixture\'s image.'
+        );
+        $this->assertSame('VersionGuardTest/genuine-name.png', $plain->getFilename());
+
+        $again = $service->createRelatedObject(Image::class, $plainData);
+        $this->assertNotNull($again);
+        $this->assertSame($plain->ID, $again->ID, 'The plain path is found again on the next run.');
+        $this->assertSame(2, Image::get()->count(), 'Two files means two records.');
+    }
+
     public function testDuplicateCheck(): void
     {
         $service = new FixtureDataService();
