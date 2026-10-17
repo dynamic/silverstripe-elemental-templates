@@ -347,6 +347,8 @@ class FixtureDataServiceTest extends SapphireTest
         // TestAssetStore basedir: ASSETS_PATH is where the old file_put_contents() wrote, and
         // that is the write this test is about.
         $publicPath = ASSETS_PATH . '/ImportTest/remote-dup.png';
+        $publicFolder = dirname($publicPath ?? '');
+        $publicFolderPreExisted = is_dir($publicFolder ?? '');
 
         try {
             $tempFilesBefore = $this->listStagedTempFiles();
@@ -393,6 +395,11 @@ class FixtureDataServiceTest extends SapphireTest
             @unlink($firstSource);
             @unlink($secondSource);
             @unlink($publicPath);
+            if (!$publicFolderPreExisted) {
+                // The folder this test mkdir'ed is not its to keep: leaving it behind puts an empty
+                // folder in the project's real assets path, which is what this branch stops doing.
+                @rmdir($publicFolder ?? '');
+            }
         }
     }
 
@@ -563,6 +570,29 @@ class FixtureDataServiceTest extends SapphireTest
         } finally {
             @unlink($source);
         }
+    }
+
+    /**
+     * The same extension question on the local branch, answered with the behaviour the code really
+     * has: an extension-less Filename never becomes a record at all, because Image refuses a name
+     * with no extension. That is why the duplicate lookup does not need the raw path as a candidate
+     * (it is unchanged from before this branch - the module has always refused this input).
+     */
+    public function testCreateImageFromFileRejectsExtensionlessFilename(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+
+        $image = $service->createImageFromFile([
+            'Title' => 'Extensionless local',
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'no-extension-local',
+            'Folder' => 'NoExtTest',
+        ]);
+
+        $this->assertNull($image, 'An image with no extension cannot be written, so nothing is created.');
+        $this->assertSame(0, Image::get()->count(), 'A refused image must not leave a record behind.');
     }
 
     /**

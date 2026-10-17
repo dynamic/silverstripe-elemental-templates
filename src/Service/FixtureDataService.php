@@ -451,7 +451,10 @@ class FixtureDataService
      * the downloaded bytes and falls back to 'jpg'. A lookup key built from the raw, extension-less
      * name would never match that stored path, so every run created another copy of the image.
      * Allowing for each extension it might pick keeps the key in step with the creation path; a
-     * Filename that already has an extension still yields exactly one candidate.
+     * Filename that already has an extension still yields exactly one candidate, because nothing
+     * appends to it. The raw extension-less path is deliberately not a candidate: no fixture can
+     * store a file under it, because Image rejects a name with no extension and the whole image
+     * write fails (testCreateImageFromFileRejectsExtensionlessFilename).
      *
      * @return string[]
      */
@@ -463,10 +466,10 @@ class FixtureDataService
             return $path === '' ? [] : [$path];
         }
 
-        // The default ('jpg', first below) plus every extension the MIME map can produce.
-        $extensions = array_values(array_unique(array_values(self::IMPORTED_EXTENSIONS) + ['jpg']));
+        // Every extension a remote import can infer. 'jpg' is both the map's jpeg value and its
+        // fallback, so it needs no extra entry.
         $candidates = [];
-        foreach ($extensions as $extension) {
+        foreach (array_unique(array_values(self::IMPORTED_EXTENSIONS)) as $extension) {
             $candidate = $this->buildAssetPath($folder, $filename . '.' . $extension);
             if ($candidate !== '') {
                 $candidates[] = $candidate;
