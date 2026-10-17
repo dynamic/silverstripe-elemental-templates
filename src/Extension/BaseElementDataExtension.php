@@ -9,6 +9,7 @@ use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Config\Config;
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\Core\Injector\Injector;
 use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
@@ -54,12 +55,20 @@ class BaseElementDataExtension extends Extension
     }
 
     /**
-     * @deprecated 3.0.7 The flag was never read. SilverStripe shares one extension instance per
-     *             process, so a flag stored here would apply to every later write. TemplateElementDuplicator
-     *             now sets AvailableGlobally on the copy directly. This method does nothing.
+     * The flag was never read. SilverStripe shares one extension instance per process, so a flag
+     * stored here would apply to every later write. TemplateElementDuplicator sets AvailableGlobally
+     * on the copy directly. This method does nothing.
+     *
+     * @deprecated 3.1.0 Will be removed without equivalent functionality to replace it in a future major release.
      */
     public function setResetAvailableGlobally(bool $reset): void
     {
+        Deprecation::notice(
+            '3.1.0',
+            'BaseElementDataExtension::setResetAvailableGlobally() does nothing and will be removed without'
+            . ' equivalent functionality to replace it in a future major release.',
+            Deprecation::SCOPE_GLOBAL
+        );
     }
 
     /**
