@@ -8,6 +8,7 @@ use Psr\Log\LoggerInterface;
 use SilverStripe\Assets\File;
 use SilverStripe\Assets\FileNameFilter;
 use SilverStripe\Assets\Image;
+use SilverStripe\Assets\Storage\DefaultAssetNameGenerator;
 use SilverStripe\ORM\DataObject;
 use Symfony\Component\Yaml\Yaml;
 use SilverStripe\Control\Director;
@@ -234,6 +235,8 @@ class FixtureDataService
             $relatedIsFile = is_a($relatedClassName, File::class, true);
             $query = DataObject::get($relatedClassName);
             $filtersApplied = 0;
+            $assetPathPatterns = [];
+            $exactAssetPaths = [];
             foreach ($duplicateCheckFields as $field) {
                 if (!isset($data[$field])) {
                     continue;
@@ -242,7 +245,12 @@ class FixtureDataService
                 if ($relatedIsFile && $field === 'Filename' && !$relatedClassName::singleton()->hasDatabaseField('Filename')) {
                     $assetPaths = $this->assetPathCandidates((string)($data['Folder'] ?? ''), (string)$data['Filename']);
                     if (!empty($assetPaths)) {
-                        $query = $query->filter('FileFilename', $assetPaths);
+                        // Narrow in SQL by prefix, then match exactly in PHP below: the stored
+                        // name may carry the -vN suffix File::onBeforeWrite() gave it.
+                        $matchers = $this->assetPathMatchers($assetPaths);
+                        $query = $query->filter('FileFilename:StartsWith', array_keys($matchers));
+                        $assetPathPatterns = array_merge($assetPathPatterns, ...array_values($matchers));
+                        $exactAssetPaths = array_merge($exactAssetPaths, $assetPaths);
                         $filtersApplied++;
                     }
                     continue;
@@ -260,7 +268,12 @@ class FixtureDataService
                 $logger->warning("DuplicateCheck for $relatedClassName named no field present in the fixture data; skipping the lookup.");
             }
 
-            $existingRecord = $filtersApplied > 0 ? $query->first() : null;
+            $existingRecord = null;
+            if ($filtersApplied > 0) {
+                $existingRecord = empty($assetPathPatterns)
+                    ? $query->first()
+                    : $this->firstMatchingAssetPath($query->sort('ID'), $exactAssetPaths, $assetPathPatterns);
+            }
 
             if ($existingRecord) {
                 // $logger->debug("Found existing record for $relatedClassName with matching fields: " . json_encode($duplicateCheckFields));
@@ -477,6 +490,72 @@ class FixtureDataService
         }
 
         return array_values(array_unique($candidates));
+    }
+
+    /**
+     * For each candidate asset path, the SQL prefix and the exact pattern a stored FileFilename
+     * has to match, allowing for the version suffix File::onBeforeWrite() appends when another
+     * file already holds that Name in the same folder (Placeholder/hero.png is stored as
+     * Placeholder/hero-v2.png). Mirrors DefaultAssetNameGenerator: the suffix goes before the
+     * first period of the base name, and a name that already ends in a version is versioned
+     * from its unversioned stem. Not covered: the md5 names the generator falls back to after
+     * 100 versions, and a project that binds a different AssetNameGenerator.
+     *
+     * @param string[] $assetPaths
+     * @return array<string, string[]> regex patterns, keyed by the SQL StartsWith prefix
+     */
+    private function assetPathMatchers(array $assetPaths): array
+    {
+        $prefix = preg_quote((string)Config::inst()->get(DefaultAssetNameGenerator::class, 'version_prefix'), '/');
+        $matchers = [];
+
+        foreach ($assetPaths as $assetPath) {
+            $directory = ltrim(dirname($assetPath), '.');
+            $name = basename($assetPath);
+            $extension = '';
+            if (($pos = strpos($name, '.')) !== false) {
+                $extension = substr($name, $pos);
+                $name = substr($name, 0, $pos);
+            }
+            if ($prefix !== '' && preg_match('/^(?<name>[^\/]+?)' . $prefix . '[0-9]+$/', $name, $matches)) {
+                $name = $matches['name'];
+            }
+
+            $stem = $directory !== '' ? "$directory/$name" : $name;
+            $matchers[$stem][] = '/^' . preg_quote($stem, '/') . '(?:' . $prefix . '[0-9]+)?' . preg_quote($extension, '/') . '$/';
+        }
+
+        return $matchers;
+    }
+
+    /**
+     * The first record whose FileFilename is one of the exact candidate paths, or failing that
+     * the first one whose FileFilename is a versioned form of one. An exact match wins, so a
+     * fixture keeps the image stored under its own name when a renamed copy also matches.
+     *
+     * @param iterable<DataObject> $records
+     * @param string[] $assetPaths
+     * @param string[] $patterns
+     */
+    private function firstMatchingAssetPath(iterable $records, array $assetPaths, array $patterns): ?DataObject
+    {
+        $versioned = null;
+        foreach ($records as $record) {
+            $stored = (string)$record->getField('FileFilename');
+            if (in_array($stored, $assetPaths, true)) {
+                return $record;
+            }
+            if ($versioned === null) {
+                foreach ($patterns as $pattern) {
+                    if (preg_match($pattern, $stored)) {
+                        $versioned = $record;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $versioned;
     }
 
     /**

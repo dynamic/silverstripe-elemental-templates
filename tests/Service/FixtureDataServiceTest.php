@@ -9,6 +9,7 @@ use SilverStripe\Control\Director;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Versioned\Versioned;
 use DNADesign\Elemental\Models\ElementalArea;
 use DNADesign\Elemental\Models\ElementContent;
 use Dynamic\ElementalTemplates\Models\Template;
@@ -321,6 +322,58 @@ class FixtureDataServiceTest extends SapphireTest
             $second->ID,
             'The duplicate lookup key must be filtered the same way the stored path is.'
         );
+    }
+
+    /**
+     * Regression test for #113: two fixtures sharing a Folder/Filename but not a Title. The
+     * second image's Name collides with the first, so File::onBeforeWrite() stores it as
+     * shared-v2.png; the duplicate lookup has to accept that versioned name, or every run adds
+     * another -vN copy.
+     *
+     * File::updateFilesystem() only moves the stored path to the new Name on the draft stage
+     * (the stage the CMS works in). SapphireTest leaves no stage set, so the test sets draft
+     * itself; without it FileFilename keeps the unversioned path and the case never arises.
+     */
+    public function testImageDuplicateCheckMatchesVersionedNameOfCollidingFixture(): void
+    {
+        Versioned::withVersionedMode(function () {
+            Versioned::set_stage(Versioned::DRAFT);
+            $service = new FixtureDataService();
+
+            $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+            $fixture = fn (string $title) => [
+                'Title' => $title,
+                'PopulateFileFrom' => $populateFileFrom,
+                'Filename' => 'shared.png',
+                'Folder' => 'Placeholder',
+                'DuplicateCheck' => ['Title', 'Filename'],
+            ];
+
+            $firstA = $service->createRelatedObject(Image::class, $fixture('Shared name A'));
+            $firstB = $service->createRelatedObject(Image::class, $fixture('Shared name B'));
+            $this->assertNotNull($firstA, 'The first fixture should create an image.');
+            $this->assertNotNull($firstB, 'The second fixture should create an image.');
+            $this->assertSame('Placeholder/shared.png', $firstA->getFilename());
+            $this->assertSame(
+                'Placeholder/shared-v2.png',
+                $firstB->getFilename(),
+                'The colliding image should get the versioned name File::onBeforeWrite() assigns.'
+            );
+
+            $secondA = $service->createRelatedObject(Image::class, $fixture('Shared name A'));
+            $secondB = $service->createRelatedObject(Image::class, $fixture('Shared name B'));
+            $this->assertSame($firstA->ID, $secondA->ID, 'A re-run should reuse the first fixture\'s image.');
+            $this->assertSame(
+                $firstB->ID,
+                $secondB->ID,
+                'A re-run should reuse the colliding fixture\'s versioned image, not add a -v3 copy.'
+            );
+            $this->assertSame(
+                2,
+                Image::get()->filter('ParentID', $firstA->ParentID)->count(),
+                'Two fixtures run twice should leave exactly two images in the folder.'
+            );
+        });
     }
 
     /**
