@@ -124,10 +124,9 @@ class TemplatePickerField extends FormField
         }
 
         $list = ArrayList::create();
-        // Eager load the has_ones the loop reads and count every template's blocks in one
-        // query below, so the picker costs a fixed number of queries instead of about three
-        // per template.
-        $templates = Template::get()->eagerLoad('LayoutImage', 'Elements');
+        // Eager load the layout image and count every template's blocks in one query below,
+        // so the picker costs a fixed number of queries instead of about three per template.
+        $templates = Template::get()->eagerLoad('LayoutImage');
 
         // Filter by page type if set. A template matches when its PageType is the
         // current class or any ancestor of it (a template tagged "Page" applies to a
