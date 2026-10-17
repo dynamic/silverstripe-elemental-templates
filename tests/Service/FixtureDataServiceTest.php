@@ -715,13 +715,20 @@ class FixtureDataServiceTest extends SapphireTest
     }
 
     /**
-     * The Filename branch has to be what decides a match: with only Filename checked, Title plays
-     * no part, so a lookup that filtered nothing would create a new image on every run.
+     * The Filename branch has to be what decides a match: with only Filename checked, Title plays no
+     * part, so a lookup that filtered nothing would still hand back "some" image - it has to be this
+     * fixture's own.
      */
     public function testImageDuplicateCheckOnFilenameOnlyReusesImage(): void
     {
         $service = new FixtureDataService();
         $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+
+        // An unrelated image, created first so that an unfiltered lookup would find it.
+        $seed = Image::create();
+        $seed->setFromLocalFile(__DIR__ . '/placeholder.png', 'SeedFolder/seed.png');
+        $seed->write();
+        $this->assertSame('SeedFolder/seed.png', $seed->getFilename(), 'The seed sits on another path.');
 
         $data = [
             'PopulateFileFrom' => $populateFileFrom,
@@ -732,27 +739,44 @@ class FixtureDataServiceTest extends SapphireTest
 
         $first = $service->createRelatedObject(Image::class, $data);
         $this->assertNotNull($first, 'The first call should create an image.');
-        $this->assertSame('Placeholder/filename-only.png', $first->getFilename());
+        $this->assertSame(
+            'Placeholder/filename-only.png',
+            $first->getFilename(),
+            'Filename alone must still narrow the lookup to this fixture\'s own path.'
+        );
 
         $second = $service->createRelatedObject(Image::class, $data);
         $this->assertNotNull($second);
+        $this->assertSame($first->ID, $second->ID, 'Filename alone has to be enough to reuse the image.');
+        $this->assertSame('Placeholder/filename-only.png', $second->getFilename());
+        $this->assertSame(2, Image::get()->count(), 'Only one image beyond the seed should exist.');
+
+        $seedAfter = Image::get()->byID((int)$seed->ID);
+        $this->assertNotNull($seedAfter);
         $this->assertSame(
-            $first->ID,
-            $second->ID,
-            'Filename alone has to be enough to reuse the image.'
+            'SeedFolder/seed.png',
+            $seedAfter->getFilename(),
+            'The unrelated image must not be matched, let alone moved.'
         );
-        $this->assertSame(1, Image::get()->count(), 'Only one image should exist for this fixture.');
     }
 
     /**
-     * The negative side of the same lookup: a shared Title must not be enough to match. A different
-     * Folder, or a different Filename, is a different file and has to become a new record.
+     * The negative side of the same lookup: a shared Title must not be enough to match. The same
+     * Title in a different Folder, or under a different Filename, is a different file and has to
+     * become a new record - while the same Title on the same path stays the same image.
      */
     public function testImageDuplicateCheckDoesNotMatchSameTitleInAnotherFolder(): void
     {
         $service = new FixtureDataService();
         $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
         $title = 'Shared title across folders';
+
+        // An image that already carries this Title, so a Title-only lookup would match it from
+        // any folder and under any file name.
+        $seed = Image::create();
+        $seed->setFromLocalFile(__DIR__ . '/placeholder.png', 'AlphaTest/shared.png');
+        $seed->setField('Title', $title);
+        $seed->write();
 
         $data = function (string $folder, string $filename) use ($populateFileFrom, $title): array {
             return [
@@ -764,24 +788,31 @@ class FixtureDataServiceTest extends SapphireTest
             ];
         };
 
-        $inAlpha = $service->createRelatedObject(Image::class, $data('AlphaTest', 'shared.png'));
+        $samePath = $service->createRelatedObject(Image::class, $data('AlphaTest', 'shared.png'));
+        $this->assertNotNull($samePath);
+        $this->assertSame(
+            $seed->ID,
+            $samePath->ID,
+            'The same Title on the same path is the same image.'
+        );
+
         $inBeta = $service->createRelatedObject(Image::class, $data('BetaTest', 'shared.png'));
         $otherName = $service->createRelatedObject(Image::class, $data('AlphaTest', 'other.png'));
 
-        $this->assertNotNull($inAlpha);
         $this->assertNotNull($inBeta);
         $this->assertNotNull($otherName);
         $this->assertNotSame(
-            $inAlpha->ID,
+            $seed->ID,
             $inBeta->ID,
             'The same Title in another folder is a different file, so it must not be reused.'
         );
         $this->assertNotSame(
-            $inAlpha->ID,
+            $seed->ID,
             $otherName->ID,
             'The same Title with another Filename is a different file, so it must not be reused.'
         );
-        $this->assertSame('AlphaTest/shared.png', $inAlpha->getFilename());
+        $this->assertNotSame($inBeta->ID, $otherName->ID, 'Two different files must not share one record.');
+        $this->assertSame('AlphaTest/shared.png', $seed->getFilename(), 'Reusing a file must not move it.');
         $this->assertSame('BetaTest/shared.png', $inBeta->getFilename());
         $this->assertSame('AlphaTest/other.png', $otherName->getFilename());
         $this->assertSame(3, Image::get()->count(), 'Three different files means three records.');
