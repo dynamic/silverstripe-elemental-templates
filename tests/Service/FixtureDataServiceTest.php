@@ -861,6 +861,76 @@ class FixtureDataServiceTest extends SapphireTest
         $this->assertNotNull($again);
         $this->assertSame($plain->ID, $again->ID, 'The plain path is found again on the next run.');
         $this->assertSame(2, Image::get()->count(), 'Two files means two records.');
+
+        // And the fixture whose own name carries "-v2" has to be found again too, rather than
+        // adding a copy on every run.
+        $versionedAgain = $service->createRelatedObject(Image::class, [
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'genuine-name-v2.png',
+            'Folder' => 'VersionGuardTest',
+            'DuplicateCheck' => ['Filename'],
+        ]);
+        $this->assertNotNull($versionedAgain);
+        $this->assertSame(
+            $versioned->ID,
+            $versionedAgain->ID,
+            'A fixture whose own Filename ends in "-vN" is stored under exactly that name.'
+        );
+        $this->assertSame(2, Image::get()->count(), 'Re-running both fixtures must not add a copy.');
+    }
+
+    /**
+     * The name generator bumps a name that already carries a version to the next one, so a fixture
+     * whose own Filename ends in "-vN" and collides with another fixture lands on "-v3" - a path
+     * neither the fixture nor a stripped candidate spells out.
+     */
+    public function testImageDuplicateCheckReusesVersionedFileWhoseOwnNameCarriesVersion(): void
+    {
+        $service = new FixtureDataService();
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+
+        $fixture = function (string $title) use ($populateFileFrom): array {
+            return [
+                'Title' => $title,
+                'PopulateFileFrom' => $populateFileFrom,
+                'Filename' => 'banner-v2.png',
+                'Folder' => 'VersionedTest',
+                'DuplicateCheck' => ['Title', 'Filename'],
+            ];
+        };
+
+        $firstA = $service->createRelatedObject(Image::class, $fixture('Banner first'));
+        $this->assertNotNull($firstA);
+        $this->assertSame(
+            'VersionedTest/banner-v2.png',
+            $firstA->getFilename(),
+            'Nothing is in the way, so the version in the fixture name is kept as-is.'
+        );
+
+        $firstB = $service->createRelatedObject(Image::class, $fixture('Banner second'));
+        $this->assertNotNull($firstB);
+        $this->assertNotSame($firstA->ID, $firstB->ID);
+        $this->assertSame(
+            'banner-v3.png',
+            $firstB->getField('Name'),
+            'The generator bumps the version of a name that already carries one.'
+        );
+
+        // As above: TestAssetStore reports no public-path conflict, so apply the rename that
+        // File::updateFilesystem() performs against a real AssetStore.
+        $firstB->setField('FileFilename', 'VersionedTest/banner-v3.png');
+        $firstB->write();
+        $firstB->flushCache();
+        $firstB = Image::get()->byID((int)$firstB->ID);
+
+        $secondA = $service->createRelatedObject(Image::class, $fixture('Banner first'));
+        $secondB = $service->createRelatedObject(Image::class, $fixture('Banner second'));
+
+        $this->assertNotNull($secondA);
+        $this->assertNotNull($secondB);
+        $this->assertSame($firstA->ID, $secondA->ID, 'The fixture holding its own "-v2" name is found again.');
+        $this->assertSame($firstB->ID, $secondB->ID, 'The fixture bumped to "-v3" is found again.');
+        $this->assertSame(2, Image::get()->count(), 'Re-running the fixtures must not add another copy.');
     }
 
     public function testDuplicateCheck(): void

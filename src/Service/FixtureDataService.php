@@ -274,9 +274,6 @@ class FixtureDataService
                     "DuplicateCheck for $relatedClassName named no field present in the fixture data"
                     . " (requested: $requested); skipping the lookup."
                 );
-            }
-
-            if ($filtersApplied === 0) {
                 $existingRecord = null;
             } elseif ($assetCandidates !== []) {
                 $existingRecord = $this->selectAssetRecord($query, $assetCandidates, $relatedClassName);
@@ -524,23 +521,25 @@ class FixtureDataService
 
     /**
      * The prefix every candidate path starts with: its folder plus the file name without the
-     * extension. DefaultAssetNameGenerator appends "-v<version>" to that stem (before the
-     * extension) when a name is taken, so a prefix built this way still matches the renamed file.
-     * All candidates for one fixture differ only in their extension, so the first one is enough.
+     * extension and without any version suffix. DefaultAssetNameGenerator appends "-v<version>" to
+     * that stem (before the extension) when a name is taken, and bumps an existing "-vN" to
+     * "-vN+1", so a prefix built from the stripped stem still matches every renamed variant. All
+     * candidates for one fixture differ only in their extension, so the first one is enough.
      *
      * @param string[] $candidates
      */
     private function assetPathPrefix(array $candidates): string
     {
         $path = (string)reset($candidates);
-        $name = basename($path);
+        [$stripped] = $this->splitAssetVersionSuffix($path);
+        $name = basename($stripped);
         // The generator splits the extension at the FIRST period, unlike pathinfo().
         $position = strpos($name, '.');
         if ($position === false) {
-            return $path;
+            return $stripped;
         }
 
-        $folder = trim(dirname($path), '.');
+        $folder = trim(dirname($stripped), '.');
 
         return ($folder === '' ? '' : $folder . '/') . substr($name, 0, $position);
     }
@@ -549,30 +548,46 @@ class FixtureDataService
      * Pick the record a fixture's Filename branch really refers to.
      *
      * The SQL filter is a prefix match (and LIKE treats "_" and "%" as wildcards, which a filtered
-     * file name can contain), so every candidate it returns is confirmed here: its stored path,
-     * minus any name-generator version suffix, has to be one of the fixture's own candidate paths.
-     * The un-suffixed match wins over a versioned one, so a fixture gets the plain path back for
-     * as long as that path exists.
+     * file name can contain), so every candidate it returns is confirmed here. A record matches when
+     * either
+     * - its stored path is exactly one of the fixture's own candidate paths, or
+     * - that path with the name generator's version suffix removed is one of the fixture's paths
+     *   stripped the same way, and something else occupies the path the generator was stepping
+     *   aside for. Without that second half a file whose own name happens to end in "-vN" would be
+     *   handed to a fixture that never created it.
+     * The un-suffixed match wins over a versioned one, so a fixture gets the plain path back for as
+     * long as that path exists.
      *
      * @param DataList $list     The filtered lookup, already narrowed to this fixture's folder and stem
      * @param string[] $candidates Exact paths the fixture's Folder/Filename pair can be stored under
      */
     private function selectAssetRecord(DataList $list, array $candidates, string $className): ?DataObject
     {
+        // A fixture whose own Filename ends in "-vN" is stored under exactly that name, so the raw
+        // paths are matched before any suffix is stripped from either side.
+        $strippedCandidates = array_values(array_unique(array_map(
+            fn (string $candidate) => $this->splitAssetVersionSuffix($candidate)[0],
+            $candidates
+        )));
+
         $best = null;
         $bestVersion = 0;
 
         foreach ($list as $record) {
-            [$normalised, $version] = $this->splitAssetVersionSuffix((string)$record->getField('FileFilename'));
+            $stored = (string)$record->getField('FileFilename');
 
-            if (!in_array($normalised, $candidates, true)) {
-                continue;
-            }
+            if (in_array($stored, $candidates, true)) {
+                $version = 0;
+            } else {
+                [$stripped, $version] = $this->splitAssetVersionSuffix($stored);
 
-            if ($version > 0 && !$this->assetPathIsOccupied($className, $normalised)) {
-                // Nothing sits at the un-suffixed path, so this file was never renamed by the name
-                // generator: its "-vN" is part of its own name and belongs to a different fixture.
-                continue;
+                if (!in_array($stripped, $strippedCandidates, true)) {
+                    continue;
+                }
+
+                if ($version > 0 && !$this->assetRenameExplained($className, $stripped, $candidates)) {
+                    continue;
+                }
             }
 
             if ($best === null || $version < $bestVersion) {
@@ -609,6 +624,29 @@ class FixtureDataService
         $normalised = ($folder === '' ? '' : $folder . '/') . $matches[1] . $extension;
 
         return [$normalised, (int)$matches[2]];
+    }
+
+    /**
+     * Whether a record carrying a version suffix really is the name generator's doing: either the
+     * path it was squeezed off, or the path the fixture itself asks for, has to be taken by
+     * something else. A generator bump of "hero-v2.png" lands on "hero-v3.png" with nothing at
+     * "hero.png", so checking the stripped path alone is not enough.
+     *
+     * @param string[] $candidates
+     */
+    private function assetRenameExplained(string $className, string $strippedPath, array $candidates): bool
+    {
+        if ($this->assetPathIsOccupied($className, $strippedPath)) {
+            return true;
+        }
+
+        foreach ($candidates as $candidate) {
+            if ($this->assetPathIsOccupied($className, $candidate)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
