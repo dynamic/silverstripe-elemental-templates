@@ -2,6 +2,7 @@
 
 namespace Dynamic\ElementalTemplates\Form;
 
+use DNADesign\Elemental\Models\BaseElement;
 use Dynamic\ElementalTemplates\Models\Template;
 use SilverStripe\Admin\AdminRootController;
 use SilverStripe\Core\ClassInfo;
@@ -123,7 +124,10 @@ class TemplatePickerField extends FormField
         }
 
         $list = ArrayList::create();
-        $templates = Template::get();
+        // Eager load the has_ones the loop reads and count every template's blocks in one
+        // query below, so the picker costs a fixed number of queries instead of about three
+        // per template.
+        $templates = Template::get()->eagerLoad('LayoutImage', 'Elements');
 
         // Filter by page type if set. A template matches when its PageType is the
         // current class or any ancestor of it (a template tagged "Page" applies to a
@@ -142,6 +146,8 @@ class TemplatePickerField extends FormField
             }
             $templates = $matched;
         }
+
+        $elementCounts = $this->getElementCounts($templates);
 
         foreach ($templates as $template) {
             $thumbnail = null;
@@ -162,11 +168,36 @@ class TemplatePickerField extends FormField
                 'ThumbnailURL' => $thumbnailUrl,
                 'PreviewLink' => $template->getPreviewLink(),
                 'IsSelected' => (int) $this->getValue() === (int) $template->ID,
-                'ElementCount' => $template->Elements()->Elements()->count(),
+                'ElementCount' => $elementCounts[(int) $template->ElementsID] ?? 0,
             ]));
         }
 
         return $this->templatesCache = $list;
+    }
+
+    /**
+     * Block counts keyed by ElementalArea ID, for every area the given templates use, read in
+     * one query in the current stage.
+     *
+     * @param iterable<Template> $templates
+     * @return array<int, int>
+     */
+    private function getElementCounts(iterable $templates): array
+    {
+        $areaIDs = [];
+        foreach ($templates as $template) {
+            if ($template->ElementsID) {
+                $areaIDs[] = (int) $template->ElementsID;
+            }
+        }
+
+        if (!$areaIDs) {
+            return [];
+        }
+
+        return array_count_values(
+            array_map('intval', BaseElement::get()->filter('ParentID', array_unique($areaIDs))->column('ParentID'))
+        );
     }
 
     /**
