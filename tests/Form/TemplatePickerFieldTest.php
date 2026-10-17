@@ -2,6 +2,8 @@
 
 namespace Dynamic\ElementalTemplates\Tests\Form;
 
+use DNADesign\Elemental\Models\ElementalArea;
+use DNADesign\Elemental\Models\ElementContent;
 use Dynamic\ElementalTemplates\Form\TemplatePickerField;
 use Dynamic\ElementalTemplates\Models\Template;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
@@ -136,6 +138,41 @@ class TemplatePickerFieldTest extends SapphireTest
 
         $this->assertStringContainsString('admin/elemental-templates', $html);
         $this->assertStringNotContainsString('adminelemental-templates', $html);
+    }
+
+    public function testElementCountIsReadPerTemplate()
+    {
+        $withBlocks = $this->makeTemplateWithArea('WithBlocks');
+        $empty = $this->makeTemplateWithArea('Empty');
+        $this->makeTemplate('NoArea', null);
+
+        foreach (['One', 'Two'] as $title) {
+            $element = ElementContent::create();
+            $element->Title = $title;
+            $element->ParentID = $withBlocks->ElementsID;
+            $element->write();
+        }
+
+        $field = TemplatePickerField::create('ApplyTemplateID', 'Select template');
+        $counts = $field->getTemplates()->map('Title', 'ElementCount')->toArray();
+
+        $this->assertSame(2, $counts['WithBlocks']);
+        $this->assertSame(0, $counts['Empty']);
+        $this->assertSame(0, $counts['NoArea']);
+        $this->assertSame($withBlocks->getElementCount(), $counts['WithBlocks']);
+        $this->assertSame($empty->getElementCount(), $counts['Empty']);
+    }
+
+    private function makeTemplateWithArea(string $title): Template
+    {
+        $area = ElementalArea::create();
+        $area->write();
+
+        $template = $this->makeTemplate($title, null);
+        $template->ElementsID = $area->ID;
+        $template->write();
+
+        return $template;
     }
 
     private function makeTemplate(string $title, ?string $pageType, ?string $category = null): Template
