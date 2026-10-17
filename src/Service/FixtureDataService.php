@@ -6,6 +6,7 @@ use Exception;
 use RuntimeException;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Assets\File;
+use SilverStripe\Assets\FileNameFilter;
 use SilverStripe\Assets\Image;
 use SilverStripe\ORM\DataObject;
 use Symfony\Component\Yaml\Yaml;
@@ -220,6 +221,7 @@ class FixtureDataService
         if (!empty($duplicateCheckFields)) {
             $relatedIsFile = is_a($relatedClassName, File::class, true);
             $query = DataObject::get($relatedClassName);
+            $filtersApplied = 0;
             foreach ($duplicateCheckFields as $field) {
                 if (!isset($data[$field])) {
                     continue;
@@ -229,16 +231,25 @@ class FixtureDataService
                     $assetPath = $this->buildAssetPath((string)($data['Folder'] ?? ''), (string)$data['Filename']);
                     if ($assetPath !== '') {
                         $query = $query->filter('FileFilename', $assetPath);
+                        $filtersApplied++;
                     }
                     continue;
                 }
 
                 if ($relatedClassName::singleton()->hasDatabaseField($field)) {
                     $query = $query->filter($field, $data[$field]);
+                    $filtersApplied++;
                 }
             }
 
-            $existingRecord = $query->first();
+            if ($filtersApplied === 0) {
+                // None of the requested DuplicateCheck fields is present in the fixture data, so the
+                // query carries no filter and would match an arbitrary record of this class.
+                $logger->warning("DuplicateCheck for $relatedClassName named no field present in the fixture data; skipping the lookup.");
+            }
+
+            $existingRecord = $filtersApplied > 0 ? $query->first() : null;
+
             if ($existingRecord) {
                 // $logger->debug("Found existing record for $relatedClassName with matching fields: " . json_encode($duplicateCheckFields));
 
@@ -409,6 +420,8 @@ class FixtureDataService
 
     /**
      * Build the asset path a fixture image is stored at, from its fixture Folder and Filename.
+     * Filtered the way File::setFilename() filters, so a lookup key built here matches the
+     * FileFilename the record is actually stored under.
      */
     private function buildAssetPath(string $folder, string $filename): string
     {
@@ -416,10 +429,31 @@ class FixtureDataService
         $filename = $this->sanitiseFilename($filename);
 
         if ($folder === '' || $filename === '') {
-            return $folder . $filename;
+            $path = $folder . $filename;
+        } else {
+            $path = "$folder/$filename";
         }
 
-        return "$folder/$filename";
+        $filtered = $this->filterAssetPath($path);
+
+        return $filtered !== '' ? $filtered : $path;
+    }
+
+    /**
+     * Run each segment of an asset path through SilverStripe's FileNameFilter, mirroring
+     * File::filterFilename() (which is protected). The filter collapses repeated separators
+     * and strips leading dots, dashes and underscores, so an unfiltered key would not match.
+     */
+    private function filterAssetPath(string $path): string
+    {
+        if ($path === '') {
+            return '';
+        }
+
+        $filter = FileNameFilter::create();
+        $segments = array_filter(explode('/', $path), fn ($segment) => $segment !== '' && $segment !== '0');
+
+        return implode('/', array_map(fn ($segment) => $filter->filter($segment), $segments));
     }
 
     /**
@@ -552,7 +586,8 @@ class FixtureDataService
 
         // Stage the download in a temp file outside the assets folder. Writing it to
         // ASSETS_PATH/<Folder>/<Filename> would land on the path an already published asset
-        // occupies, and the AssetStore then resolves the name conflict for us instead.
+        // occupies; handed to the AssetStore instead, the new file is stored under its own hash
+        // and File::onBeforeWrite() gives the record a non-conflicting Name.
         // A unique name in the system temp dir, with the source extension kept so the store
         // can still detect the mime type.
         $tempPath = sys_get_temp_dir() . '/ss_fixture_import_' . bin2hex(random_bytes(8)) . '.' . $extension;

@@ -279,6 +279,45 @@ class FixtureDataServiceTest extends SapphireTest
     }
 
     /**
+     * The duplicate lookup key has to be filtered the way File::setFilename() filters, or a
+     * Filename the FileNameFilter rewrites never matches the stored FileFilename and every
+     * element adds another copy of the same image.
+     */
+    public function testImageDuplicateCheckMatchesFilteredFilename(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $title = 'Filtered duplicate';
+
+        $data = [
+            'Title' => $title,
+            'PopulateFileFrom' => $populateFileFrom,
+            // Spaces and brackets: sanitising gives "hero_image__1_.png", the FileNameFilter
+            // SilverStripe stores with collapses that to "hero_image_1_.png".
+            'Filename' => 'hero image (1).png',
+            'Folder' => 'Placeholder',
+            'DuplicateCheck' => ['Title', 'Filename'],
+        ];
+
+        $first = $service->createRelatedObject(Image::class, $data);
+        $this->assertNotNull($first, 'The first image should be created.');
+        $this->assertSame(
+            'Placeholder/hero_image_1_.png',
+            $first->getFilename(),
+            'The image should be stored under the filtered name SilverStripe derives.'
+        );
+
+        $second = $service->createRelatedObject(Image::class, $data);
+        $this->assertNotNull($second, 'The second call should return an image.');
+        $this->assertSame(
+            $first->ID,
+            $second->ID,
+            'The duplicate lookup key must be filtered the same way the stored path is.'
+        );
+    }
+
+    /**
      * Regression test for #113: importRemoteImage() used to stage its download by writing it
      * straight onto ASSETS_PATH/<Folder>/<Filename> - the path an already published asset
      * occupies - and only then register the file. Re-importing under the same Filename
@@ -290,15 +329,13 @@ class FixtureDataServiceTest extends SapphireTest
     {
         $service = new FixtureDataService();
 
+        // Two different images, staged locally and served over file:// so no network is needed.
         $placeholder = file_get_contents(__DIR__ . '/placeholder.png');
         $this->assertNotFalse($placeholder, 'The test placeholder image should be readable.');
 
-        // Two different images, staged locally and served over file:// so no network is needed.
-        $firstSource = tempnam(sys_get_temp_dir(), 'fixture_first_') . '.png';
-        $secondSource = tempnam(sys_get_temp_dir(), 'fixture_second_') . '.png';
-        file_put_contents($firstSource, $placeholder);
+        $firstSource = $this->writeTempSource('fixture_first_', $placeholder);
         // Appending a byte keeps the file a valid PNG while changing its content and hash.
-        file_put_contents($secondSource, $placeholder . "\0");
+        $secondSource = $this->writeTempSource('fixture_second_', $placeholder . "\0");
 
         $publicPath = ASSETS_PATH . '/ImportTest/remote-dup.png';
 
@@ -354,6 +391,13 @@ class FixtureDataServiceTest extends SapphireTest
      * A remote import whose file cannot be read still returns null and leaves no staged
      * temp file behind.
      */
+    /**
+     * Bad input: an unreadable source still returns null and creates no record. This is a guard
+     * rather than a falsifiability proof - the download fails before anything is staged, so the
+     * pre-fix code returned null here too. The staged temp file check is the same kind of guard:
+     * it pins the cleanup the fix is responsible for, and it cannot fail on code that never
+     * staged anything.
+     */
     public function testRemoteImageImportOfUnreadableUrlReturnsNull(): void
     {
         $service = new FixtureDataService();
@@ -396,9 +440,7 @@ class FixtureDataServiceTest extends SapphireTest
     {
         $service = new FixtureDataService();
 
-        $placeholder = file_get_contents(__DIR__ . '/placeholder.png');
-        $source = tempnam(sys_get_temp_dir(), 'fixture_title_') . '.png';
-        file_put_contents($source, $placeholder);
+        $source = $this->writeTempSource('fixture_title_', (string)file_get_contents(__DIR__ . '/placeholder.png'));
 
         try {
             $image = $service->createImageFromFile([
@@ -418,6 +460,18 @@ class FixtureDataServiceTest extends SapphireTest
         } finally {
             @unlink($source);
         }
+    }
+
+    /**
+     * Write a fixture source image to a uniquely named temp file, and return its path. Unlike
+     * tempnam() this leaves no stray second file behind for the caller to clean up.
+     */
+    private function writeTempSource(string $prefix, string $contents): string
+    {
+        $path = sys_get_temp_dir() . '/' . $prefix . bin2hex(random_bytes(8)) . '.png';
+        file_put_contents($path, $contents);
+
+        return $path;
     }
 
     /**
