@@ -377,6 +377,68 @@ class FixtureDataServiceTest extends SapphireTest
     }
 
     /**
+     * A DuplicateCheck on Filename alone has to match on the stored path: the second call
+     * carries a different Title, so only the Filename lookup can find the first image.
+     */
+    public function testImageDuplicateCheckOnFilenameAloneReusesImage(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $data = [
+            'Title' => 'Filename only first',
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'filename-only.png',
+            'Folder' => 'Placeholder',
+            'DuplicateCheck' => ['Filename'],
+        ];
+
+        $first = $service->createRelatedObject(Image::class, $data);
+        $this->assertNotNull($first, 'The first image should be created.');
+
+        $second = $service->createRelatedObject(Image::class, ['Title' => 'Filename only second'] + $data);
+        $this->assertNotNull($second, 'The second call should return an image.');
+        $this->assertSame($first->ID, $second->ID, 'A Filename-only DuplicateCheck should reuse the stored image.');
+        $this->assertSame(
+            1,
+            Image::get()->filter('FileFilename:StartsWith', 'Placeholder/filename-only')->count(),
+            'Only one image should exist under that Filename.'
+        );
+    }
+
+    /**
+     * The Filename half of a DuplicateCheck has to rule a record out: the same Title in a
+     * different Folder, or under a different Filename, is a different image.
+     */
+    public function testImageDuplicateCheckWithSameTitleAndDifferentPathCreatesNewImage(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $title = 'Same title, different path';
+        $data = [
+            'Title' => $title,
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'same-title.png',
+            'Folder' => 'Placeholder',
+            'DuplicateCheck' => ['Title', 'Filename'],
+        ];
+
+        $first = $service->createRelatedObject(Image::class, $data);
+        $otherFolder = $service->createRelatedObject(Image::class, ['Folder' => 'OtherFolder'] + $data);
+        $otherName = $service->createRelatedObject(Image::class, ['Filename' => 'same-title-other.png'] + $data);
+
+        $this->assertNotNull($first, 'The first image should be created.');
+        $this->assertNotNull($otherFolder, 'The image in another folder should be created.');
+        $this->assertNotNull($otherName, 'The image under another Filename should be created.');
+        $this->assertNotSame($first->ID, $otherFolder->ID, 'A different Folder must not match on Title alone.');
+        $this->assertNotSame($first->ID, $otherName->ID, 'A different Filename must not match on Title alone.');
+        $this->assertSame('OtherFolder/same-title.png', $otherFolder->getFilename());
+        $this->assertSame('Placeholder/same-title-other.png', $otherName->getFilename());
+        $this->assertSame(3, Image::get()->filter('Title', $title)->count(), 'Each path should get its own image.');
+    }
+
+    /**
      * Regression test for #113: importRemoteImage() used to stage its download by writing it
      * straight onto ASSETS_PATH/<Folder>/<Filename> - the path an already published asset
      * occupies - and only then register the file. Re-importing under the same Filename
@@ -402,6 +464,7 @@ class FixtureDataServiceTest extends SapphireTest
         $publicPath = ASSETS_PATH . '/ImportTest/remote-dup.png';
         $publicFolder = dirname($publicPath ?? '');
         $publicFolderPreExisted = is_dir($publicFolder ?? '');
+        $publicFileCreated = false;
 
         try {
             $tempFilesBefore = $this->listStagedTempFiles();
@@ -418,6 +481,7 @@ class FixtureDataServiceTest extends SapphireTest
             $this->assertFalse(file_exists($publicPath), 'The first import should not leave a file on the public path.');
             @mkdir(dirname($publicPath ?? ''), 0777, true);
             file_put_contents($publicPath, $placeholder);
+            $publicFileCreated = true;
 
             $second = $service->importRemoteImage('file://' . $secondSource, 'remote-dup.png', 'ImportTest');
             $this->assertNotNull($second, 'The second remote import should succeed.');
@@ -447,7 +511,10 @@ class FixtureDataServiceTest extends SapphireTest
         } finally {
             @unlink($firstSource);
             @unlink($secondSource);
-            @unlink($publicPath);
+            if ($publicFileCreated) {
+                // Only the file this test wrote is its to remove.
+                @unlink($publicPath);
+            }
             if (!$publicFolderPreExisted) {
                 // The folder this test mkdir'ed is not its to keep: leaving it behind puts an empty
                 // folder in the project's real assets path, which is what this branch stops doing.
