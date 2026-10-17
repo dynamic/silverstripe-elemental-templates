@@ -522,6 +522,93 @@ class FixtureDataServiceTest extends SapphireTest
         $this->assertSame('Seeded block', $seeded->Title, 'The unrelated record must not be updated.');
     }
 
+    /**
+     * importRemoteImage() appends an extension it had to infer from the downloaded bytes when the
+     * fixture Filename carries none, so a duplicate lookup keyed on the raw, extension-less name
+     * never matched it and every run created another copy of the same image.
+     */
+    public function testImageDuplicateCheckMatchesInferredExtensionOfRemoteImport(): void
+    {
+        $service = new FixtureDataService();
+
+        $source = $this->writeTempSource('fixture_noext_', (string)file_get_contents(__DIR__ . '/placeholder.png'));
+
+        try {
+            $data = [
+                'Title' => 'Extensionless import',
+                'PopulateFileFrom' => 'file://' . $source,
+                // No extension: the import has to infer one, so the stored path is not the name
+                // the fixture spelled out.
+                'Filename' => 'no-extension',
+                'Folder' => 'ImportTest',
+                'DuplicateCheck' => ['Title', 'Filename'],
+            ];
+
+            $first = $service->createRelatedObject(Image::class, $data);
+            $this->assertNotNull($first, 'The first import should create an image.');
+            $this->assertSame(
+                'ImportTest/no-extension.png',
+                $first->getFilename(),
+                'The inferred extension is part of the path the image is stored at.'
+            );
+
+            $second = $service->createRelatedObject(Image::class, $data);
+            $this->assertNotNull($second, 'The second call should return an image.');
+            $this->assertSame(
+                $first->ID,
+                $second->ID,
+                'The lookup key has to allow for the extension the import appends.'
+            );
+            $this->assertSame(1, Image::get()->count(), 'Only one image should exist for this fixture.');
+        } finally {
+            @unlink($source);
+        }
+    }
+
+    /**
+     * createImageFromFile()'s local branch used to pre-create ASSETS_PATH/<Folder>, which
+     * setFromLocalFile() never needed: it only left an empty folder in the project's real assets
+     * path, and wrote there even while a test store was active.
+     */
+    public function testCreateImageFromFileDoesNotCreatePublicAssetFolders(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $folder = 'NoMkdirTest';
+        $publicFolder = ASSETS_PATH . '/' . $folder;
+
+        try {
+            $this->assertDirectoryDoesNotExist($publicFolder, 'The test starts from a clean assets path.');
+
+            $image = $service->createImageFromFile([
+                'PopulateFileFrom' => $populateFileFrom,
+                'Filename' => 'local-only.png',
+                'Folder' => $folder,
+            ]);
+
+            $this->assertNotNull($image, 'The image should still be created.');
+            $this->assertSame(
+                $folder . '/local-only.png',
+                $image->getFilename(),
+                'The folder the fixture asked for is still applied.'
+            );
+            $this->assertNotSame(
+                '',
+                (string)$image->getString(),
+                'The AssetStore publishes the bytes, and creates whatever folder it needs to do that.'
+            );
+            $this->assertDirectoryDoesNotExist(
+                $publicFolder,
+                'Creating an image must not create a folder in the project real assets path.'
+            );
+        } finally {
+            // With the fix in place there is nothing here to remove; this only cleans up after a
+            // pre-fix run. rmdir never removes a non-empty directory.
+            @rmdir($publicFolder);
+        }
+    }
+
     public function testDuplicateCheck(): void
     {
         $service = new FixtureDataService();

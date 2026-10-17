@@ -19,6 +19,18 @@ use Dynamic\ElementalTemplates\Extension\BaseElementDataExtension;
 class FixtureDataService
 {
     /**
+     * The extensions importRemoteImage() can give a downloaded file whose name carries none,
+     * keyed by the MIME type it sniffs from the bytes ('jpg' is also its fallback). The image
+     * duplicate lookup key has to allow for the same set, or an extension-less fixture Filename
+     * never matches the path the image was stored under.
+     */
+    private const IMPORTED_EXTENSIONS = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+    ];
+
+    /**
      * Load and parse fixture data for a given class.
      *
      * @param string $className
@@ -228,9 +240,9 @@ class FixtureDataService
                 }
 
                 if ($relatedIsFile && $field === 'Filename' && !$relatedClassName::singleton()->hasDatabaseField('Filename')) {
-                    $assetPath = $this->buildAssetPath((string)($data['Folder'] ?? ''), (string)$data['Filename']);
-                    if ($assetPath !== '') {
-                        $query = $query->filter('FileFilename', $assetPath);
+                    $assetPaths = $this->assetPathCandidates((string)($data['Folder'] ?? ''), (string)$data['Filename']);
+                    if (!empty($assetPaths)) {
+                        $query = $query->filter('FileFilename', $assetPaths);
                         $filtersApplied++;
                     }
                     continue;
@@ -374,17 +386,10 @@ class FixtureDataService
             return null;
         }
 
-        // Generate target path in assets
-        $targetFolder = $folder ? ASSETS_PATH . "/$folder" : ASSETS_PATH;
-
-        // Ensure the target folder exists
-        if (!file_exists($targetFolder)) {
-            if (!mkdir($targetFolder, 0755, true) && !is_dir($targetFolder)) {
-                $logger->warning("Failed to create directory: $targetFolder");
-                return null;
-            }
-        }
-
+        // No directory is created under ASSETS_PATH here. setFromLocalFile() hands the path to the
+        // AssetStore, which creates whatever folder it publishes into - and publishes somewhere
+        // else entirely while a test store is active. Pre-creating it here only ever left empty
+        // folders in the project's real assets path, and the remote branch no longer does it.
         $localPath = $this->buildAssetPath($folder, $filename);
 
         try {
@@ -437,6 +442,38 @@ class FixtureDataService
         $filtered = $this->filterAssetPath($path);
 
         return $filtered !== '' ? $filtered : $path;
+    }
+
+    /**
+     * Every FileFilename a fixture's Folder/Filename pair can end up stored under.
+     *
+     * importRemoteImage() appends an extension when the fixture Filename carries none: it sniffs
+     * the downloaded bytes and falls back to 'jpg'. A lookup key built from the raw, extension-less
+     * name would never match that stored path, so every run created another copy of the image.
+     * Allowing for each extension it might pick keeps the key in step with the creation path; a
+     * Filename that already has an extension still yields exactly one candidate.
+     *
+     * @return string[]
+     */
+    private function assetPathCandidates(string $folder, string $filename): array
+    {
+        $path = $this->buildAssetPath($folder, $filename);
+
+        if ($path === '' || pathinfo($path, PATHINFO_EXTENSION) !== '') {
+            return $path === '' ? [] : [$path];
+        }
+
+        // The default ('jpg', first below) plus every extension the MIME map can produce.
+        $extensions = array_values(array_unique(array_values(self::IMPORTED_EXTENSIONS) + ['jpg']));
+        $candidates = [];
+        foreach ($extensions as $extension) {
+            $candidate = $this->buildAssetPath($folder, $filename . '.' . $extension);
+            if ($candidate !== '') {
+                $candidates[] = $candidate;
+            }
+        }
+
+        return array_values(array_unique($candidates));
     }
 
     /**
@@ -563,13 +600,7 @@ class FixtureDataService
             $mimeType = $finfo->buffer($contents);
 
             // Map MIME type to file extension
-            $mimeToExtension = [
-                'image/jpeg' => 'jpg',
-                'image/png' => 'png',
-                'image/gif' => 'gif',
-            ];
-
-            $extension = $mimeToExtension[$mimeType] ?? 'jpg'; // Default to jpg if MIME type is unknown
+            $extension = self::IMPORTED_EXTENSIONS[$mimeType] ?? 'jpg'; // Default to jpg if MIME type is unknown
             // $logger->debug("Inferred file extension: $extension for MIME type: $mimeType");
 
             // Append the inferred extension to the filename
