@@ -5,6 +5,7 @@ namespace Dynamic\ElementalTemplates\Service;
 use Exception;
 use RuntimeException;
 use Psr\Log\LoggerInterface;
+use SilverStripe\Assets\File;
 use SilverStripe\Assets\Image;
 use SilverStripe\ORM\DataObject;
 use Symfony\Component\Yaml\Yaml;
@@ -12,7 +13,6 @@ use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\LinkField\Models\Link;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Assets\Storage\AssetStore;
 use Dynamic\ElementalTemplates\Extension\BaseElementDataExtension;
 
 class FixtureDataService
@@ -215,10 +215,25 @@ class FixtureDataService
         $duplicateCheckFields = $data['DuplicateCheck'] ?? [];
         unset($data['DuplicateCheck']);
 
+        // File subclasses store the asset path in FileFilename, not in a Filename column, and
+        // reusing an existing file must never re-apply the fixture's folder-less Filename.
         if (!empty($duplicateCheckFields)) {
+            $relatedIsFile = is_a($relatedClassName, File::class, true);
             $query = DataObject::get($relatedClassName);
             foreach ($duplicateCheckFields as $field) {
-                if ($relatedClassName::singleton()->hasDatabaseField($field) && isset($data[$field])) {
+                if (!isset($data[$field])) {
+                    continue;
+                }
+
+                if ($relatedIsFile && $field === 'Filename' && !$relatedClassName::singleton()->hasDatabaseField('Filename')) {
+                    $assetPath = $this->buildAssetPath((string)($data['Folder'] ?? ''), (string)$data['Filename']);
+                    if ($assetPath !== '') {
+                        $query = $query->filter('FileFilename', $assetPath);
+                    }
+                    continue;
+                }
+
+                if ($relatedClassName::singleton()->hasDatabaseField($field)) {
                     $query = $query->filter($field, $data[$field]);
                 }
             }
@@ -226,6 +241,15 @@ class FixtureDataService
             $existingRecord = $query->first();
             if ($existingRecord) {
                 // $logger->debug("Found existing record for $relatedClassName with matching fields: " . json_encode($duplicateCheckFields));
+
+                if ($relatedIsFile) {
+                    // Return the existing file untouched: update($data) would push the fixture's
+                    // folder-less Filename through File::setFilename(), which resets ParentID to
+                    // 0 and moves a shared image out of its folder.
+                    // $logger->debug("Reusing existing file for $relatedClassName with ID: " . $existingRecord->ID);
+
+                    return $existingRecord;
+                }
 
                 // Update the existing record with the new data
                 $existingRecord->update($data);
@@ -315,15 +339,15 @@ class FixtureDataService
         }
 
         // Sanitize folder and filename
-        $folder = preg_replace('/[^a-zA-Z0-9_\-\/]/', '_', trim($folder, '/'));
-        $filename = preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $filename);
+        $folder = $this->sanitiseFolder((string)$folder);
+        $filename = $this->sanitiseFilename((string)$filename);
 
         // $logger->debug("Creating image from PopulateFileFrom: $populateFileFrom with Filename: $filename in Folder: $folder");
 
         // Check if PopulateFileFrom is a URL
         if (filter_var($populateFileFrom, FILTER_VALIDATE_URL)) {
             // $logger->debug("Detected URL for PopulateFileFrom. Using importRemoteImage.");
-            return $this->importRemoteImage($populateFileFrom, $filename, $folder);
+            return $this->importRemoteImage($populateFileFrom, $filename, $folder, $this->getFixtureTitle($data));
         }
 
         // Resolve the absolute path for PopulateFileFrom (local file)
@@ -350,12 +374,12 @@ class FixtureDataService
             }
         }
 
-        $localPath = $folder ? "$folder/$filename" : $filename;
-        $fullLocalPath = ASSETS_PATH . "/$localPath";
+        $localPath = $this->buildAssetPath($folder, $filename);
 
         try {
             $image = Image::create();
             $image->setFromLocalFile($absolutePath, $localPath);
+            $this->writeTitle($image, $data);
             $image->write();
 
             // $logger->debug("Successfully created Image record with ID: {$image->ID}");
@@ -363,6 +387,70 @@ class FixtureDataService
         } catch (Exception $e) {
             $logger->error("Error creating Image record: " . $e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Sanitise a fixture folder name the way image creation does, so a lookup key built from
+     * it matches the path the image is actually stored at.
+     */
+    private function sanitiseFolder(string $folder): string
+    {
+        return (string) preg_replace('/[^a-zA-Z0-9_\-\/]/', '_', trim($folder, '/'));
+    }
+
+    /**
+     * Sanitise a fixture filename the way image creation does.
+     */
+    private function sanitiseFilename(string $filename): string
+    {
+        return (string) preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $filename);
+    }
+
+    /**
+     * Build the asset path a fixture image is stored at, from its fixture Folder and Filename.
+     */
+    private function buildAssetPath(string $folder, string $filename): string
+    {
+        $folder = $this->sanitiseFolder($folder);
+        $filename = $this->sanitiseFilename($filename);
+
+        if ($folder === '' || $filename === '') {
+            return $folder . $filename;
+        }
+
+        return "$folder/$filename";
+    }
+
+    /**
+     * The fixture's Title, if it supplied one.
+     *
+     * @param array $data
+     */
+    private function getFixtureTitle(array $data): ?string
+    {
+        $title = $data['Title'] ?? null;
+
+        if ($title === null || $title === '') {
+            return null;
+        }
+
+        return (string)$title;
+    }
+
+    /**
+     * Write the fixture Title onto a newly created image, so a DuplicateCheck on Title can
+     * match it. File::onBeforeWrite() only derives a Title from the file name when none is set.
+     *
+     * @param Image $image
+     * @param array $data
+     */
+    private function writeTitle(Image $image, array $data): void
+    {
+        $title = $this->getFixtureTitle($data);
+
+        if ($title !== null) {
+            $image->setField('Title', $title);
         }
     }
 
@@ -413,7 +501,7 @@ class FixtureDataService
     }
 
     // Add debugging to importRemoteImage to log its behavior
-    public function importRemoteImage($url, $filename = null, $folder = '')
+    public function importRemoteImage($url, $filename = null, $folder = '', ?string $title = null)
     {
         $logger = Injector::inst()->get(LoggerInterface::class);
         // $logger->debug("Starting importRemoteImage for URL: $url");
@@ -454,38 +542,40 @@ class FixtureDataService
         }
 
         // Ensure filename is safe
-        $filename = preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $filename);
+        $filename = $this->sanitiseFilename((string)$filename);
 
-        // Generate target path in assets
-        $folder = trim($folder, '/');
-        $targetFolder = $folder ? ASSETS_PATH . "/$folder" : ASSETS_PATH;
-        if (!file_exists($targetFolder)) {
-            mkdir($targetFolder, 0755, true);
-        }
-
-        $localPath = $folder ? "$folder/$filename" : $filename;
-        $fullLocalPath = ASSETS_PATH . "/$localPath";
+        $folder = $this->sanitiseFolder((string)$folder);
+        $localPath = $this->buildAssetPath($folder, $filename);
 
         // Log the URL and filename
         // $logger->debug("URL: $url, Filename: $filename");
 
-        // Log the folder where the file will be saved
-        // $logger->debug("Target folder: $targetFolder");
+        // Stage the download in a temp file outside the assets folder. Writing it to
+        // ASSETS_PATH/<Folder>/<Filename> would land on the path an already published asset
+        // occupies, and the AssetStore then resolves the name conflict for us instead.
+        // A unique name in the system temp dir, with the source extension kept so the store
+        // can still detect the mime type.
+        $tempPath = sys_get_temp_dir() . '/ss_fixture_import_' . bin2hex(random_bytes(8)) . '.' . $extension;
 
-        // Log the full local path of the file
-        // $logger->debug("Full local path: $fullLocalPath");
-
-        // Log the result of file_put_contents
-        if (file_put_contents($fullLocalPath, $contents)) {
-            // $logger->debug("File successfully saved to: $fullLocalPath");
-        } else {
-            $logger->warning("Failed to save file to: $fullLocalPath");
+        if (file_put_contents($tempPath, $contents) === false) {
+            $logger->warning("Failed to stage downloaded file from URL: $url");
+            @unlink($tempPath);
+            return null;
         }
 
         // Use AssetStore to create the file record
-        $store = Injector::inst()->get(AssetStore::class);
         $image = Image::create();
-        $image->setFromLocalFile($fullLocalPath, $localPath);
+
+        try {
+            $image->setFromLocalFile($tempPath, $localPath);
+        } finally {
+            // The AssetStore copied the bytes into its own store; the staged file is ours to clean up.
+            @unlink($tempPath);
+        }
+
+        if ($title !== null && $title !== '') {
+            $image->setField('Title', $title);
+        }
 
         try {
             $image->write();
