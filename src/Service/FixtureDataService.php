@@ -451,7 +451,8 @@ class FixtureDataService
         }
 
         $filter = FileNameFilter::create();
-        $segments = array_filter(explode('/', $path), fn ($segment) => $segment !== '' && $segment !== '0');
+        // Mirrors File::getFilePathParts(): a "0" segment is a legitimate folder name.
+        $segments = array_values(array_filter(explode('/', $path), fn ($segment) => $segment !== ''));
 
         return implode('/', array_map(fn ($segment) => $filter->filter($segment), $segments));
     }

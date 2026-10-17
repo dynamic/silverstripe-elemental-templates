@@ -3,6 +3,7 @@
 namespace Dynamic\ElementalTemplates\Tests\Service;
 
 use Psr\Log\LoggerInterface;
+use SilverStripe\Assets\Dev\TestAssetStore;
 use SilverStripe\Assets\Image;
 use SilverStripe\Control\Director;
 use SilverStripe\Dev\SapphireTest;
@@ -21,6 +22,9 @@ class FixtureDataServiceTest extends SapphireTest
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Keep published asset bytes out of the project's real assets folder.
+        TestAssetStore::activate('FixtureDataServiceTest');
 
         // Mock the logger
         $mockLogger = $this->createMock(LoggerInterface::class);
@@ -51,6 +55,8 @@ class FixtureDataServiceTest extends SapphireTest
 
     protected function tearDown(): void
     {
+        TestAssetStore::reset();
+
         parent::tearDown();
     }
 
@@ -337,6 +343,9 @@ class FixtureDataServiceTest extends SapphireTest
         // Appending a byte keeps the file a valid PNG while changing its content and hash.
         $secondSource = $this->writeTempSource('fixture_second_', $placeholder . "\0");
 
+        // The path the pre-fix code staged its download onto. It deliberately stays outside the
+        // TestAssetStore basedir: ASSETS_PATH is where the old file_put_contents() wrote, and
+        // that is the write this test is about.
         $publicPath = ASSETS_PATH . '/ImportTest/remote-dup.png';
 
         try {
@@ -388,15 +397,8 @@ class FixtureDataServiceTest extends SapphireTest
     }
 
     /**
-     * A remote import whose file cannot be read still returns null and leaves no staged
-     * temp file behind.
-     */
-    /**
-     * Bad input: an unreadable source still returns null and creates no record. This is a guard
-     * rather than a falsifiability proof - the download fails before anything is staged, so the
-     * pre-fix code returned null here too. The staged temp file check is the same kind of guard:
-     * it pins the cleanup the fix is responsible for, and it cannot fail on code that never
-     * staged anything.
+     * Bad input: an unreadable remote source returns null and creates no record. The temp file
+     * check guards the staging cleanup; the download itself fails before anything is staged.
      */
     public function testRemoteImageImportOfUnreadableUrlReturnsNull(): void
     {
@@ -483,6 +485,41 @@ class FixtureDataServiceTest extends SapphireTest
     {
         $files = glob(sys_get_temp_dir() . '/ss_fixture_import_*');
         return $files === false ? [] : $files;
+    }
+
+    /**
+     * A DuplicateCheck whose fields are all absent from the fixture data must not fall back to
+     * an unfiltered lookup, which would hand back (and previously overwrite) an unrelated record.
+     */
+    public function testDuplicateCheckWithoutUsableFieldLeavesOtherRecordsAlone(): void
+    {
+        $service = new FixtureDataService();
+
+        $seeded = ElementContent::create();
+        $seeded->Title = 'Seeded block';
+        $seeded->Content = 'Seeded content';
+        $seeded->write();
+
+        $created = $service->createRelatedObject(ElementContent::class, [
+            'Content' => 'Fresh content',
+            // Title is the only check field and it is not in the data above.
+            'DuplicateCheck' => ['Title'],
+        ]);
+
+        $this->assertNotNull($created, 'A record should still be created.');
+        $this->assertNotSame(
+            $seeded->ID,
+            $created->ID,
+            'Without a usable check field the lookup must not match an arbitrary record.'
+        );
+
+        $seeded->flushCache();
+        $this->assertSame(
+            'Seeded content',
+            $seeded->Content,
+            'The unrelated record must not be updated.'
+        );
+        $this->assertSame('Seeded block', $seeded->Title, 'The unrelated record must not be updated.');
     }
 
     public function testDuplicateCheck(): void
