@@ -318,10 +318,6 @@ class FixtureDataService
         $folder = preg_replace('/[^a-zA-Z0-9_\-\/]/', '_', trim($folder, '/'));
         $filename = preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $filename);
 
-        // Ensure the folder and filename use forward slashes
-        $folder = str_replace('_', '/', $folder);
-        $filename = str_replace('_', '/', $filename);
-
         // $logger->debug("Creating image from PopulateFileFrom: $populateFileFrom with Filename: $filename in Folder: $folder");
 
         // Check if PopulateFileFrom is a URL

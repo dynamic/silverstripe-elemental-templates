@@ -16,6 +16,8 @@ use Dynamic\ElementalTemplates\Extension\BaseElementDataExtension;
 
 class FixtureDataServiceTest extends SapphireTest
 {
+    protected $usesDatabase = true;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -184,6 +186,45 @@ class FixtureDataServiceTest extends SapphireTest
         $this->assertNotNull($image, 'Image should be created successfully.');
         $this->assertInstanceOf(Image::class, $image, 'Created object should be an instance of Image.');
         $this->assertEquals('Placeholder/test-placeholder3.png', $image->Filename, 'Image filename should match the provided value.');
+    }
+
+    /**
+     * Regression test for #99: underscores in the supplied Folder and Filename must be
+     * preserved rather than turned into directory separators.
+     */
+    public function testCreateImageFromFileKeepsUnderscores(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+
+        $image = $service->createImageFromFile([
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'hero_image.png',
+            'Folder' => 'Placeholder',
+        ]);
+
+        $this->assertNotNull($image, 'Image with an underscore in its filename should be created.');
+        $this->assertInstanceOf(Image::class, $image);
+        $this->assertSame(
+            'Placeholder/hero_image.png',
+            $image->Filename,
+            'Underscores in the filename must not be converted into folders.'
+        );
+
+        // An underscore in the folder name must stay inside a single folder too.
+        $folderedImage = $service->createImageFromFile([
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'banner_image.png',
+            'Folder' => 'Hero_Images',
+        ]);
+
+        $this->assertNotNull($folderedImage, 'Image inside an underscored folder should be created.');
+        $this->assertSame(
+            'Hero_Images/banner_image.png',
+            $folderedImage->Filename,
+            'Underscores in the folder name must not be converted into folders.'
+        );
     }
 
     public function testDuplicateCheck(): void
