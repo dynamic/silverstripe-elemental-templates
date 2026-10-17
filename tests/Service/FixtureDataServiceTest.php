@@ -3,11 +3,13 @@
 namespace Dynamic\ElementalTemplates\Tests\Service;
 
 use Psr\Log\LoggerInterface;
+use SilverStripe\Assets\Dev\TestAssetStore;
 use SilverStripe\Assets\Image;
 use SilverStripe\Control\Director;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Versioned\Versioned;
 use DNADesign\Elemental\Models\ElementalArea;
 use DNADesign\Elemental\Models\ElementContent;
 use Dynamic\ElementalTemplates\Models\Template;
@@ -21,6 +23,9 @@ class FixtureDataServiceTest extends SapphireTest
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Keep published asset bytes out of the project's real assets folder.
+        TestAssetStore::activate('FixtureDataServiceTest');
 
         // Mock the logger
         $mockLogger = $this->createMock(LoggerInterface::class);
@@ -51,6 +56,8 @@ class FixtureDataServiceTest extends SapphireTest
 
     protected function tearDown(): void
     {
+        TestAssetStore::reset();
+
         parent::tearDown();
     }
 
@@ -225,6 +232,531 @@ class FixtureDataServiceTest extends SapphireTest
             $folderedImage->Filename,
             'Underscores in the folder name must not be converted into folders.'
         );
+    }
+
+    /**
+     * Regression test for #113: an image DuplicateCheck must actually match the image the
+     * fixture already created, and reusing it must not move it out of its folder.
+     */
+    public function testImageDuplicateCheckReusesImageAndKeepsItsFolder(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $title = 'Duplicate check placeholder';
+
+        $data = [
+            'Title' => $title,
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'dup.png',
+            'Folder' => 'Placeholder',
+            'DuplicateCheck' => ['Title', 'Filename'],
+        ];
+
+        $first = $service->createRelatedObject(Image::class, $data);
+        $this->assertNotNull($first, 'The first image should be created.');
+        $this->assertSame(
+            'Placeholder/dup.png',
+            $first->getFilename(),
+            'The image should be stored in the folder the fixture asked for.'
+        );
+        $this->assertGreaterThan(0, (int)$first->ParentID, 'The image should sit inside the Placeholder folder.');
+        $parentID = (int)$first->ParentID;
+
+        $second = $service->createRelatedObject(Image::class, $data);
+        $this->assertNotNull($second, 'The second call should return an image.');
+        $this->assertSame(
+            $first->ID,
+            $second->ID,
+            'The DuplicateCheck should reuse the image the fixture already created.'
+        );
+        $this->assertSame(
+            1,
+            Image::get()->filter('Title', $title)->count(),
+            'Only one image should exist for this fixture.'
+        );
+
+        $second = Image::get()->byID($second->ID);
+        $this->assertSame($parentID, (int)$second->ParentID, 'Reusing the image must not move it to another folder.');
+        $this->assertSame(
+            'Placeholder/dup.png',
+            $second->getFilename(),
+            'Reusing the image must not change its filename.'
+        );
+    }
+
+    /**
+     * The duplicate lookup key has to be filtered the way File::setFilename() filters, or a
+     * Filename the FileNameFilter rewrites never matches the stored FileFilename and every
+     * element adds another copy of the same image.
+     */
+    public function testImageDuplicateCheckMatchesFilteredFilename(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $title = 'Filtered duplicate';
+
+        $data = [
+            'Title' => $title,
+            'PopulateFileFrom' => $populateFileFrom,
+            // Spaces and brackets: sanitising gives "hero_image__1_.png", the FileNameFilter
+            // SilverStripe stores with collapses that to "hero_image_1_.png".
+            'Filename' => 'hero image (1).png',
+            'Folder' => 'Placeholder',
+            'DuplicateCheck' => ['Title', 'Filename'],
+        ];
+
+        $first = $service->createRelatedObject(Image::class, $data);
+        $this->assertNotNull($first, 'The first image should be created.');
+        $this->assertSame(
+            'Placeholder/hero_image_1_.png',
+            $first->getFilename(),
+            'The image should be stored under the filtered name SilverStripe derives.'
+        );
+
+        $second = $service->createRelatedObject(Image::class, $data);
+        $this->assertNotNull($second, 'The second call should return an image.');
+        $this->assertSame(
+            $first->ID,
+            $second->ID,
+            'The duplicate lookup key must be filtered the same way the stored path is.'
+        );
+    }
+
+    /**
+     * Regression test for #113: two fixtures sharing a Folder/Filename but not a Title. The
+     * second image's Name collides with the first, so File::onBeforeWrite() stores it as
+     * shared-v2.png; the duplicate lookup has to accept that versioned name, or every run adds
+     * another -vN copy.
+     *
+     * File::updateFilesystem() only moves the stored path to the new Name on the draft stage
+     * (the stage the CMS works in). SapphireTest leaves no stage set, so the test sets draft
+     * itself; without it FileFilename keeps the unversioned path and the case never arises.
+     */
+    public function testImageDuplicateCheckMatchesVersionedNameOfCollidingFixture(): void
+    {
+        Versioned::withVersionedMode(function () {
+            Versioned::set_stage(Versioned::DRAFT);
+            $service = new FixtureDataService();
+
+            $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+            $fixture = fn (string $title) => [
+                'Title' => $title,
+                'PopulateFileFrom' => $populateFileFrom,
+                'Filename' => 'shared.png',
+                'Folder' => 'Placeholder',
+                'DuplicateCheck' => ['Title', 'Filename'],
+            ];
+
+            $firstA = $service->createRelatedObject(Image::class, $fixture('Shared name A'));
+            $firstB = $service->createRelatedObject(Image::class, $fixture('Shared name B'));
+            $this->assertNotNull($firstA, 'The first fixture should create an image.');
+            $this->assertNotNull($firstB, 'The second fixture should create an image.');
+            $this->assertSame('Placeholder/shared.png', $firstA->getFilename());
+            $this->assertSame(
+                'Placeholder/shared-v2.png',
+                $firstB->getFilename(),
+                'The colliding image should get the versioned name File::onBeforeWrite() assigns.'
+            );
+
+            $secondA = $service->createRelatedObject(Image::class, $fixture('Shared name A'));
+            $secondB = $service->createRelatedObject(Image::class, $fixture('Shared name B'));
+            $this->assertSame($firstA->ID, $secondA->ID, 'A re-run should reuse the first fixture\'s image.');
+            $this->assertSame(
+                $firstB->ID,
+                $secondB->ID,
+                'A re-run should reuse the colliding fixture\'s versioned image, not add a -v3 copy.'
+            );
+            $this->assertSame(
+                2,
+                Image::get()->filter('ParentID', $firstA->ParentID)->count(),
+                'Two fixtures run twice should leave exactly two images in the folder.'
+            );
+        });
+    }
+
+    /**
+     * A DuplicateCheck on Filename alone has to match on the stored path: the second call
+     * carries a different Title, so only the Filename lookup can find the first image.
+     */
+    public function testImageDuplicateCheckOnFilenameAloneReusesImage(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $data = [
+            'Title' => 'Filename only first',
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'filename-only.png',
+            'Folder' => 'Placeholder',
+            'DuplicateCheck' => ['Filename'],
+        ];
+
+        $first = $service->createRelatedObject(Image::class, $data);
+        $this->assertNotNull($first, 'The first image should be created.');
+
+        $second = $service->createRelatedObject(Image::class, ['Title' => 'Filename only second'] + $data);
+        $this->assertNotNull($second, 'The second call should return an image.');
+        $this->assertSame($first->ID, $second->ID, 'A Filename-only DuplicateCheck should reuse the stored image.');
+        $this->assertSame(
+            1,
+            Image::get()->filter('FileFilename:StartsWith', 'Placeholder/filename-only')->count(),
+            'Only one image should exist under that Filename.'
+        );
+    }
+
+    /**
+     * The Filename half of a DuplicateCheck has to rule a record out: the same Title in a
+     * different Folder, or under a different Filename, is a different image.
+     */
+    public function testImageDuplicateCheckWithSameTitleAndDifferentPathCreatesNewImage(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $title = 'Same title, different path';
+        $data = [
+            'Title' => $title,
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'same-title.png',
+            'Folder' => 'Placeholder',
+            'DuplicateCheck' => ['Title', 'Filename'],
+        ];
+
+        $first = $service->createRelatedObject(Image::class, $data);
+        $otherFolder = $service->createRelatedObject(Image::class, ['Folder' => 'OtherFolder'] + $data);
+        $otherName = $service->createRelatedObject(Image::class, ['Filename' => 'same-title-other.png'] + $data);
+
+        $this->assertNotNull($first, 'The first image should be created.');
+        $this->assertNotNull($otherFolder, 'The image in another folder should be created.');
+        $this->assertNotNull($otherName, 'The image under another Filename should be created.');
+        $this->assertNotSame($first->ID, $otherFolder->ID, 'A different Folder must not match on Title alone.');
+        $this->assertNotSame($first->ID, $otherName->ID, 'A different Filename must not match on Title alone.');
+        $this->assertSame('OtherFolder/same-title.png', $otherFolder->getFilename());
+        $this->assertSame('Placeholder/same-title-other.png', $otherName->getFilename());
+        $this->assertSame(3, Image::get()->filter('Title', $title)->count(), 'Each path should get its own image.');
+    }
+
+    /**
+     * Regression test for #113: importRemoteImage() used to stage its download by writing it
+     * straight onto ASSETS_PATH/<Folder>/<Filename> - the path an already published asset
+     * occupies - and only then register the file. Re-importing under the same Filename
+     * therefore replaced the bytes sitting at that path (and the AssetStore then consumed
+     * them). The download has to be staged in a temp file instead, so the AssetStore can
+     * resolve the name conflict without anything being written over an existing asset.
+     */
+    public function testRemoteImageImportDoesNotOverwriteExistingAssetBytes(): void
+    {
+        $service = new FixtureDataService();
+
+        // Two different images, staged locally and served over file:// so no network is needed.
+        $placeholder = file_get_contents(__DIR__ . '/placeholder.png');
+        $this->assertNotFalse($placeholder, 'The test placeholder image should be readable.');
+
+        $firstSource = $this->writeTempSource('fixture_first_', $placeholder);
+        // Appending a byte keeps the file a valid PNG while changing its content and hash.
+        $secondSource = $this->writeTempSource('fixture_second_', $placeholder . "\0");
+
+        // The path the pre-fix code staged its download onto. It deliberately stays outside the
+        // TestAssetStore basedir: ASSETS_PATH is where the old file_put_contents() wrote, and
+        // that is the write this test is about.
+        $publicPath = ASSETS_PATH . '/ImportTest/remote-dup.png';
+        $publicFolder = dirname($publicPath ?? '');
+        $publicFolderPreExisted = is_dir($publicFolder ?? '');
+        $publicFileCreated = false;
+
+        try {
+            $tempFilesBefore = $this->listStagedTempFiles();
+            $first = $service->importRemoteImage('file://' . $firstSource, 'remote-dup.png', 'ImportTest');
+            $this->assertNotNull($first, 'The first remote import should succeed.');
+            $this->assertSame(
+                md5($placeholder),
+                md5((string)$first->getString()),
+                'The first import should publish its own bytes.'
+            );
+
+            // The bytes an already published asset occupies at that path, which a second
+            // import under the same Filename must leave alone.
+            $this->assertFalse(file_exists($publicPath), 'The first import should not leave a file on the public path.');
+            @mkdir(dirname($publicPath ?? ''), 0777, true);
+            file_put_contents($publicPath, $placeholder);
+            $publicFileCreated = true;
+
+            $second = $service->importRemoteImage('file://' . $secondSource, 'remote-dup.png', 'ImportTest');
+            $this->assertNotNull($second, 'The second remote import should succeed.');
+            $this->assertNotSame(
+                $first->ID,
+                $second->ID,
+                'The second import should create its own image record.'
+            );
+
+            $first->flushCache();
+            $this->assertSame(
+                md5($placeholder),
+                md5((string)$first->getString()),
+                'Importing a second file under the same Filename must not change the first image\'s content.'
+            );
+            $this->assertFileExists($publicPath, 'A second import must not consume or remove the file at the target path.');
+            $this->assertSame(
+                $placeholder,
+                file_get_contents($publicPath),
+                'A second import must not overwrite the bytes already sitting at the target path.'
+            );
+            $this->assertSame(
+                $tempFilesBefore,
+                $this->listStagedTempFiles(),
+                'The staged download must be cleaned up once the AssetStore has the bytes.'
+            );
+        } finally {
+            @unlink($firstSource);
+            @unlink($secondSource);
+            if ($publicFileCreated) {
+                // Only the file this test wrote is its to remove.
+                @unlink($publicPath);
+            }
+            if (!$publicFolderPreExisted) {
+                // The folder this test mkdir'ed is not its to keep: leaving it behind puts an empty
+                // folder in the project's real assets path, which is what this branch stops doing.
+                @rmdir($publicFolder ?? '');
+            }
+        }
+    }
+
+    /**
+     * Bad input: an unreadable remote source returns null and creates no record. The temp file
+     * check guards the staging cleanup; the download itself fails before anything is staged.
+     */
+    public function testRemoteImageImportOfUnreadableUrlReturnsNull(): void
+    {
+        $service = new FixtureDataService();
+
+        $before = $this->listStagedTempFiles();
+        $image = $service->importRemoteImage('file:///definitely/not/a/real/file.png', 'missing.png', 'ImportTest');
+
+        $this->assertNull($image, 'An unreadable URL should not create an image.');
+        $this->assertSame($before, $this->listStagedTempFiles(), 'No staged temp file should be left behind.');
+    }
+
+    /**
+     * Without DuplicateCheck every call creates a fresh image (unchanged behaviour).
+     */
+    public function testImageWithoutDuplicateCheckAlwaysCreatesANewImage(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $data = [
+            'Title' => 'No duplicate check',
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'no-dup.png',
+            'Folder' => 'Placeholder',
+        ];
+
+        $first = $service->createRelatedObject(Image::class, $data);
+        $second = $service->createRelatedObject(Image::class, $data);
+
+        $this->assertNotNull($first);
+        $this->assertNotNull($second);
+        $this->assertNotSame($first->ID, $second->ID, 'Without DuplicateCheck a new image is created every time.');
+    }
+
+    /**
+     * The fixture Title has to land on the image on the remote branch too, otherwise a
+     * DuplicateCheck on Title can never match (#113).
+     */
+    public function testCreateImageFromFileWritesFixtureTitleForRemoteSource(): void
+    {
+        $service = new FixtureDataService();
+
+        $source = $this->writeTempSource('fixture_title_', (string)file_get_contents(__DIR__ . '/placeholder.png'));
+
+        try {
+            $image = $service->createImageFromFile([
+                'Title' => 'Remote fixture title',
+                'PopulateFileFrom' => 'file://' . $source,
+                'Filename' => 'titled-remote.png',
+                'Folder' => 'ImportTest',
+            ]);
+
+            $this->assertNotNull($image, 'An image should be created from a file:// source.');
+            $this->assertSame(
+                'Remote fixture title',
+                $image->Title,
+                'The fixture Title should be written on the remote branch as well.'
+            );
+            $this->assertSame('ImportTest/titled-remote.png', $image->getFilename());
+        } finally {
+            @unlink($source);
+        }
+    }
+
+    /**
+     * Write a fixture source image to a uniquely named temp file, and return its path. Unlike
+     * tempnam() this leaves no stray second file behind for the caller to clean up.
+     */
+    private function writeTempSource(string $prefix, string $contents): string
+    {
+        $path = sys_get_temp_dir() . '/' . $prefix . bin2hex(random_bytes(8)) . '.png';
+        file_put_contents($path, $contents);
+
+        return $path;
+    }
+
+    /**
+     * Temp files this test suite staged in the system temp directory.
+     *
+     * @return string[]
+     */
+    private function listStagedTempFiles(): array
+    {
+        $files = glob(sys_get_temp_dir() . '/ss_fixture_import_*');
+        return $files === false ? [] : $files;
+    }
+
+    /**
+     * A DuplicateCheck whose fields are all absent from the fixture data must not fall back to
+     * an unfiltered lookup, which would hand back (and previously overwrite) an unrelated record.
+     */
+    public function testDuplicateCheckWithoutUsableFieldLeavesOtherRecordsAlone(): void
+    {
+        $service = new FixtureDataService();
+
+        $seeded = ElementContent::create();
+        $seeded->Title = 'Seeded block';
+        $seeded->Content = 'Seeded content';
+        $seeded->write();
+
+        $created = $service->createRelatedObject(ElementContent::class, [
+            'Content' => 'Fresh content',
+            // Title is the only check field and it is not in the data above.
+            'DuplicateCheck' => ['Title'],
+        ]);
+
+        $this->assertNotNull($created, 'A record should still be created.');
+        $this->assertNotSame(
+            $seeded->ID,
+            $created->ID,
+            'Without a usable check field the lookup must not match an arbitrary record.'
+        );
+
+        $seeded->flushCache();
+        $this->assertSame(
+            'Seeded content',
+            $seeded->Content,
+            'The unrelated record must not be updated.'
+        );
+        $this->assertSame('Seeded block', $seeded->Title, 'The unrelated record must not be updated.');
+    }
+
+    /**
+     * importRemoteImage() appends an extension it had to infer from the downloaded bytes when the
+     * fixture Filename carries none, so a duplicate lookup keyed on the raw, extension-less name
+     * never matched it and every run created another copy of the same image.
+     */
+    public function testImageDuplicateCheckMatchesInferredExtensionOfRemoteImport(): void
+    {
+        $service = new FixtureDataService();
+
+        $source = $this->writeTempSource('fixture_noext_', (string)file_get_contents(__DIR__ . '/placeholder.png'));
+
+        try {
+            $data = [
+                'Title' => 'Extensionless import',
+                'PopulateFileFrom' => 'file://' . $source,
+                // No extension: the import has to infer one, so the stored path is not the name
+                // the fixture spelled out.
+                'Filename' => 'no-extension',
+                'Folder' => 'ImportTest',
+                'DuplicateCheck' => ['Title', 'Filename'],
+            ];
+
+            $first = $service->createRelatedObject(Image::class, $data);
+            $this->assertNotNull($first, 'The first import should create an image.');
+            $this->assertSame(
+                'ImportTest/no-extension.png',
+                $first->getFilename(),
+                'The inferred extension is part of the path the image is stored at.'
+            );
+
+            $second = $service->createRelatedObject(Image::class, $data);
+            $this->assertNotNull($second, 'The second call should return an image.');
+            $this->assertSame(
+                $first->ID,
+                $second->ID,
+                'The lookup key has to allow for the extension the import appends.'
+            );
+            $this->assertSame(1, Image::get()->count(), 'Only one image should exist for this fixture.');
+        } finally {
+            @unlink($source);
+        }
+    }
+
+    /**
+     * The same extension question on the local branch, answered with the behaviour the code really
+     * has: an extension-less Filename never becomes a record at all, because Image refuses a name
+     * with no extension. That is why the duplicate lookup does not need the raw path as a candidate
+     * (it is unchanged from before this branch - the module has always refused this input).
+     */
+    public function testCreateImageFromFileRejectsExtensionlessFilename(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+
+        $image = $service->createImageFromFile([
+            'Title' => 'Extensionless local',
+            'PopulateFileFrom' => $populateFileFrom,
+            'Filename' => 'no-extension-local',
+            'Folder' => 'NoExtTest',
+        ]);
+
+        $this->assertNull($image, 'An image with no extension cannot be written, so nothing is created.');
+        $this->assertSame(0, Image::get()->count(), 'A refused image must not leave a record behind.');
+    }
+
+    /**
+     * createImageFromFile()'s local branch used to pre-create ASSETS_PATH/<Folder>, which
+     * setFromLocalFile() never needed: it only left an empty folder in the project's real assets
+     * path, and wrote there even while a test store was active.
+     */
+    public function testCreateImageFromFileDoesNotCreatePublicAssetFolders(): void
+    {
+        $service = new FixtureDataService();
+
+        $populateFileFrom = str_replace(Director::baseFolder() . '/', '', __DIR__ . '/placeholder.png');
+        $folder = 'NoMkdirTest';
+        $publicFolder = ASSETS_PATH . '/' . $folder;
+
+        try {
+            $this->assertDirectoryDoesNotExist($publicFolder, 'The test starts from a clean assets path.');
+
+            $image = $service->createImageFromFile([
+                'PopulateFileFrom' => $populateFileFrom,
+                'Filename' => 'local-only.png',
+                'Folder' => $folder,
+            ]);
+
+            $this->assertNotNull($image, 'The image should still be created.');
+            $this->assertSame(
+                $folder . '/local-only.png',
+                $image->getFilename(),
+                'The folder the fixture asked for is still applied.'
+            );
+            $this->assertNotSame(
+                '',
+                (string)$image->getString(),
+                'The AssetStore publishes the bytes, and creates whatever folder it needs to do that.'
+            );
+            $this->assertDirectoryDoesNotExist(
+                $publicFolder,
+                'Creating an image must not create a folder in the project real assets path.'
+            );
+        } finally {
+            // With the fix in place there is nothing here to remove; this only cleans up after a
+            // pre-fix run. rmdir never removes a non-empty directory.
+            @rmdir($publicFolder);
+        }
     }
 
     public function testDuplicateCheck(): void
