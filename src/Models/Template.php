@@ -663,6 +663,8 @@ class Template extends DataObject implements PermissionProvider
                     ->setUseButtonTag(true)
                     ->setIcon('upload')
                     ->addExtraClass('btn-outline-secondary')
+                    // setIcon() adds btn-mobile-collapse, which hides the label below 600px
+                    ->setAttribute('aria-label', 'Capture Preview Image')
                     ->setAttribute('data-template-id', $templateID)
                     ->setAttribute('data-preview-url', $contentOnlyUrl)
                     ->setAttribute('data-upload-url', '/template-screenshot-upload/upload')
