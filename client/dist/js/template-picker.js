@@ -166,7 +166,7 @@
 
                 // Show loading state
                 this.prop('disabled', true).addClass('loading');
-                this.text('Applying...');
+                this.find('.template-picker__apply-label').text('Applying...');
                 picker.showStatus('Applying template...', 'loading');
 
                 // Find and trigger the CMS Actions "Apply Blocks Template" button
@@ -180,7 +180,7 @@
                     // Button not found - show error
                     picker.showStatus('Apply action not available. Use "More Options → Apply Blocks Template" instead.', 'error');
                     this.prop('disabled', false).removeClass('loading');
-                    this.text('Apply Template to Page');
+                    this.find('.template-picker__apply-label').text('Apply Template to Page');
                 }
             }
         });
@@ -202,9 +202,9 @@
                 var modalHeader = $('<div class="template-preview-modal__header"></div>');
                 var modalTitle = $('<h3 class="template-preview-modal__title"></h3>').text(templateTitle + ' Preview');
                 var closeBtn = $('<button type="button" class="template-preview-modal__close" aria-label="Close preview">&times;</button>');
-                var openNewTabBtn = $('<a target="_blank" class="template-preview-modal__newtab" title="Open in new tab"><span class="font-icon-external-link"></span></a>').attr('href', previewUrl);
+                var openNewTabBtn = $('<a target="_blank" class="template-preview-modal__newtab" title="Open in new tab" aria-label="Open preview in new tab"><span class="font-icon-external-link" aria-hidden="true"></span></a>').attr('href', previewUrl);
                 var iframe = $('<iframe class="template-preview-modal__iframe" title="Template preview"></iframe>').attr('src', previewUrl);
-                var loader = $('<div class="template-preview-modal__loader"><span class="font-icon-spinner"></span> Loading preview...</div>');
+                var loader = $('<div class="template-preview-modal__loader"><span class="font-icon-spinner" aria-hidden="true"></span> Loading preview...</div>');
 
                 // Build modal structure
                 modalHeader.append(modalTitle).append(openNewTabBtn).append(closeBtn);

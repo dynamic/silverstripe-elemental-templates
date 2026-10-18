@@ -661,7 +661,8 @@ class Template extends DataObject implements PermissionProvider
             $actions->push(
                 CustomAction::create('CaptureScreenshot', 'Capture Preview Image')
                     ->setUseButtonTag(true)
-                    ->addExtraClass('btn-outline-secondary font-icon-upload')
+                    ->setIcon('upload')
+                    ->addExtraClass('btn-outline-secondary')
                     ->setAttribute('data-template-id', $templateID)
                     ->setAttribute('data-preview-url', $contentOnlyUrl)
                     ->setAttribute('data-upload-url', '/template-screenshot-upload/upload')

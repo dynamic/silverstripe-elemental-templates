@@ -27,7 +27,7 @@
                                  loading="lazy" />
                         <% else %>
                             <div class="template-picker__placeholder">
-                                <span class="font-icon-block-layout"></span>
+                                <span class="font-icon-block-layout" aria-hidden="true"></span>
                             </div>
                         <% end_if %>
                     </div>
@@ -42,7 +42,7 @@
                         <a href="$PreviewLink"
                            class="template-picker__preview-link"
                            title="Preview template">
-                            <span class="font-icon-eye"></span> Preview
+                            <span class="font-icon-eye" aria-hidden="true"></span> Preview
                         </a>
                     </div>
                 </label>
@@ -53,16 +53,17 @@
         <%-- Sticky Apply button at bottom --%>
         <div class="template-picker__actions">
             <button type="button" 
-                    class="template-picker__apply-btn btn btn-primary font-icon-plus-circled"
+                    class="template-picker__apply-btn btn btn-primary"
                     aria-describedby="{$ID}_template_status"
                     disabled>
-                Apply Template to Page
+                <span class="template-picker__apply-icon font-icon-plus-circled" aria-hidden="true"></span>
+                <span class="template-picker__apply-label">Apply Template to Page</span>
             </button>
             <span class="template-picker__status" id="{$ID}_template_status" aria-live="polite"></span>
         </div>
     <% else %>
         <div class="template-picker__empty">
-            <span class="font-icon-block-layout template-picker__empty-icon"></span>
+            <span class="font-icon-block-layout template-picker__empty-icon" aria-hidden="true"></span>
             <p>No templates available.</p>
             <p class="template-picker__empty-hint">Create templates in the <a href="{$AdminURL}">Element Templates</a> section.</p>
         </div>

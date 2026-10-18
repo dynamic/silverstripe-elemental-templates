@@ -269,6 +269,10 @@
     vertical-align: middle;
 }
 
+.template-picker__apply-btn.loading .template-picker__apply-icon {
+    display: none;
+}
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
