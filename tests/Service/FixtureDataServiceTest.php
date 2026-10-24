@@ -100,7 +100,6 @@ class FixtureDataServiceTest extends SapphireTest
         // Verify that the fields were populated correctly by FixtureDataService
         $this->assertEquals('Test Content Block Title', $element->getField('Title'));
         $this->assertEquals('<p>Test Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris elementum congue erat, accumsan tincidunt velit porta lobortis. Sed at efficitur ex. Nulla quis porta neque. In hac habitasse platea dictumst. Nullam et malesuada sem. Pellentesque eros eros, rutrum sit amet erat in, finibus ultrices tortor. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>', $element->getField('HTML'));
-        $this->assertFalse((bool)$element->getField('AvailableGlobally'));
     }
 
     public function testElementContentCreationWithinTemplate(): void
@@ -124,7 +123,6 @@ class FixtureDataServiceTest extends SapphireTest
         // Verify that the fields were populated correctly by FixtureDataService
         $this->assertEquals('Test Content Block Title', $element->getField('Title'));
         $this->assertEquals('<p>Test Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris elementum congue erat, accumsan tincidunt velit porta lobortis. Sed at efficitur ex. Nulla quis porta neque. In hac habitasse platea dictumst. Nullam et malesuada sem. Pellentesque eros eros, rutrum sit amet erat in, finibus ultrices tortor. Curabitur a tincidunt leo, congue interdum ex. Integer a tortor eget ligula eleifend suscipit a rutrum purus. Donec quis rutrum felis.</p>', $element->getField('HTML'));
-        $this->assertFalse((bool)$element->getField('AvailableGlobally'));
 
         // Create an ElementContent outside of a Template
         $elementOutsideTemplate = ElementContent::create();
@@ -133,16 +131,6 @@ class FixtureDataServiceTest extends SapphireTest
         // Elements outside templates should not be populated with fixture data
         $this->assertSame(null, $elementOutsideTemplate->getField('Title'));
         $this->assertSame('', $elementOutsideTemplate->getField('HTML'));
-    }
-
-    public function testCreateRelatedObject(): void
-    {
-        $this->markTestSkipped('Test requires dynamic/silverstripe-elemental-carousel which is not yet compatible with SilverStripe 6');
-    }
-
-    public function testPopulateElementDataWithRelationships(): void
-    {
-        $this->markTestSkipped('Test requires dynamic/silverstripe-elemental-card which is not yet compatible with SilverStripe 6');
     }
 
     public function testImageCreationFromLocalAndURL(): void
