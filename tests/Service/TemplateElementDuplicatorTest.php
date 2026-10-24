@@ -32,7 +32,6 @@ class TemplateElementDuplicatorTest extends SapphireTest
 
         $template = Template::create();
         $template->Title = 'Test Template';
-        $template->AvailableGlobally = true;
         $template->ElementsID = $templateArea->ID;
         $template->write();
         $template->copyVersionToStage('Stage', 'Stage');
