@@ -64,10 +64,18 @@ class SiteTreeExtension extends Extension
             ->setHeadingLevel(4)
             ->addExtraClass('template-picker-panel');
 
-        // Add before the elemental area if possible, otherwise at start of Main tab
-        $elementalAreaField = $fields->dataFieldByName('ElementalArea');
-        if ($elementalAreaField) {
+        // This extension is applied to SiteTree, so it normally runs before
+        // ElementalPageExtension on the page class: no ElementalArea field exists here yet,
+        // and elemental inserts its area directly before the Metadata field. Anchoring the
+        // panel on Metadata therefore places it above the area (issue #121); where the
+        // consuming site removes Metadata, the panel is simply appended to Root.Main. The
+        // ElementalArea anchor is kept first for the unusual setup that applies
+        // ElementalPageExtension to SiteTree itself with its config loading before this
+        // module's, in which case the area already exists here.
+        if ($fields->dataFieldByName('ElementalArea')) {
             $fields->insertBefore('ElementalArea', $templatePanel);
+        } elseif ($fields->fieldByName('Root.Main.Metadata')) {
+            $fields->addFieldToTab('Root.Main', $templatePanel, 'Metadata');
         } else {
             $fields->addFieldToTab('Root.Main', $templatePanel);
         }

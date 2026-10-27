@@ -6,7 +6,7 @@ parameters:
         - src
 
     scanDirectories:
-        - app/src
+        - app/code
         - vendor/silverstripe/framework/src
         - vendor/silverstripe/cms/code
         - vendor/dnadesign/silverstripe-elemental/src

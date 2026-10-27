@@ -337,6 +337,36 @@ class SiteTreeExtensionTest extends SapphireTest
         return $area->Elements()->column('ID');
     }
 
+    /**
+     * Regression test for issue #121: the template picker panel must sit above the elemental
+     * area in Root.Main, not below it. Elemental inserts its area before the Metadata field,
+     * so updateCMSFields() anchors the panel on Metadata too.
+     */
+    public function testTemplatePickerPanelPrecedesElementalArea()
+    {
+        $page = $this->objFromFixture(SamplePage::class, 'testPage');
+        $this->assertGreaterThan(0, $page->ID, 'Precondition: the fixture page must be saved.');
+
+        $fields = $page->getCMSFields();
+        $names = array_map(
+            static fn ($field): string => (string) $field->getName(),
+            $fields->findOrMakeTab('Root.Main')->Fields()->toArray()
+        );
+
+        $index = array_search('ElementalArea', $names, true);
+        $this->assertNotFalse(
+            $index,
+            'Root.Main must contain an ElementalArea field. Order was: ' . json_encode($names)
+        );
+        $this->assertGreaterThan(0, $index, 'ElementalArea must have a preceding field.');
+        $this->assertSame(
+            'TemplatePickerPanel',
+            $names[$index - 1],
+            'The field directly before ElementalArea must be the TemplatePickerPanel. Order was: '
+            . json_encode($names)
+        );
+    }
+
     public function testApplyTemplateActionRedirectsToCurrentRecord()
     {
         $this->logInWithPermission('ADMIN');
