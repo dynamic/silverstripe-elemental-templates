@@ -5,8 +5,15 @@ parameters:
     paths:
         - src
 
+    # The global Page/PageController classes live in a site's app/code, which a
+    # module-only checkout (the CI phplinting job) never has. Stubs in tests/phpstan/
+    # keep them discoverable without a filesystem dependency on a project skeleton;
+    # tests/phpstan/_manifest_exclude keeps those stubs out of SilverStripe's own
+    # class manifest, so they cannot clash with a site's real app/code/Page.php.
+    scanFiles:
+        - tests/phpstan/stubs/Page.php
+
     scanDirectories:
-        - app/code
         - vendor/silverstripe/framework/src
         - vendor/silverstripe/cms/code
         - vendor/dnadesign/silverstripe-elemental/src
