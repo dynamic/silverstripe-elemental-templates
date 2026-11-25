@@ -4,6 +4,8 @@ namespace Dynamic\ElementalTemplates\Tests\Controller;
 
 use SilverStripe\Dev\FunctionalTest;
 use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
+use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePageTwo;
 
 class TemplatePreviewControllerTest extends FunctionalTest
 {
@@ -103,6 +105,63 @@ class TemplatePreviewControllerTest extends FunctionalTest
         $response = $this->get('template-preview/' . $template->ID . '?content_only=1');
 
         $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    public function testFullPreviewOfUntypedTemplateRendersOneDocument()
+    {
+        $template = $this->makeTemplate('Untyped Template', null);
+
+        $this->assertSingleDocumentPreview($template);
+    }
+
+    public function testFullPreviewOfPageTemplateRendersOneDocument()
+    {
+        $template = $this->makeTemplate('Page Template', \Page::class);
+
+        $this->assertSingleDocumentPreview($template);
+    }
+
+    public function testFullPreviewOfNamespacedPageTypeWithoutLayoutTemplateDoesNotError()
+    {
+        // SamplePage has no Layout/SamplePage.ss, so the preview falls back to Page.
+        $template = $this->makeTemplate('Sample Template', SamplePage::class);
+
+        $this->assertSingleDocumentPreview($template);
+    }
+
+    public function testFullPreviewUsesTheLayoutTemplateOfTheTemplatePageType()
+    {
+        // SamplePageTwo has its own Layout template in the test theme, which must win
+        // over the Page fallback while still rendering inside the one Page wrapper.
+        $template = $this->makeTemplate('Typed Layout Template', SamplePageTwo::class);
+
+        $this->useTestTheme(__DIR__, 'previewtest', function () use ($template) {
+            $response = $this->get('template-preview/' . $template->ID);
+            $body = (string) $response->getBody();
+
+            $this->assertEquals(200, $response->getStatusCode());
+            $this->assertSame(1, substr_count($body, '<html'), 'Preview must be a single HTML document.');
+            $this->assertSame(1, substr_count($body, 'SITE-HEADER'), 'Header must not be doubled.');
+            $this->assertSame(1, substr_count($body, 'TYPED-LAYOUT'), 'The type-specific layout must render.');
+            $this->assertSame(0, substr_count($body, 'main-element-area'), 'The Page layout must not render.');
+        });
+    }
+
+    /**
+     * The full preview must render the site's Page template once, with the layout
+     * inside it, not a whole document nested inside a second Page template.
+     */
+    private function assertSingleDocumentPreview(Template $template): void
+    {
+        $this->useTestTheme(__DIR__, 'previewtest', function () use ($template) {
+            $response = $this->get('template-preview/' . $template->ID);
+            $body = (string) $response->getBody();
+
+            $this->assertEquals(200, $response->getStatusCode());
+            $this->assertSame(1, substr_count($body, '<html'), 'Preview must be a single HTML document.');
+            $this->assertSame(1, substr_count($body, 'SITE-HEADER'), 'Header must not be doubled.');
+            $this->assertSame(1, substr_count($body, 'main-element-area'), 'Layout must render once.');
+        });
     }
 
     private function makeTemplate(string $title, ?string $pageType): Template

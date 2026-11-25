@@ -3,7 +3,8 @@
 namespace Dynamic\ElementalTemplates\Controller;
 
 use SilverStripe\Control\HTTPRequest;
-use SilverStripe\ORM\FieldType\DBField;
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\View\SSViewer;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
 use Dynamic\ElementalTemplates\Models\Template;
@@ -95,23 +96,10 @@ class TemplatePreviewController extends \PageController
         $page->Title = $template->Title;
         $page->ElementalArea = $template->Elements();
 
-        $templatePath = str_replace('\\', '/', $pageType);
-        $templateSegments = explode('/', $templatePath);
+        // One render: the engine picks the main template and the Layout subtemplate
+        // from the page type's class ancestry, falling back to Page.
+        $templates = array_merge(SSViewer::get_templates_by_class($pageType, '', SiteTree::class), ['Page']);
 
-        // Inject 'Layout' between the second-to-last and last segments
-        if (count($templateSegments) > 1) {
-            array_splice($templateSegments, -1, 0, 'Layout');
-        }
-
-        $adjustedTemplatePath = implode('/', $templateSegments);
-
-        // Render the BlockPage layout template and store it in the Layout variable
-        $layoutContent = $this->customise($page)->renderWith($adjustedTemplatePath);
-
-        // Render the Page.ss template with the Layout variable properly set
-        return $this->customise([
-            'Page' => $page,
-            'Layout' => DBField::create_field('HTMLText', $layoutContent)
-        ])->renderWith('Page');
+        return $this->customise($page)->renderWith($templates);
     }
 }
