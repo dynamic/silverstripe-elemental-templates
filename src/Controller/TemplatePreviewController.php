@@ -43,10 +43,10 @@ class TemplatePreviewController extends \PageController
             return $this->httpError(404, 'Template not found');
         }
 
-        // Untyped templates apply to any page type, so preview them against the
-        // base Page rather than 500ing — mirrors Template::getAllowedTypes().
+        // Preview against the base Page when the template is untyped (it applies to any
+        // page type) or its PageType is not an existing SiteTree class, rather than 500ing.
         $pageType = $template->PageType;
-        if (!$pageType || !class_exists($pageType)) {
+        if (!$pageType || !is_a($pageType, SiteTree::class, true)) {
             $pageType = \Page::class;
         }
         if (!class_exists($pageType)) {
@@ -100,6 +100,8 @@ class TemplatePreviewController extends \PageController
         // from the page type's class ancestry, falling back to Page.
         $templates = array_merge(SSViewer::get_templates_by_class($pageType, '', SiteTree::class), ['Page']);
 
-        return $this->customise($page)->renderWith($templates);
+        // $Page matches content-only mode. Without it, a Page.ss reading $Page reaches
+        // ContentController::Page($link) and errors for want of the argument.
+        return $this->customise($page)->customise(['Page' => $page])->renderWith($templates);
     }
 }
