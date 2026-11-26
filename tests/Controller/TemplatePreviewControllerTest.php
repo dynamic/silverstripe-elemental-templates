@@ -2,8 +2,10 @@
 
 namespace Dynamic\ElementalTemplates\Tests\Controller;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use SilverStripe\Dev\FunctionalTest;
 use Dynamic\ElementalTemplates\Models\Template;
+use Dynamic\ElementalTemplates\Tests\TestOnly\ElementOne;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePageTwo;
 
@@ -147,13 +149,65 @@ class TemplatePreviewControllerTest extends FunctionalTest
         });
     }
 
+    public function testFullPreviewExposesThePageVariableToThePageTemplate()
+    {
+        // Content-only mode passes $Page, so a site's Page.ss can use it in the full preview too.
+        $template = $this->makeTemplate('Page Variable Template', SamplePage::class);
+
+        $this->useTestTheme(__DIR__, 'previewtest', function () use ($template) {
+            $response = $this->get('template-preview/' . $template->ID);
+
+            $this->assertEquals(200, $response->getStatusCode());
+            $this->assertStringContainsString(
+                '<div class="page-variable">Page Variable Template</div>',
+                (string) $response->getBody()
+            );
+        });
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function provideUnusablePageTypes(): array
+    {
+        return [
+            // Has its own template in the test theme, which must not become the preview wrapper.
+            'DataObject that is not a page' => [ElementOne::class],
+            // Has no create() method at all.
+            'class outside the ORM' => [\stdClass::class],
+            'class that no longer exists' => ['Dynamic\\ElementalTemplates\\Tests\\RemovedPage'],
+        ];
+    }
+
+    #[DataProvider('provideUnusablePageTypes')]
+    public function testFullPreviewFallsBackToPageForAPageTypeThatIsNotASiteTree(string $pageType)
+    {
+        $template = $this->makeTemplate('Fallback Template', $pageType);
+
+        $body = $this->assertSingleDocumentPreview($template);
+
+        $this->assertStringNotContainsString('WRONG-TEMPLATE', $body);
+    }
+
+    #[DataProvider('provideUnusablePageTypes')]
+    public function testContentOnlyPreviewFallsBackToPageForAPageTypeThatIsNotASiteTree(string $pageType)
+    {
+        $template = $this->makeTemplate('Fallback Template', $pageType);
+        $response = $this->get('template-preview/' . $template->ID . '?content_only=1');
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertStringContainsString('Fallback Template - Preview', (string) $response->getBody());
+    }
+
     /**
      * The full preview must render the site's Page template once, with the layout
      * inside it, not a whole document nested inside a second Page template.
      */
-    private function assertSingleDocumentPreview(Template $template): void
+    private function assertSingleDocumentPreview(Template $template): string
     {
-        $this->useTestTheme(__DIR__, 'previewtest', function () use ($template) {
+        $body = '';
+
+        $this->useTestTheme(__DIR__, 'previewtest', function () use ($template, &$body) {
             $response = $this->get('template-preview/' . $template->ID);
             $body = (string) $response->getBody();
 
@@ -162,6 +216,8 @@ class TemplatePreviewControllerTest extends FunctionalTest
             $this->assertSame(1, substr_count($body, 'SITE-HEADER'), 'Header must not be doubled.');
             $this->assertSame(1, substr_count($body, 'main-element-area'), 'Layout must render once.');
         });
+
+        return $body;
     }
 
     private function makeTemplate(string $title, ?string $pageType): Template
