@@ -8,6 +8,7 @@ use Dynamic\ElementalTemplates\Models\Template;
 use Dynamic\ElementalTemplates\Tests\TestOnly\ElementOne;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePage;
 use Dynamic\ElementalTemplates\Tests\TestOnly\SamplePageTwo;
+use Dynamic\ElementalTemplates\Tests\Unmanifested\AbstractSamplePage;
 
 class TemplatePreviewControllerTest extends FunctionalTest
 {
@@ -176,11 +177,13 @@ class TemplatePreviewControllerTest extends FunctionalTest
             // Has no create() method at all.
             'class outside the ORM' => [\stdClass::class],
             'class that no longer exists' => ['Dynamic\\ElementalTemplates\\Tests\\RemovedPage'],
+            // A SiteTree, but create() cannot instantiate it.
+            'abstract page class' => [AbstractSamplePage::class],
         ];
     }
 
     #[DataProvider('provideUnusablePageTypes')]
-    public function testFullPreviewFallsBackToPageForAPageTypeThatIsNotASiteTree(string $pageType)
+    public function testFullPreviewFallsBackToPageForAnUnusablePageType(string $pageType)
     {
         $template = $this->makeTemplate('Fallback Template', $pageType);
 
@@ -190,7 +193,7 @@ class TemplatePreviewControllerTest extends FunctionalTest
     }
 
     #[DataProvider('provideUnusablePageTypes')]
-    public function testContentOnlyPreviewFallsBackToPageForAPageTypeThatIsNotASiteTree(string $pageType)
+    public function testContentOnlyPreviewFallsBackToPageForAnUnusablePageType(string $pageType)
     {
         $template = $this->makeTemplate('Fallback Template', $pageType);
         $response = $this->get('template-preview/' . $template->ID . '?content_only=1');

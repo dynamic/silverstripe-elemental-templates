@@ -44,9 +44,13 @@ class TemplatePreviewController extends \PageController
         }
 
         // Preview against the base Page when the template is untyped (it applies to any
-        // page type) or its PageType is not an existing SiteTree class, rather than 500ing.
+        // page type) or its PageType is not an instantiable SiteTree class, rather than 500ing.
         $pageType = $template->PageType;
-        if (!$pageType || !is_a($pageType, SiteTree::class, true)) {
+        if (
+            !$pageType
+            || !is_a($pageType, SiteTree::class, true)
+            || !(new \ReflectionClass($pageType))->isInstantiable()
+        ) {
             $pageType = \Page::class;
         }
         if (!class_exists($pageType)) {
